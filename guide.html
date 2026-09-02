@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="進貨預約 Demo 的系統架構、操作步驟與七組測試劇本。">
+<meta name="robots" content="noindex">
+<title>進貨預約測試指南</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<style>
+:root{
+  --ground:#EDEFEC; --surface:#FFFFFF; --surface-2:#F6F7F5; --surface-3:#E4E8E3;
+  --ink:#161B19; --ink-2:#5C6663; --ink-3:#89918D;
+  --line:#D6DAD5; --line-2:#C2C8C1;
+  --primary:#0B4F4A; --primary-ink:#FFFFFF; --primary-soft:#DCEAE7;
+  --accent:#D98A14; --accent-soft:#FBEDD4;
+  --ok:#2E7D5B; --ok-soft:#DDEEE5;
+  --crit:#B03A2E; --crit-soft:#F6DEDA;
+  --shadow:0 1px 2px rgba(22,27,25,.06),0 6px 18px rgba(22,27,25,.05);
+  --r:6px;
+  --f-display:"Noto Serif TC",Georgia,"Times New Roman",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
+    --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
+    --line:#2A3331; --line-2:#3A4643;
+    --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
+    --accent:#E8A33C; --accent-soft:#3A2C13;
+    --ok:#4FA57D; --ok-soft:#173029;
+    --crit:#D2685A; --crit-soft:#3A211D;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
+  --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
+  --line:#2A3331; --line-2:#3A4643;
+  --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
+  --accent:#E8A33C; --accent-soft:#3A2C13;
+  --ok:#4FA57D; --ok-soft:#173029;
+  --crit:#D2685A; --crit-soft:#3A211D;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.page{max-width:880px;margin:0 auto;padding:0 22px 90px}
+h1,h2,h3,h4{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0;line-height:1.35}
+p{margin:0 0 14px}
+a{color:var(--primary);text-underline-offset:3px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+
+header.hero{border-bottom:2px solid var(--ink);padding:52px 0 26px;margin-bottom:34px}
+header.hero h1{font-size:40px;letter-spacing:-.01em;margin:8px 0 12px}
+header.hero .lede{font-size:17px;color:var(--ink-2);max-width:60ch;margin:0}
+.linkbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.linkbar a{display:inline-flex;align-items:center;gap:7px;background:var(--primary);color:var(--primary-ink);
+  text-decoration:none;font-weight:700;padding:9px 16px;border-radius:var(--r);font-size:14px}
+.linkbar a.ghost{background:none;color:var(--primary);border:1px solid var(--line-2);font-weight:500}
+.linkbar a:hover{filter:brightness(1.08)}
+
+section{margin-bottom:46px;scroll-margin-top:20px}
+h2{font-size:25px;margin-bottom:6px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+h2 .num{font-family:var(--f-mono);font-size:15px;color:var(--ink-3);margin-right:12px;font-weight:400}
+h3{font-size:17px;margin:30px 0 10px}
+h4{font-size:15px;margin:0 0 6px;font-family:var(--f-body)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 22px;margin-bottom:16px}
+.note{background:var(--surface-2);border-left:3px solid var(--line-2);padding:13px 17px;border-radius:0 var(--r) var(--r) 0;margin:0 0 16px;font-size:14px;color:var(--ink-2)}
+.note.warn{border-left-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.note.key{border-left-color:var(--primary);background:var(--primary-soft);color:var(--ink)}
+.note b{color:var(--ink)}
+.note p:last-child{margin:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:700;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+figure{margin:0 0 20px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 20px 14px;box-shadow:var(--shadow)}
+figure svg{display:block;width:100%;max-width:100%;height:auto;color:var(--ink)}
+figcaption{font-size:13px;color:var(--ink-2);margin-top:12px;padding-top:11px;border-top:1px solid var(--line);text-wrap:pretty}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.pill.n{background:var(--surface-3);color:var(--ink-2)}
+.pill.p{background:var(--primary-soft);color:var(--primary)}
+.pill.a{background:var(--accent-soft);color:var(--accent)}
+.pill.o{background:var(--ok-soft);color:var(--ok)}
+
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:14px;margin-bottom:18px}
+.role{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:17px 19px;box-shadow:var(--shadow)}
+.role h4{display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:9px}
+.role ol{margin:0;padding-left:19px;font-size:14px;display:grid;gap:5px}
+.role ol li::marker{color:var(--ink-3);font-family:var(--f-mono);font-size:12px}
+
+.scen{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+.scen-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:15px 21px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.scen-h .sn{font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--primary);
+  background:var(--primary-soft);padding:3px 9px;border-radius:var(--r)}
+.scen-h h3{margin:0;font-size:17px}
+.scen-b{padding:18px 21px}
+.scen-b .goal{color:var(--ink-2);font-size:14px;margin-bottom:14px}
+.scen-b ol{margin:0 0 14px;padding-left:20px;display:grid;gap:6px;font-size:14px}
+.scen-b ol li::marker{color:var(--ink-3);font-family:var(--f-mono);font-size:12px}
+.expect{background:var(--ok-soft);border-left:3px solid var(--ok);padding:11px 15px;border-radius:0 var(--r) var(--r) 0;font-size:14px;margin-bottom:12px}
+.expect b{color:var(--ok)}
+.ask{background:var(--accent-soft);border-left:3px solid var(--accent);padding:11px 15px;border-radius:0 var(--r) var(--r) 0;font-size:14px}
+.ask b{display:block;margin-bottom:3px}
+.ask ul{margin:0;padding-left:18px}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--surface-3);padding:1px 6px;border-radius:3px;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.q{border-left:3px solid var(--accent);padding:2px 0 2px 15px;margin-bottom:16px}
+.q b{display:block;font-size:15px}
+.q p{margin:3px 0 0;color:var(--ink-2);font-size:14px}
+ul.plain{margin:0 0 16px;padding-left:20px}
+ul.plain li{margin-bottom:6px}
+footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-3);font-size:13px}
+@media (max-width:640px){
+  header.hero{padding-top:34px}
+  header.hero h1{font-size:30px}
+  .page{padding:0 16px 60px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="hero">
+  <div class="eyebrow">進貨預約 Demo · 2026.09</div>
+  <h1>進貨預約測試指南</h1>
+  <p class="lede">這份文件說明目前 Demo 的系統架構、各角色的操作步驟，以及七組請你實際跑一遍的測試劇本。目的不是驗收功能，而是<b>在寫程式之前先把規則吵清楚</b>。</p>
+  <div class="linkbar">
+    <a href="https://alexchiang-mf.github.io/inbound-booking-demo/">開啟 Demo 操作</a>
+    <a class="ghost" href="#arch">系統架構</a>
+    <a class="ghost" href="#ops">操作步驟</a>
+    <a class="ghost" href="#test">測試劇本</a>
+    <a class="ghost" href="#open">待拍板事項</a>
+  </div>
+</header>
+
+<div class="note warn">
+  <p><b>Demo 內所有資料皆為虛構。</b>廠商名稱一律使用天干開頭的代號（甲上食品、乙誠物流…），採購單號、車牌與準點數據都是編出來的，與任何實際公司或營運數據無關。碼頭數量與時段設定僅為說明用的預設值。</p>
+</div>
+
+<div class="note key">
+  <p><b>三十秒版本。</b>供應商拿到採購單號才能預約；輸入單號後系統直接列出還有空位的時段讓他點，像訂餐廳一樣。車輛噸數越大吃掉越多時段。到場後在警衛室過刷報到，現場叫號指派碼頭，進場與離場各再過刷一次。沒來或過號會被記錄下來，但<b>只做統計、不擋預約</b>。</p>
+</div>
+
+<section id="arch">
+  <h2><span class="num">01</span>系統架構</h2>
+
+  <h3>一次進貨怎麼走</h3>
+  <figure>
+    <svg viewBox="0 0 860 262" role="img" aria-label="進貨流程圖：預約階段由採購單核可、查詢單號、選噸數挑時段、產生預約號碼與 QRcode 四步組成；司機到場後進入現場階段，依序為報到過刷、叫號指派碼頭、進場過刷、離場過刷，離場後碼頭才釋放給下一位叫號。">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g font-family="system-ui, sans-serif">
+        <text x="20" y="20" font-size="11" font-weight="700" letter-spacing="1.5" fill="currentColor" opacity=".55">預約（進貨日前）</text>
+        <g fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="20" y="32" width="180" height="52" rx="5" opacity=".45"/>
+          <rect x="225" y="32" width="180" height="52" rx="5" opacity=".45"/>
+          <rect x="430" y="32" width="180" height="52" rx="5" opacity=".45"/>
+          <rect x="635" y="32" width="180" height="52" rx="5" opacity=".45"/>
+        </g>
+        <g font-size="13" fill="currentColor" text-anchor="middle">
+          <text x="110" y="54">採購單核可</text><text x="330" y="54">輸入採購單號</text>
+          <text x="520" y="54">選噸數 → 挑時段</text><text x="725" y="54">預約號碼 + QRcode</text>
+        </g>
+        <g font-size="11" fill="currentColor" opacity=".6" text-anchor="middle">
+          <text x="110" y="72">採購把單號給廠商</text><text x="330" y="72">日期、倉別自動帶入</text>
+          <text x="520" y="72">只列出還有空位的</text><text x="725" y="72">列印或傳給司機</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)">
+          <line x1="200" y1="58" x2="222" y2="58"/><line x1="405" y1="58" x2="427" y2="58"/>
+          <line x1="610" y1="58" x2="632" y2="58"/>
+        </g>
+        <path d="M725,84 L725,104 L110,104 L110,146" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+        <text x="417" y="99" font-size="11.5" fill="currentColor" text-anchor="middle" opacity=".75">司機依預約時段到場</text>
+
+        <text x="20" y="138" font-size="11" font-weight="700" letter-spacing="1.5" fill="currentColor" opacity=".55">現場（進貨日當天）</text>
+        <g fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="20" y="150" width="180" height="52" rx="5" opacity=".45"/>
+          <rect x="225" y="150" width="180" height="52" rx="5" opacity=".45"/>
+          <rect x="430" y="150" width="180" height="52" rx="5" opacity=".45"/>
+          <rect x="635" y="150" width="180" height="52" rx="5" opacity=".45"/>
+        </g>
+        <g font-size="13" fill="currentColor" text-anchor="middle">
+          <text x="110" y="172">① 報到過刷</text><text x="330" y="172">叫號指派碼頭</text>
+          <text x="520" y="172">② 進場過刷</text><text x="725" y="172">③ 離場過刷</text>
+        </g>
+        <g font-size="11" fill="currentColor" opacity=".6" text-anchor="middle">
+          <text x="110" y="190">警衛室，排入等候</text><text x="330" y="190">現場人員決定</text>
+          <text x="520" y="190">停靠指定碼頭下貨</text><text x="725" y="190">下貨完成</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)">
+          <line x1="200" y1="176" x2="222" y2="176"/><line x1="405" y1="176" x2="427" y2="176"/>
+          <line x1="610" y1="176" x2="632" y2="176"/>
+        </g>
+        <path d="M725,202 L725,226 L315,226 L315,204" fill="none" stroke="#D98A14" stroke-width="1.6" marker-end="url(#ar)"/>
+        <text x="520" y="245" font-size="11.5" fill="#D98A14" text-anchor="middle" font-weight="600">離場過刷後碼頭才釋放，下一位才叫得動</text>
+      </g>
+    </svg>
+    <figcaption>三次過刷分別解決三件事：報到確認人到了、進場確認車進了指定碼頭、離場釋放碼頭。<b>少了離場過刷，系統就不知道碼頭何時空出來</b>，等待時間與叫號都會失準——這是整套流程最容易被省略、也最不能省的一步。</figcaption>
+  </figure>
+
+  <h3>角色與畫面</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>畫面</th><th>誰用</th><th>做什麼</th></tr></thead>
+    <tbody>
+      <tr><td><b>採購單預約</b></td><td>廠商</td><td>輸入採購單號 → 選噸數 → 點時段 → 產生預約號碼與 QRcode</td></tr>
+      <tr><td><b>預約查詢</b></td><td>廠商</td><td>以單號查自己那張單的狀態與排隊進度，沒有總覽清單</td></tr>
+      <tr><td><b>修改預約</b></td><td>廠商</td><td>三步驟改約，含變更對照與號碼換發提示</td></tr>
+      <tr><td><b>警衛室過刷</b></td><td>警衛</td><td>報到、進場、離場過刷；判定過號並放行下一位遞補</td></tr>
+      <tr><td><b>碼頭看板</b></td><td>理貨現場</td><td>碼頭即時佔用、排隊順序、預估等待；對車輛叫號指派</td></tr>
+      <tr><td><b>到場準點報表</b></td><td>採購／管理</td><td>廠商別準點統計，可匯出 CSV</td></tr>
+      <tr><td><b>參數設定</b></td><td>管理</td><td>碼頭啟用、開放時段、每小時切分、下貨工時</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>資料怎麼組</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>資料</th><th>由誰產生</th><th>關鍵欄位</th></tr></thead>
+    <tbody>
+      <tr><td><b>採購單</b></td><td>採購系統（Demo 為預先建好）</td><td>單號、廠商、<b>指定進貨日</b>、<b>收貨倉別</b>、板數</td></tr>
+      <tr><td><b>預約</b></td><td>廠商，一張單一筆</td><td>預約號碼、時段序、車型、車牌、狀態</td></tr>
+      <tr><td><b>倉別 / 碼頭</b></td><td>管理維護</td><td>啟用與否、碼頭位或廣場位、下貨工時</td></tr>
+      <tr><td><b>時段</b></td><td>由參數推導，不另存</td><td>開放起訖 ÷ 每小時切分段數</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><p><b>進貨日與倉別不是廠商填的，是採購單帶進來的。</b>這是整個設計的樞紐：廠商端沒有日期選單也沒有倉別選單，等於「沒有採購單就無法預約」與「不能約到沒下單的日子」兩件事同時被擋掉，不必另外寫檢核。</p></div>
+
+  <h3>預約狀態怎麼流轉</h3>
+  <figure>
+    <svg viewBox="0 0 880 288" role="img" aria-label="預約狀態機：已預約經報到過刷成為已報到，經現場叫號成為叫號中，經進場過刷成為下貨中，經離場過刷成為已離場。已預約可由廠商取消成為已取消，或在時段結束三十分後由系統自動判定為未到。叫號中若逾十五分未進場，由警衛判定為過號，過號者重新過刷報到後回到已報到。">
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+        <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#D98A14"/>
+        </marker>
+      </defs>
+      <g font-family="system-ui, sans-serif">
+        <g fill="none" stroke="currentColor" stroke-width="1.3">
+          <rect x="20" y="110" width="140" height="44" rx="5"/>
+          <rect x="190" y="110" width="140" height="44" rx="5"/>
+          <rect x="360" y="110" width="140" height="44" rx="5"/>
+          <rect x="530" y="110" width="140" height="44" rx="5"/>
+          <rect x="700" y="110" width="140" height="44" rx="5"/>
+        </g>
+        <g font-size="13.5" fill="currentColor" text-anchor="middle" font-weight="500">
+          <text x="90" y="137">已預約</text><text x="260" y="137">已報到</text><text x="430" y="137">叫號中</text>
+          <text x="600" y="137">下貨中</text><text x="770" y="137">已離場</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)">
+          <line x1="160" y1="132" x2="187" y2="132"/><line x1="330" y1="132" x2="357" y2="132"/>
+          <line x1="500" y1="132" x2="527" y2="132"/><line x1="670" y1="132" x2="697" y2="132"/>
+        </g>
+        <g font-size="11" fill="currentColor" opacity=".7" text-anchor="middle">
+          <text x="173" y="124">① 報到</text><text x="343" y="124">叫號</text>
+          <text x="513" y="124">② 進場</text><text x="683" y="124">③ 離場</text>
+        </g>
+
+        <rect x="20" y="24" width="140" height="40" rx="5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" opacity=".65"/>
+        <text x="90" y="49" font-size="13" fill="currentColor" text-anchor="middle" opacity=".8">已取消</text>
+        <line x1="90" y1="108" x2="90" y2="66" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"/>
+        <text x="100" y="92" font-size="11" fill="currentColor" opacity=".7">廠商取消，時段釋出</text>
+
+        <rect x="20" y="224" width="140" height="40" rx="5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" opacity=".65"/>
+        <text x="90" y="249" font-size="13" fill="currentColor" text-anchor="middle" opacity=".8">未到</text>
+        <line x1="90" y1="156" x2="90" y2="221" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ar2)"/>
+        <text x="100" y="186" font-size="11" fill="currentColor" opacity=".7">時段結束 +30 分</text>
+        <text x="100" y="201" font-size="11" fill="currentColor" opacity=".7">（系統自動判定）</text>
+
+        <rect x="360" y="224" width="140" height="40" rx="5" fill="none" stroke="#D98A14" stroke-width="1.4"/>
+        <text x="430" y="249" font-size="13" fill="#D98A14" text-anchor="middle" font-weight="600">過號</text>
+        <line x1="430" y1="156" x2="430" y2="221" stroke="#D98A14" stroke-width="1.4" marker-end="url(#ar3)"/>
+        <text x="440" y="186" font-size="11" fill="#D98A14">叫號後逾 15 分未進場</text>
+        <text x="440" y="201" font-size="11" fill="#D98A14">碼頭讓給下一位</text>
+        <path d="M357,244 L262,244 L262,158" fill="none" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"/>
+        <text x="268" y="214" font-size="11" fill="currentColor" opacity=".7">重新過刷報到</text>
+      </g>
+    </svg>
+    <figcaption>實線是人工動作觸發，虛線框與虛線箭頭是系統自動判定。<b>只有「未到」是系統自己認定的</b>，其餘都要有人按下去——這代表現場永遠有介入空間，但也代表沒人操作時狀態不會自己往前走。過號不是終點，重新過刷就回到等候佇列。</figcaption>
+  </figure>
+
+  <h3>一個時段能收幾台</h3>
+  <figure>
+    <svg viewBox="0 0 800 322" role="img" aria-label="容量模型圖：橫軸為時段，縱軸為停靠位。碼頭區三個位子、廣場區兩個位子。十一噸以下佔一格，十一噸以上佔兩格連續時段，鷗翼車佔廣場兩格。在 07:00 這一欄，碼頭三個位子已被佔用兩個，還能再收一台小車。">
+      <g font-family="system-ui, sans-serif">
+        <g font-size="12" fill="currentColor" text-anchor="middle" opacity=".75">
+          <text x="200" y="30">06:00</text><text x="320" y="30">06:30</text><text x="440" y="30">07:00</text>
+          <text x="560" y="30">07:30</text><text x="680" y="30">08:00</text>
+        </g>
+        <rect x="380" y="14" width="120" height="286" fill="#D98A14" opacity=".09"/>
+        <text x="20" y="58" font-size="11" font-weight="700" letter-spacing="1.2" fill="currentColor" opacity=".55">碼頭位（非鷗翼車）</text>
+        <g fill="none" stroke="currentColor" stroke-width="1" opacity=".3">
+          <rect x="140" y="66" width="600" height="38"/><rect x="140" y="110" width="600" height="38"/><rect x="140" y="154" width="600" height="38"/>
+          <line x1="260" y1="66" x2="260" y2="192"/><line x1="380" y1="66" x2="380" y2="192"/>
+          <line x1="500" y1="66" x2="500" y2="192"/><line x1="620" y1="66" x2="620" y2="192"/>
+        </g>
+        <g font-size="12" fill="currentColor" text-anchor="end" opacity=".75">
+          <text x="128" y="90">1 號碼頭</text><text x="128" y="134">2 號碼頭</text><text x="128" y="178">3 號碼頭</text>
+        </g>
+        <rect x="144" y="70" width="112" height="30" rx="3" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="1.2"/>
+        <text x="200" y="90" font-size="11.5" fill="currentColor" text-anchor="middle">11 噸以下</text>
+        <rect x="384" y="70" width="232" height="30" rx="3" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="1.2"/>
+        <text x="500" y="90" font-size="11.5" fill="currentColor" text-anchor="middle">11 噸以上（佔 2 格）</text>
+        <rect x="264" y="114" width="232" height="30" rx="3" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="1.2"/>
+        <text x="380" y="134" font-size="11.5" fill="currentColor" text-anchor="middle">11 噸以上（佔 2 格）</text>
+        <text x="440" y="178" font-size="11.5" fill="#D98A14" text-anchor="middle" font-weight="600">還能收 1 台</text>
+
+        <text x="20" y="222" font-size="11" font-weight="700" letter-spacing="1.2" fill="currentColor" opacity=".55">廣場位（鷗翼車）</text>
+        <g fill="none" stroke="currentColor" stroke-width="1" opacity=".3">
+          <rect x="140" y="230" width="600" height="38"/><rect x="140" y="274" width="600" height="38"/>
+          <line x1="260" y1="230" x2="260" y2="312"/><line x1="380" y1="230" x2="380" y2="312"/>
+          <line x1="500" y1="230" x2="500" y2="312"/><line x1="620" y1="230" x2="620" y2="312"/>
+        </g>
+        <g font-size="12" fill="currentColor" text-anchor="end" opacity=".75">
+          <text x="128" y="254">廣場 1 號位</text><text x="128" y="298">廣場 2 號位</text>
+        </g>
+        <rect x="384" y="234" width="232" height="30" rx="3" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="1.2"/>
+        <text x="500" y="254" font-size="11.5" fill="currentColor" text-anchor="middle">鷗翼車（佔 2 格）</text>
+      </g>
+    </svg>
+    <figcaption>時段的容量不是設定出來的，而是<b>算出來的</b>：某個時段還能收幾台 ＝ 該倉啟用的同類停靠位數 − 已被佔用的數量。所以在參數設定關掉一個碼頭，廠商端的「餘 N 位」會立刻少一個；把每小時切分從 2 段改成 4 段，格子會變兩倍細。圖中 07:00 欄的碼頭區三個位子已用掉兩個，因此小車顯示「餘 1 位」，而大車因為需要 07:00 與 07:30 兩格連續都有空位，可能反而訂不進去。</figcaption>
+  </figure>
+
+  <h3>三個推估規則</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>要算什麼</th><th>怎麼算</th><th>誰看得到</th></tr></thead>
+    <tbody>
+      <tr><td><b>預估離場</b></td><td>進場時間 ＋ 下貨工時 × 佔用格數</td><td>碼頭看板、廠商進度</td></tr>
+      <tr><td><b>預估等待</b></td><td>依各碼頭釋出時間排序模擬指派，得到預估進場時間；<br>等待 ＝ 預估進場 − 現在 ＋ <b>15 分緩衝</b></td><td>碼頭看板、廠商進度</td></tr>
+      <tr><td><b>過號判定</b></td><td>叫號後逾 <b>15 分</b>未進場，由警衛按下判定</td><td>警衛室、碼頭看板</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><p><b>下貨工時是這三個數字的地基，也是最脆弱的一環。</b>目前用「每格固定分鐘數」估算，但原簡報自己的備註就寫了現場每日板數在 200～400 浮動、堆高機台數不定。工時一旦失準，預估離場與等待時間就會跟著失準，廠商很快就不信任叫號。這點列在待拍板事項裡。</p></div>
+</section>
+
+<section id="ops">
+  <h2><span class="num">02</span>操作步驟</h2>
+  <p>四張角色卡，照著點就會走完。右上角有<b>模擬時鐘</b>，按「＋15 分」可以推進時間，用來觀察逾時與過號。所有資料存在你自己的瀏覽器，怎麼點都不影響別人；要回到初始狀態按右上「重設 Demo 資料」。</p>
+
+  <div class="roles">
+    <div class="role">
+      <h4><span class="pill p">廠商</span>預約一張單</h4>
+      <ol>
+        <li>左側「採購單預約」，輸入採購單號後查詢</li>
+        <li>核對帶出的廠商、倉別、進貨日</li>
+        <li>選車輛噸數，觀察時段格數變化</li>
+        <li>點一個還有空位的時段</li>
+        <li>填車牌，按「確認預約」</li>
+        <li>畫面跳出預約單，可列印或下載給司機</li>
+      </ol>
+    </div>
+    <div class="role">
+      <h4><span class="pill p">廠商</span>查詢與改約</h4>
+      <ol>
+        <li>「預約查詢」輸入單號，只會查到這張單</li>
+        <li>已預約會顯示號碼、時段與當下進度</li>
+        <li>按「改約」進入三步驟流程</li>
+        <li>改車型會清空時段要求重選</li>
+        <li>右側對照表確認變動項目與號碼換發</li>
+        <li>確認後<b>把新預約單重新給司機</b></li>
+      </ol>
+    </div>
+    <div class="role">
+      <h4><span class="pill a">警衛</span>三次過刷</h4>
+      <ol>
+        <li>先在上方選對倉別</li>
+        <li>輸入預約號碼或採購單號，按「報到」</li>
+        <li>已叫號的車輛按「進場過刷」</li>
+        <li>叫號逾 15 分會出現「判定過號」</li>
+        <li>判定後系統自動放行下一位遞補</li>
+        <li>下貨完在已報到清單按「離場過刷」</li>
+      </ol>
+    </div>
+    <div class="role">
+      <h4><span class="pill a">現場</span>叫號與調度</h4>
+      <ol>
+        <li>「碼頭看板」選倉別</li>
+        <li>上方卡片看各碼頭即時狀態</li>
+        <li>下方排隊順序顯示預估進場與等待</li>
+        <li>對要放行的車輛按「叫號指派」</li>
+        <li>系統自動挑一個空的同類停靠位</li>
+        <li>沒有空位時會擋下並提示</li>
+      </ol>
+    </div>
+  </div>
+  <div class="note"><p>管理端的兩張畫面不需要照步驟走：<b>參數設定</b>改完立即生效，回預約頁就看得到差異；<b>到場準點報表</b>可調整統計區間並匯出 CSV（會顯示可複製的文字，貼進 Excel 選逗號分隔）。</p></div>
+</section>
+
+<section id="test">
+  <h2><span class="num">03</span>測試劇本</h2>
+  <p>七組劇本，每組大約三到五分鐘。<b>重點不在「有沒有 bug」，而在最後那格「請幫我確認」的問題</b>——那些是現在還沒定案、需要現場經驗判斷的地方。劇本裡的採購單號是固定的，每個人看到的都一樣。</p>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 1</span><h3>第一次預約</h3><span class="pill n mono">PO-260903-0015</span></div>
+    <div class="scen-b">
+      <p class="goal">確認「採購單號就是入口」與餐廳式選時段是否直覺。</p>
+      <ol>
+        <li>「採購單預約」輸入 <code>PO-260903-0015</code> 後查詢</li>
+        <li>核對帶出的資料：乙誠物流、常溫 1、09/03、9 板</li>
+        <li>注意畫面上<b>沒有日期選單也沒有倉別選單</b></li>
+        <li>車型選「11 噸以下」，觀察時段格子的「餘 N 位」</li>
+        <li>點一個時段，填車牌 <code>ABC-1234</code>，確認預約</li>
+      </ol>
+      <div class="expect"><b>預期：</b>產生預約號碼（字母對應第幾個時段，如第四格為 D）與可掃描的 QRcode，畫面自動停在「預約查詢」並顯示這張單。</div>
+      <div class="ask"><b>請幫我確認</b><ul>
+        <li>廠商不能自己選進貨日，一律以採購單為準——實務上會不會卡到「提前送」或「延後送」的常見狀況？</li>
+        <li>時段直接列出來給點選，比起讓廠商自己填時間，現場接受度如何？</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 2</span><h3>大車吃兩格</h3><span class="pill n mono">PO-260903-0016</span></div>
+    <div class="scen-b">
+      <p class="goal">確認噸數與佔用格數的對應是否符合現場實況。</p>
+      <ol>
+        <li>輸入 <code>PO-260903-0016</code>（13 板，適合大車）</li>
+        <li>先選「11 噸以下」，記下某個時段的餘位數</li>
+        <li>改選「11 噸以上」，<b>把滑鼠移到時段格上</b>——會同時亮起兩格</li>
+        <li>看最後一個時段，應顯示「不足 2 格」而不能選</li>
+        <li>再改選「鷗翼車」，觀察餘位數變化（從碼頭數變成廣場數）</li>
+      </ol>
+      <div class="expect"><b>預期：</b>11 噸以下佔 1 格、11 噸以上佔 2 格、鷗翼車佔 2 格且停廣場。切換車型時可預約的時段數會跟著改變。</div>
+      <div class="ask"><b>請幫我確認</b><ul>
+        <li>1 格 / 2 格 / 2 格 的對應是否合理？還是應該再細分（例如 20 噸以上佔 3 格）？</li>
+        <li>低溫與冷凍的下貨速度不同，佔用格數是否該分溫層設定？</li>
+        <li>要不要改用「板數」估算佔用格數，而不是用噸數？</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 3</span><h3>改約與號碼換發</h3><span class="pill n mono">PO-260903-0029</span></div>
+    <div class="scen-b">
+      <p class="goal">確認改約流程是否清楚，特別是號碼換發的告知方式。</p>
+      <ol>
+        <li>「預約查詢」輸入 <code>PO-260903-0029</code>（已預約 D-01，07:30）</li>
+        <li>按「改約」，注意上方三步驟指示</li>
+        <li>把車型改成「11 噸以上」，觀察已選時段被清空並跳出提示</li>
+        <li>挑一個新時段，原時段會標示「目前預約」且持續為你保留</li>
+        <li>看右側「變更對照」，有變動的列會標色</li>
+        <li>確認改約，觀察彈出的新預約單</li>
+      </ol>
+      <div class="expect"><b>預期：</b>時段一變動，預約號碼就換發（D-01 → 新號碼），並跳出警語提醒舊預約單與 QRcode 立即失效。只改車牌不改時段時，號碼維持不變。</div>
+      <div class="ask"><b>請幫我確認</b><ul>
+        <li>號碼換發後，司機手上可能還是舊單——實務上要怎麼通知？要不要讓舊號碼在警衛室仍查得到並提示「已改約」？</li>
+        <li>「進貨日當天之前都可以改」這個界線，對現場排班來說夠不夠？要不要改成前一日中午截止？</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 4</span><h3>從報到到離場</h3><span class="pill n mono">PO-260902-0010</span></div>
+    <div class="scen-b">
+      <p class="goal">走完現場三次過刷，觀察碼頭狀態如何變化。</p>
+      <ol>
+        <li>「警衛室過刷」倉別選<b>常溫 1</b>，輸入 <code>PO-260902-0010</code> 報到</li>
+        <li>切到「碼頭看板」，在排隊順序中找到剛報到的那筆</li>
+        <li>按「叫號指派」，看系統挑了哪個碼頭</li>
+        <li>回警衛室，在「已叫號待進場」按「進場過刷」</li>
+        <li>回碼頭看板，該碼頭應顯示「下貨中」與預估離場時間</li>
+        <li>回警衛室，在已報到清單按「離場過刷」</li>
+      </ol>
+      <div class="expect"><b>預期：</b>碼頭卡片依序從「可用」→「已叫號未進場」→「下貨中」→「可用」。離場後該碼頭立刻能給下一台。</div>
+      <div class="ask"><b>請幫我確認</b><ul>
+        <li>進場與離場過刷該由警衛做，還是理貨現場做？誰手上會有掃描設備？</li>
+        <li>叫號通知怎麼傳給司機？廣播、簡訊，還是靠他自己看手機上的進度頁？</li>
+        <li>補充觀察：試著在常溫 1 輸入 <code>C-01</code>，系統會提示今日有兩筆同號分屬不同倉別。<b>預約號碼目前只在同倉別內唯一</b>，這樣可以嗎？</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 5</span><h3>過號與遞補</h3><span class="pill n mono">C-03</span></div>
+    <div class="scen-b">
+      <p class="goal">這是整套流程最需要現場判斷的一段，請特別留意。</p>
+      <ol>
+        <li>先看「碼頭看板」，常溫 1 的廣場或碼頭上有一筆 <code>C-03</code> 顯示「已叫號未進場」</li>
+        <li>按右上「＋15 分」推進模擬時間</li>
+        <li>該碼頭卡片轉為紅色「已過號」，提示可放行下一位</li>
+        <li>到「警衛室過刷」，按下「判定過號」</li>
+        <li>觀察系統自動把該碼頭交給下一位同類型等候車輛</li>
+        <li>到「到場準點報表」，看過號數與「提早遞補」數的變化</li>
+      </ol>
+      <div class="expect"><b>預期：</b>C-03 轉為過號並釋放碼頭，下一位自動獲得該碼頭且標記為「提早遞補」，兩者都進入統計。過號者重新過刷可回到等候佇列。</div>
+      <div class="ask"><b>請幫我確認</b><ul>
+        <li>15 分寬限合理嗎？現場實際會等多久？</li>
+        <li>遞補要不要先確認下一位人已經到場？直接叫號但人不在，會不會連環過號？</li>
+        <li>過號的車重新報到後，應該排到佇列末端，還是保留原時段的優先權？</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 6</span><h3>參數連動</h3><span class="pill n">參數設定</span></div>
+    <div class="scen-b">
+      <p class="goal">確認容量與時段是誰說了算，以及改動的影響範圍。</p>
+      <ol>
+        <li>「參數設定」找到常溫 1，取消勾選「3 號碼頭」</li>
+        <li>回「採購單預約」隨便查一張 09/03 的單，餘位數應該少 1</li>
+        <li>回參數設定，把常溫 1 的「每小時切分」從 2 段改成 4 段</li>
+        <li>再回預約頁，時段變成每 15 分一格</li>
+        <li>把「下貨工時」從 30 分改成 45 分，到碼頭看板看預估離場的變化</li>
+      </ol>
+      <div class="expect"><b>預期：</b>參數改動立即反映在廠商端的可預約格數與現場的預估時間上，不需要重新整理。</div>
+      <div class="ask"><b>請幫我確認</b><ul>
+        <li>這些參數該由誰維護？各溫層幹部各自管自己的倉，還是統一由一個窗口？</li>
+        <li>改動要不要隔日生效？當天改會影響已經約好的廠商嗎？</li>
+        <li>下貨工時用固定分鐘數，在板數浮動的情況下夠用嗎？</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 7</span><h3>權限邊界</h3><span class="pill n mono">PO-260902-0004</span></div>
+    <div class="scen-b">
+      <p class="goal">測試目前的身分驗證強度，這關係到系統要不要接帳號。</p>
+      <ol>
+        <li>「預約查詢」輸入 <code>PO-260902-0004</code>（丁豐農產運銷的單，不是你的）</li>
+        <li>觀察：<b>查得到</b>，因為單號本身就是憑證</li>
+        <li>再確認畫面上沒有任何「其他廠商」或「其他單」的清單</li>
+      </ol>
+      <div class="expect"><b>預期：</b>知道單號就查得到該單，但無法列舉、也看不到其他人的預約。碼頭看板與報表屬內部畫面，不對廠商開放。</div>
+      <div class="ask"><b>請幫我確認</b><ul>
+        <li>單號當唯一憑證夠嗎？要不要再加廠商代號或統編做雙重驗證？</li>
+        <li>採購單號是有規則的流水號，理論上可以猜。這個風險可接受嗎？</li>
+        <li>正式版要不要改接 AD 帳號？討論版原本建議先不接權限系統。</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="open">
+  <h2><span class="num">04</span>待拍板事項</h2>
+  <p>以下是目前<b>刻意沒有決定</b>的項目，需要現場經驗才能定案。跑完劇本後如果有想法，直接回覆即可。</p>
+
+  <div class="q"><b>一單多車 / 多單一車</b><p>目前採一張採購單＝一次預約＝一台車。實務上大單分批送、或同廠商多單併一車都存在，而且<b>不同溫層情境可能不同</b>（冷凍多為專車、常溫易併車）。需逐溫層確認後再定資料結構。</p></div>
+  <div class="q"><b>一車跨溫層</b><p>一台車同時送常溫與低溫時，要算兩次預約各佔一格，還是一次預約佔用兩倉？會直接影響碼頭調度與號碼編法。</p></div>
+  <div class="q"><b>預約號碼是否要全廠唯一</b><p>目前號碼只在「同倉別＋同時段」內唯一，同一天常溫 1 與低溫倉可能同時出現 C-01。掃 QRcode 沒問題，但人工輸入號碼時需先選對倉別。要不要改成含倉別前綴，或全廠連號？也要考量現場叫號廣播的唸法。</p></div>
+  <div class="q"><b>過號後的時段釋放</b><p>過號車輛重新排隊時，是排在當下佇列末端，還是保留原時段優先權？</p></div>
+  <div class="q"><b>下貨工時參數</b><p>目前以每格固定分鐘估算。現場回饋每日板數在 200～400 浮動、堆高機台數不定，預估離場一旦失準會影響叫號可信度。是否改以板數估算需再評估。</p></div>
+  <div class="q"><b>權限與掛載位置</b><p>討論版建議先寫死參數、不接權限系統，並掛在既有物流 e 化系統內。正式版是否改接 AD 帳號、預約頁與寫入程式是否分離，待資訊評估。</p></div>
+  <div class="q"><b>尖峰時段的公平性</b><p>目前純粹先搶先贏，沒有任何配額。重點廠商可優先預約早段的機制也還沒做。少數廠商把早上時段包走的情況要不要處理？</p></div>
+
+  <h3>已知限制</h3>
+  <ul class="plain">
+    <li>資料存在各自的瀏覽器，<b>看不到彼此的操作</b>。要做多人同步演練（一人當廠商、一人當警衛）目前做不到。</li>
+    <li>沒有後端、沒有帳號、沒有通知機制。叫號、簡訊、與現有系統介接都還不在範圍內。</li>
+    <li>報表的歷史資料是為了讓統計有東西看而預先編出來的，不代表任何實際績效。</li>
+  </ul>
+</section>
+
+<footer>
+  <p>本文件與 Demo 同步更新。Demo：<a href="https://alexchiang-mf.github.io/inbound-booking-demo/">alexchiang-mf.github.io/inbound-booking-demo</a>　·　依 2026/01/06 討論版收斂，資料皆為虛構。</p>
+</footer>
+
+</div>
+</body>
+</html>

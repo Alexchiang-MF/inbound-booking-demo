@@ -1,3 +1,11 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="以採購單號為 key、餐廳訂位式選時段的進貨預約流程 Demo。資料皆為虛構。">
+<meta name="robots" content="noindex">
 <title>進貨預約排程台</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -222,7 +230,8 @@ textarea{width:100%;min-height:150px;font-family:var(--f-mono);font-size:11.5px;
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
-
+</head>
+<body>
 <div class="app">
   <aside class="rail">
     <div class="brand">
@@ -324,7 +333,7 @@ function seed(){
   let pn=1;
   const mkPO=(vi,wh,date,pallets)=>{
     const v=VENDORS[vi];
-    const po="PO-"+date.slice(2).replace(/-/g,"")+"-"+pad(pn++)+""+pad(Math.floor(Math.random()*90)+10);
+    const po="PO-"+date.slice(2).replace(/-/g,"")+"-"+String(pn++).padStart(4,"0");
     pos.push({po,vendorCode:v[0],vendorName:v[1],whId:wh,date,pallets,items:Math.max(3,Math.round(pallets*2.4))});
     return po;
   };
@@ -1026,6 +1035,7 @@ V.param=()=>{
 /* ---- 7. 規格說明 ---- */
 V.spec=()=>head("規格與待確認","本 Demo 依 2026/01/06 討論版收斂，以下列出已確定的規則，以及需要在下次會議拍板的項目。")+
  `<div class="note warn" style="margin-bottom:16px">本頁為流程討論用的示範系統。<b>所有廠商名稱、採購單號、車牌與統計數據皆為虛構</b>，與任何實際公司或營運數據無關；碼頭數量與時段設定僅為說明用的預設值。</div>
+ <div class="note" style="margin-bottom:16px">完整的系統架構圖、各角色操作步驟與七組測試劇本，請看 <a href="https://alexchiang-mf.github.io/inbound-booking-demo/guide.html" style="color:var(--primary);font-weight:700">進貨預約測試指南</a>。</div>
  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
    <div class="card"><div class="card-head"><h3>已確定的規則</h3></div><div class="card-pad">
      <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
@@ -1040,6 +1050,7 @@ V.spec=()=>head("規格與待確認","本 Demo 依 2026/01/06 討論版收斂，
    <div class="card"><div class="card-head"><h3>待確認</h3></div><div class="card-pad">
      <div class="openq"><b>一單多車 / 多單一車</b><p>目前 Demo 採一張採購單＝一次預約＝一台車。實務上大單分批送、或同廠商多單併一車都存在，且<b>不同溫層情境可能不同</b>（如冷凍多為專車、常溫易併車），需逐溫層確認後再定資料結構。</p></div>
      <div class="openq"><b>一車跨溫層</b><p>一台車同時送常溫與低溫時，要算兩次預約各佔一格，還是一次預約佔用兩倉？影響碼頭調度與號碼編法。</p></div>
+     <div class="openq"><b>預約號碼是否要全廠唯一</b><p>目前號碼只在「同倉別＋同時段」內唯一，同一天常溫 1 與低溫倉可能同時出現 C-01。掃 QRcode 沒問題（內含採購單號），但警衛人工輸入號碼時需要先選對倉別。正式版要不要改成含倉別前綴（如 N1-C-01），或改為全廠連號，需一併考量現場叫號廣播的唸法。</p></div>
      <div class="openq"><b>過號後的時段釋放</b><p>過號車輛重新排隊時，是排在當下佇列末端，還是保留原時段優先權？</p></div>
      <div class="openq"><b>下貨工時參數</b><p>目前以每格固定分鐘估算。現場回饋每日板數在 200～400 浮動、堆高機台數不定，預估離場一旦失準會影響叫號可信度，是否改以板數估算需再評估。</p></div>
      <div class="openq"><b>權限與掛載位置</b><p>討論版建議先寫死參數、不接權限系統，並掛在既有物流 e 化系統內。正式版是否改接 AD 帳號、預約頁與寫入程式是否分離，待資訊評估。</p></div>
@@ -1251,18 +1262,28 @@ function doScan(){
   const whId=S.ui.gWh||S.cfg.warehouses[0].id;
   S.ui.scanOk=false;
   if(!raw){S.ui.scanMsg="請先過刷 QRcode 或輸入預約號碼。";save();render();return}
-  const hit=S.bookings.find(b=>(b.code===raw||b.po.toUpperCase()===raw)&&LIVE.has(b.status));
-  if(!hit){S.ui.scanMsg="查無此預約：非本中心預約資料。";save();render();return}
-  if(hit.date!==S.simDate){S.ui.scanMsg="非今日進貨預約（預約日 "+hit.date+"）。";save();render();return}
+  const match=b=>(b.code===raw||b.po.toUpperCase()===raw)&&LIVE.has(b.status);
+  // 預約號碼僅在「同倉別＋同時段」內唯一，跨倉別可能撞號：以目前選定倉別優先比對
+  const todayHits=S.bookings.filter(b=>match(b)&&b.date===S.simDate);
+  if(!todayHits.length){
+    const other=S.bookings.find(match);
+    S.ui.scanMsg=other?("非今日進貨預約（預約日 "+other.date+"）。"):"查無此預約：非本中心預約資料。";
+    save();render();return;
+  }
+  const hit=todayHits.find(b=>b.whId===whId)||todayHits[0];
+  let dup="";
+  if(todayHits.length>1){
+    dup="（今日有 "+todayHits.length+" 筆同號，分屬不同倉別，已比對 "+wh(hit.whId).name+"；建議改用採購單號過刷）";
+  }
   if(hit.whId!==whId){S.ui.gWh=hit.whId}
-  if(hit.status==="checkedin"){S.ui.scanMsg=hit.code+" 尚未叫號，請注意叫號訊息。";save();render();return}
-  if(hit.status==="called"){S.ui.scanMsg=hit.code+" 已叫號，請至 "+dockName(hit)+" 停靠下貨。";S.ui.scanOk=true;save();render();return}
-  if(hit.status==="inyard"){S.ui.scanMsg=hit.code+" 下貨中，完成後請做離場過刷。";S.ui.scanOk=true;save();render();return}
-  if(hit.status==="done"){S.ui.scanMsg=hit.code+" 已完成離場。";save();render();return}
+  if(hit.status==="checkedin"){S.ui.scanMsg=hit.code+" 尚未叫號，請注意叫號訊息。"+dup;save();render();return}
+  if(hit.status==="called"){S.ui.scanMsg=hit.code+" 已叫號，請至 "+dockName(hit)+" 停靠下貨。"+dup;S.ui.scanOk=true;save();render();return}
+  if(hit.status==="inyard"){S.ui.scanMsg=hit.code+" 下貨中，完成後請做離場過刷。"+dup;S.ui.scanOk=true;save();render();return}
+  if(hit.status==="done"){S.ui.scanMsg=hit.code+" 已完成離場。"+dup;save();render();return}
   if(hit.status==="passed"){hit.status="checkedin";hit.checkinAt=S.simMin;hit.calledAt=null;
-    S.ui.scanMsg=hit.code+" 已過號，重新排入等候。";S.ui.scanOk=true;save();render();return}
+    S.ui.scanMsg=hit.code+" 已過號，重新排入等候。"+dup;S.ui.scanOk=true;save();render();return}
   checkin(hit);
-  S.ui.scanMsg=hit.code+"　"+hit.vendorName+" 報到成功，請注意叫號順序。";S.ui.scanOk=true;
+  S.ui.scanMsg=hit.code+"　"+hit.vendorName+" 報到成功，請注意叫號順序。"+dup;S.ui.scanOk=true;
   save();render();
 }
 function callUp(id){
@@ -1345,3 +1366,5 @@ $$("[data-adv]").forEach(b=>b.onclick=()=>{
 $("#resetBtn").onclick=()=>{fresh();render();toast("已重設為初始 Demo 資料")};
 load();render();
 </script>
+</body>
+</html>
