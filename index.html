@@ -1,0 +1,1347 @@
+<title>進貨預約排程台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<style>
+:root{
+  --ground:#EDEFEC; --surface:#FFFFFF; --surface-2:#F6F7F5; --surface-3:#E4E8E3;
+  --ink:#161B19; --ink-2:#5C6663; --ink-3:#89918D;
+  --line:#D6DAD5; --line-2:#C2C8C1;
+  --primary:#0B4F4A; --primary-ink:#FFFFFF; --primary-soft:#DCEAE7;
+  --accent:#D98A14; --accent-soft:#FBEDD4;
+  --ok:#2E7D5B; --ok-soft:#DDEEE5;
+  --crit:#B03A2E; --crit-soft:#F6DEDA;
+  --t-amb:#B07C15; --t-chill:#3E7CA8; --t-frozen:#5A6FB0;
+  --shadow:0 1px 2px rgba(22,27,25,.06),0 6px 18px rgba(22,27,25,.05);
+  --r:6px;
+  --f-display:"Noto Serif TC",Georgia,"Times New Roman",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
+    --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
+    --line:#2A3331; --line-2:#3A4643;
+    --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
+    --accent:#E8A33C; --accent-soft:#3A2C13;
+    --ok:#4FA57D; --ok-soft:#173029;
+    --crit:#D2685A; --crit-soft:#3A211D;
+    --t-amb:#D2A03E; --t-chill:#6BA6CF; --t-frozen:#8B9BD8;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
+  --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
+  --line:#2A3331; --line-2:#3A4643;
+  --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
+  --accent:#E8A33C; --accent-soft:#3A2C13;
+  --ok:#4FA57D; --ok-soft:#173029;
+  --crit:#D2685A; --crit-soft:#3A211D;
+  --t-amb:#D2A03E; --t-chill:#6BA6CF; --t-frozen:#8B9BD8;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0}
+button{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:212px 1fr;min-height:100vh}
+.rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{padding:0 8px 16px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand h1{font-size:17px;letter-spacing:.01em}
+.brand .sub{font-size:11px;color:var(--ink-3);letter-spacing:.14em;text-transform:uppercase;font-family:var(--f-mono);margin-top:4px}
+.rail-group{font-size:10.5px;letter-spacing:.16em;color:var(--ink-3);text-transform:uppercase;font-weight:700;padding:14px 8px 5px}
+.navbtn{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:0;border-radius:var(--r);padding:8px 9px;cursor:pointer;color:var(--ink-2);font-weight:500;transition:background .12s,color .12s}
+.navbtn:hover{background:var(--surface-2);color:var(--ink)}
+.navbtn[aria-current="true"]{background:var(--primary-soft);color:var(--primary);font-weight:700}
+.navbtn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.45;flex:none}
+.navbtn[aria-current="true"] .dot{opacity:1}
+
+main{min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 26px;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.clock{display:flex;align-items:baseline;gap:8px}
+.clock .t{font-family:var(--f-mono);font-size:22px;font-weight:600;letter-spacing:.02em}
+.clock .d{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.clock-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.spacer{flex:1}
+.wrap{padding:26px;max-width:1180px;width:100%}
+.page-head{margin-bottom:20px}
+.page-head h2{font-size:22px}
+.page-head p{margin:5px 0 0;color:var(--ink-2);max-width:64ch}
+.eyebrow{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700;font-family:var(--f-mono)}
+
+/* ---------- atoms ---------- */
+.btn{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:7px 13px;cursor:pointer;font-weight:500;transition:border-color .12s,background .12s}
+.btn:hover{border-color:var(--ink-3);background:var(--surface-2)}
+.btn.pri{background:var(--primary);border-color:var(--primary);color:var(--primary-ink);font-weight:700}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn.danger:hover{background:var(--crit-soft)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card-pad{padding:18px 20px}
+.card-head{padding:13px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card-head h3{font-size:15px}
+.grid{display:grid;gap:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+label.fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink-2);font-weight:500}
+input,select{font-family:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--surface);color:var(--ink);min-width:0}
+input.mono{font-family:var(--f-mono)}
+input:focus,select:focus{outline:2px solid var(--primary);outline-offset:-1px;border-color:var(--primary)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.02em;white-space:nowrap}
+.pill.n{background:var(--surface-3);color:var(--ink-2)}
+.pill.p{background:var(--primary-soft);color:var(--primary)}
+.pill.a{background:var(--accent-soft);color:var(--accent)}
+.pill.o{background:var(--ok-soft);color:var(--ok)}
+.pill.c{background:var(--crit-soft);color:var(--crit)}
+.temp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+.temp i{width:3px;height:12px;border-radius:2px;display:inline-block}
+.t-常溫{background:var(--t-amb)} .t-低溫{background:var(--t-chill)} .t-冷凍{background:var(--t-frozen)}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.empty{padding:34px 20px;text-align:center;color:var(--ink-3)}
+.note{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border-left:2px solid var(--line-2);padding:9px 13px;border-radius:0 var(--r) var(--r) 0}
+.note.warn{border-left-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px}
+.kv dt{color:var(--ink-2)} .kv dd{margin:0;font-weight:500}
+
+/* ---------- slot grid ---------- */
+.slotgrid{display:flex;flex-direction:column;gap:6px}
+.slotrow{display:grid;grid-template-columns:56px 1fr;align-items:center;gap:10px}
+.hourlab{font-family:var(--f-mono);font-size:13px;color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums}
+.slots{display:grid;gap:6px}
+.slot{position:relative;border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:8px 6px 7px;cursor:pointer;text-align:center;transition:border-color .12s,background .12s,transform .1s}
+.slot .st{display:block;font-family:var(--f-mono);font-size:13.5px;font-weight:600;letter-spacing:.01em}
+.slot .sc{display:block;font-size:11px;color:var(--ink-3);margin-top:1px}
+.slot:hover:not(:disabled){border-color:var(--primary);transform:translateY(-1px)}
+.slot.hl{border-color:var(--primary);background:var(--primary-soft)}
+.slot.hl .sc{color:var(--primary)}
+.slot[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#1B1206}
+.slot[aria-pressed="true"] .sc{color:#1B1206;opacity:.8}
+.slot:disabled{cursor:not-allowed;background:var(--surface-2);border-style:dashed;border-color:var(--line);color:var(--ink-3)}
+.slot:disabled .st{text-decoration:line-through;opacity:.55}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:4px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:13px;height:13px;border-radius:3px;border:1px solid var(--line-2);display:inline-block}
+
+/* ---------- stepper / diff ---------- */
+.stepper{display:flex;list-style:none;margin:0 0 18px;padding:0;flex-wrap:wrap;gap:0}
+.stepper li{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-3);font-weight:500;padding-right:6px}
+.stepper li::after{content:"";width:18px;height:1px;background:var(--line-2);margin:0 12px 0 6px}
+.stepper li:last-child::after{display:none}
+.stepper i{width:22px;height:22px;border-radius:50%;border:1px solid var(--line-2);display:grid;place-items:center;font-style:normal;font-family:var(--f-mono);font-size:12px;flex:none}
+.stepper li.now{color:var(--ink);font-weight:700}
+.stepper li.now i{border-color:var(--primary);background:var(--primary);color:var(--primary-ink)}
+.stepper li.done{color:var(--ink-2)}
+.stepper li.done i{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.stepsec{display:flex;align-items:center;gap:10px}
+.stepsec b{width:22px;height:22px;border-radius:50%;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;flex:none;font-weight:600}
+.slot.cur{box-shadow:inset 0 0 0 2px var(--primary)}
+.slot.cur .sc{color:var(--primary);font-weight:700}
+table.diff th{padding:7px 10px}
+table.diff td{padding:8px 10px;font-size:13px}
+table.diff tr.chg td{background:var(--accent-soft)}
+table.diff tr.chg td:last-child{font-weight:700}
+table.diff td:first-child{color:var(--ink-2);white-space:nowrap}
+.oldval{color:var(--ink-3);text-decoration:line-through}
+
+/* ---------- vehicle picker ---------- */
+.vpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.vopt{border:1px solid var(--line-2);border-radius:var(--r);padding:11px 13px;cursor:pointer;background:var(--surface);text-align:left;transition:border-color .12s,background .12s}
+.vopt:hover{border-color:var(--primary)}
+.vopt[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft);box-shadow:inset 0 0 0 1px var(--primary)}
+.vopt b{display:block;font-size:14px}
+.vopt small{color:var(--ink-2);font-size:11.5px}
+
+/* ---------- dock board ---------- */
+.docks{display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));gap:12px}
+.dock{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden;box-shadow:var(--shadow)}
+.dock .bar{height:3px;background:var(--line-2)}
+.dock.busy .bar{background:var(--primary)}
+.dock.called .bar{background:var(--accent)}
+.dock.late .bar{background:var(--crit)}
+.dock .body{padding:12px 14px}
+.dock .dn{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.dock .dn b{font-size:14px}
+.dock .code{font-family:var(--f-mono);font-size:20px;font-weight:600;letter-spacing:.03em}
+.dock .meta{font-size:12px;color:var(--ink-2);margin-top:4px;font-family:var(--f-mono)}
+.dock.off{opacity:.5}
+
+/* ---------- queue ---------- */
+.qnum{font-family:var(--f-mono);font-size:16px;font-weight:600}
+.wait{font-family:var(--f-mono);font-weight:600}
+.wait.soon{color:var(--ok)} .wait.long{color:var(--accent)}
+
+/* ---------- ticket ---------- */
+.scrim{position:fixed;inset:0;background:rgba(10,14,13,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60;overflow-y:auto}
+.modal{background:var(--surface);border-radius:8px;max-width:430px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);border:1px solid var(--line)}
+.ticket{padding:22px 24px}
+.ticket .th{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:14px}
+.ticket .th .co{font-family:var(--f-display);font-size:15px;font-weight:700}
+.ticket .th .co small{display:block;font-family:var(--f-mono);font-size:9px;letter-spacing:.1em;color:var(--ink-3);font-weight:400}
+.ticket .big{font-family:var(--f-mono);font-size:44px;font-weight:600;line-height:1;letter-spacing:.02em}
+.qrbox{background:#fff;padding:10px;border-radius:var(--r);width:max-content;margin:14px auto 6px;border:1px solid var(--line)}
+.qrbox img,.qrbox canvas{display:block}
+.rules{font-size:11.5px;color:var(--ink-2);border-top:1px dashed var(--line-2);margin-top:14px;padding-top:11px}
+.rules li{margin-bottom:3px}
+.rules ol{margin:0;padding-left:18px}
+
+/* ---------- misc ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--surface);padding:13px 15px}
+.stat .v{font-family:var(--f-mono);font-size:25px;font-weight:600;line-height:1.15}
+.stat .l{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.stat.good .v{color:var(--ok)} .stat.bad .v{color:var(--crit)} .stat.mid .v{color:var(--accent)}
+.bar-mini{height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden;margin-top:6px;min-width:70px}
+.bar-mini i{display:block;height:100%;background:var(--ok)}
+.bar-mini i.mid{background:var(--accent)} .bar-mini i.bad{background:var(--crit)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 18px;border-radius:99px;font-weight:500;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.chk{width:15px;height:15px;accent-color:var(--primary)}
+textarea{width:100%;min-height:150px;font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line-2);border-radius:var(--r);padding:10px;background:var(--surface-2);color:var(--ink);resize:vertical}
+.openq{border-left:2px solid var(--accent);padding:2px 0 2px 14px;margin-bottom:16px}
+.openq b{display:block;font-size:14px}
+.openq p{margin:3px 0 0;color:var(--ink-2);font-size:13px}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);align-items:center}
+  .brand{border-bottom:0;margin:0;padding:0 12px 0 0;flex:none}
+  .rail-group{display:none}
+  .navbtn{width:auto}
+  .wrap{padding:18px 16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <h1>進貨預約排程台</h1>
+      <div class="sub">TDC Inbound Demo</div>
+    </div>
+    <div class="rail-group">廠商端</div>
+    <button class="navbtn" data-view="book"><i class="dot"></i>採購單預約</button>
+    <button class="navbtn" data-view="mine"><i class="dot"></i>預約查詢</button>
+    <div class="rail-group">現場端</div>
+    <button class="navbtn" data-view="guard"><i class="dot"></i>警衛室過刷</button>
+    <button class="navbtn" data-view="board"><i class="dot"></i>碼頭看板</button>
+    <div class="rail-group">管理端</div>
+    <button class="navbtn" data-view="report"><i class="dot"></i>到場準點報表</button>
+    <button class="navbtn" data-view="param"><i class="dot"></i>參數設定</button>
+    <div class="rail-group">Demo</div>
+    <button class="navbtn" data-view="spec"><i class="dot"></i>規格與待確認</button>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <div class="clock-label">模擬時間</div>
+        <div class="clock"><span class="t mono" id="simTime">07:12</span><span class="d mono" id="simDate">2026/09/02 (三)</span></div>
+      </div>
+      <div class="row" style="gap:6px">
+        <button class="btn sm" data-adv="5">＋5 分</button>
+        <button class="btn sm" data-adv="15">＋15 分</button>
+        <button class="btn sm" data-adv="60">＋1 小時</button>
+      </div>
+      <div class="spacer"></div>
+      <span class="pill a" title="本頁所有廠商、採購單與統計數據皆為虛構">示範資料</span>
+      <span class="pill n" id="dcTag">示範物流中心</span>
+      <button class="btn sm" id="resetBtn">重設 Demo 資料</button>
+    </div>
+    <div class="wrap" id="view"></div>
+  </main>
+</div>
+<div id="layer"></div>
+
+<!-- qrcodejs 1.0.0 (MIT, davidshimjs) — 內嵌以確保離線／內網環境可用 -->
+<script>
+var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this.parsedData=[];for(var b=[],d=0,e=this.data.length;e>d;d++){var f=this.data.charCodeAt(d);f>65536?(b[0]=240|(1835008&f)>>>18,b[1]=128|(258048&f)>>>12,b[2]=128|(4032&f)>>>6,b[3]=128|63&f):f>2048?(b[0]=224|(61440&f)>>>12,b[1]=128|(4032&f)>>>6,b[2]=128|63&f):f>128?(b[0]=192|(1984&f)>>>6,b[1]=128|63&f):b[0]=f,this.parsedData=this.parsedData.concat(b)}this.parsedData.length!=this.data.length&&(this.parsedData.unshift(191),this.parsedData.unshift(187),this.parsedData.unshift(239))}function b(a,b){this.typeNumber=a,this.errorCorrectLevel=b,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}function i(a,b){if(void 0==a.length)throw new Error(a.length+"/"+b);for(var c=0;c<a.length&&0==a[c];)c++;this.num=new Array(a.length-c+b);for(var d=0;d<a.length-c;d++)this.num[d]=a[d+c]}function j(a,b){this.totalCount=a,this.dataCount=b}function k(){this.buffer=[],this.length=0}function m(){return"undefined"!=typeof CanvasRenderingContext2D}function n(){var a=!1,b=navigator.userAgent;return/android/i.test(b)&&(a=!0,aMat=b.toString().match(/android ([0-9]\.[0-9])/i),aMat&&aMat[1]&&(a=parseFloat(aMat[1]))),a}function r(a,b){for(var c=1,e=s(a),f=0,g=l.length;g>=f;f++){var h=0;switch(b){case d.L:h=l[f][0];break;case d.M:h=l[f][1];break;case d.Q:h=l[f][2];break;case d.H:h=l[f][3]}if(h>=e)break;c++}if(c>l.length)throw new Error("Too long data");return c}function s(a){var b=encodeURI(a).toString().replace(/\%[0-9a-fA-F]{2}/g,"a");return b.length+(b.length!=a?3:0)}a.prototype={getLength:function(){return this.parsedData.length},write:function(a){for(var b=0,c=this.parsedData.length;c>b;b++)a.put(this.parsedData[b],8)}},b.prototype={addData:function(b){var c=new a(b);this.dataList.push(c),this.dataCache=null},isDark:function(a,b){if(0>a||this.moduleCount<=a||0>b||this.moduleCount<=b)throw new Error(a+","+b);return this.modules[a][b]},getModuleCount:function(){return this.moduleCount},make:function(){this.makeImpl(!1,this.getBestMaskPattern())},makeImpl:function(a,c){this.moduleCount=4*this.typeNumber+17,this.modules=new Array(this.moduleCount);for(var d=0;d<this.moduleCount;d++){this.modules[d]=new Array(this.moduleCount);for(var e=0;e<this.moduleCount;e++)this.modules[d][e]=null}this.setupPositionProbePattern(0,0),this.setupPositionProbePattern(this.moduleCount-7,0),this.setupPositionProbePattern(0,this.moduleCount-7),this.setupPositionAdjustPattern(),this.setupTimingPattern(),this.setupTypeInfo(a,c),this.typeNumber>=7&&this.setupTypeNumber(a),null==this.dataCache&&(this.dataCache=b.createData(this.typeNumber,this.errorCorrectLevel,this.dataList)),this.mapData(this.dataCache,c)},setupPositionProbePattern:function(a,b){for(var c=-1;7>=c;c++)if(!(-1>=a+c||this.moduleCount<=a+c))for(var d=-1;7>=d;d++)-1>=b+d||this.moduleCount<=b+d||(this.modules[a+c][b+d]=c>=0&&6>=c&&(0==d||6==d)||d>=0&&6>=d&&(0==c||6==c)||c>=2&&4>=c&&d>=2&&4>=d?!0:!1)},getBestMaskPattern:function(){for(var a=0,b=0,c=0;8>c;c++){this.makeImpl(!0,c);var d=f.getLostPoint(this);(0==c||a>d)&&(a=d,b=c)}return b},createMovieClip:function(a,b,c){var d=a.createEmptyMovieClip(b,c),e=1;this.make();for(var f=0;f<this.modules.length;f++)for(var g=f*e,h=0;h<this.modules[f].length;h++){var i=h*e,j=this.modules[f][h];j&&(d.beginFill(0,100),d.moveTo(i,g),d.lineTo(i+e,g),d.lineTo(i+e,g+e),d.lineTo(i,g+e),d.endFill())}return d},setupTimingPattern:function(){for(var a=8;a<this.moduleCount-8;a++)null==this.modules[a][6]&&(this.modules[a][6]=0==a%2);for(var b=8;b<this.moduleCount-8;b++)null==this.modules[6][b]&&(this.modules[6][b]=0==b%2)},setupPositionAdjustPattern:function(){for(var a=f.getPatternPosition(this.typeNumber),b=0;b<a.length;b++)for(var c=0;c<a.length;c++){var d=a[b],e=a[c];if(null==this.modules[d][e])for(var g=-2;2>=g;g++)for(var h=-2;2>=h;h++)this.modules[d+g][e+h]=-2==g||2==g||-2==h||2==h||0==g&&0==h?!0:!1}},setupTypeNumber:function(a){for(var b=f.getBCHTypeNumber(this.typeNumber),c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[Math.floor(c/3)][c%3+this.moduleCount-8-3]=d}for(var c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[c%3+this.moduleCount-8-3][Math.floor(c/3)]=d}},setupTypeInfo:function(a,b){for(var c=this.errorCorrectLevel<<3|b,d=f.getBCHTypeInfo(c),e=0;15>e;e++){var g=!a&&1==(1&d>>e);6>e?this.modules[e][8]=g:8>e?this.modules[e+1][8]=g:this.modules[this.moduleCount-15+e][8]=g}for(var e=0;15>e;e++){var g=!a&&1==(1&d>>e);8>e?this.modules[8][this.moduleCount-e-1]=g:9>e?this.modules[8][15-e-1+1]=g:this.modules[8][15-e-1]=g}this.modules[this.moduleCount-8][8]=!a},mapData:function(a,b){for(var c=-1,d=this.moduleCount-1,e=7,g=0,h=this.moduleCount-1;h>0;h-=2)for(6==h&&h--;;){for(var i=0;2>i;i++)if(null==this.modules[d][h-i]){var j=!1;g<a.length&&(j=1==(1&a[g]>>>e));var k=f.getMask(b,d,h-i);k&&(j=!j),this.modules[d][h-i]=j,e--,-1==e&&(g++,e=7)}if(d+=c,0>d||this.moduleCount<=d){d-=c,c=-c;break}}}},b.PAD0=236,b.PAD1=17,b.createData=function(a,c,d){for(var e=j.getRSBlocks(a,c),g=new k,h=0;h<d.length;h++){var i=d[h];g.put(i.mode,4),g.put(i.getLength(),f.getLengthInBits(i.mode,a)),i.write(g)}for(var l=0,h=0;h<e.length;h++)l+=e[h].dataCount;if(g.getLengthInBits()>8*l)throw new Error("code length overflow. ("+g.getLengthInBits()+">"+8*l+")");for(g.getLengthInBits()+4<=8*l&&g.put(0,4);0!=g.getLengthInBits()%8;)g.putBit(!1);for(;;){if(g.getLengthInBits()>=8*l)break;if(g.put(b.PAD0,8),g.getLengthInBits()>=8*l)break;g.put(b.PAD1,8)}return b.createBytes(g,e)},b.createBytes=function(a,b){for(var c=0,d=0,e=0,g=new Array(b.length),h=new Array(b.length),j=0;j<b.length;j++){var k=b[j].dataCount,l=b[j].totalCount-k;d=Math.max(d,k),e=Math.max(e,l),g[j]=new Array(k);for(var m=0;m<g[j].length;m++)g[j][m]=255&a.buffer[m+c];c+=k;var n=f.getErrorCorrectPolynomial(l),o=new i(g[j],n.getLength()-1),p=o.mod(n);h[j]=new Array(n.getLength()-1);for(var m=0;m<h[j].length;m++){var q=m+p.getLength()-h[j].length;h[j][m]=q>=0?p.get(q):0}}for(var r=0,m=0;m<b.length;m++)r+=b[m].totalCount;for(var s=new Array(r),t=0,m=0;d>m;m++)for(var j=0;j<b.length;j++)m<g[j].length&&(s[t++]=g[j][m]);for(var m=0;e>m;m++)for(var j=0;j<b.length;j++)m<h[j].length&&(s[t++]=h[j][m]);return s};for(var c={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8},d={L:1,M:0,Q:3,H:2},e={PATTERN000:0,PATTERN001:1,PATTERN010:2,PATTERN011:3,PATTERN100:4,PATTERN101:5,PATTERN110:6,PATTERN111:7},f={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(a){for(var b=a<<10;f.getBCHDigit(b)-f.getBCHDigit(f.G15)>=0;)b^=f.G15<<f.getBCHDigit(b)-f.getBCHDigit(f.G15);return(a<<10|b)^f.G15_MASK},getBCHTypeNumber:function(a){for(var b=a<<12;f.getBCHDigit(b)-f.getBCHDigit(f.G18)>=0;)b^=f.G18<<f.getBCHDigit(b)-f.getBCHDigit(f.G18);return a<<12|b},getBCHDigit:function(a){for(var b=0;0!=a;)b++,a>>>=1;return b},getPatternPosition:function(a){return f.PATTERN_POSITION_TABLE[a-1]},getMask:function(a,b,c){switch(a){case e.PATTERN000:return 0==(b+c)%2;case e.PATTERN001:return 0==b%2;case e.PATTERN010:return 0==c%3;case e.PATTERN011:return 0==(b+c)%3;case e.PATTERN100:return 0==(Math.floor(b/2)+Math.floor(c/3))%2;case e.PATTERN101:return 0==b*c%2+b*c%3;case e.PATTERN110:return 0==(b*c%2+b*c%3)%2;case e.PATTERN111:return 0==(b*c%3+(b+c)%2)%2;default:throw new Error("bad maskPattern:"+a)}},getErrorCorrectPolynomial:function(a){for(var b=new i([1],0),c=0;a>c;c++)b=b.multiply(new i([1,g.gexp(c)],0));return b},getLengthInBits:function(a,b){if(b>=1&&10>b)switch(a){case c.MODE_NUMBER:return 10;case c.MODE_ALPHA_NUM:return 9;case c.MODE_8BIT_BYTE:return 8;case c.MODE_KANJI:return 8;default:throw new Error("mode:"+a)}else if(27>b)switch(a){case c.MODE_NUMBER:return 12;case c.MODE_ALPHA_NUM:return 11;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 10;default:throw new Error("mode:"+a)}else{if(!(41>b))throw new Error("type:"+b);switch(a){case c.MODE_NUMBER:return 14;case c.MODE_ALPHA_NUM:return 13;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 12;default:throw new Error("mode:"+a)}}},getLostPoint:function(a){for(var b=a.getModuleCount(),c=0,d=0;b>d;d++)for(var e=0;b>e;e++){for(var f=0,g=a.isDark(d,e),h=-1;1>=h;h++)if(!(0>d+h||d+h>=b))for(var i=-1;1>=i;i++)0>e+i||e+i>=b||(0!=h||0!=i)&&g==a.isDark(d+h,e+i)&&f++;f>5&&(c+=3+f-5)}for(var d=0;b-1>d;d++)for(var e=0;b-1>e;e++){var j=0;a.isDark(d,e)&&j++,a.isDark(d+1,e)&&j++,a.isDark(d,e+1)&&j++,a.isDark(d+1,e+1)&&j++,(0==j||4==j)&&(c+=3)}for(var d=0;b>d;d++)for(var e=0;b-6>e;e++)a.isDark(d,e)&&!a.isDark(d,e+1)&&a.isDark(d,e+2)&&a.isDark(d,e+3)&&a.isDark(d,e+4)&&!a.isDark(d,e+5)&&a.isDark(d,e+6)&&(c+=40);for(var e=0;b>e;e++)for(var d=0;b-6>d;d++)a.isDark(d,e)&&!a.isDark(d+1,e)&&a.isDark(d+2,e)&&a.isDark(d+3,e)&&a.isDark(d+4,e)&&!a.isDark(d+5,e)&&a.isDark(d+6,e)&&(c+=40);for(var k=0,e=0;b>e;e++)for(var d=0;b>d;d++)a.isDark(d,e)&&k++;var l=Math.abs(100*k/b/b-50)/5;return c+=10*l}},g={glog:function(a){if(1>a)throw new Error("glog("+a+")");return g.LOG_TABLE[a]},gexp:function(a){for(;0>a;)a+=255;for(;a>=256;)a-=255;return g.EXP_TABLE[a]},EXP_TABLE:new Array(256),LOG_TABLE:new Array(256)},h=0;8>h;h++)g.EXP_TABLE[h]=1<<h;for(var h=8;256>h;h++)g.EXP_TABLE[h]=g.EXP_TABLE[h-4]^g.EXP_TABLE[h-5]^g.EXP_TABLE[h-6]^g.EXP_TABLE[h-8];for(var h=0;255>h;h++)g.LOG_TABLE[g.EXP_TABLE[h]]=h;i.prototype={get:function(a){return this.num[a]},getLength:function(){return this.num.length},multiply:function(a){for(var b=new Array(this.getLength()+a.getLength()-1),c=0;c<this.getLength();c++)for(var d=0;d<a.getLength();d++)b[c+d]^=g.gexp(g.glog(this.get(c))+g.glog(a.get(d)));return new i(b,0)},mod:function(a){if(this.getLength()-a.getLength()<0)return this;for(var b=g.glog(this.get(0))-g.glog(a.get(0)),c=new Array(this.getLength()),d=0;d<this.getLength();d++)c[d]=this.get(d);for(var d=0;d<a.getLength();d++)c[d]^=g.gexp(g.glog(a.get(d))+b);return new i(c,0).mod(a)}},j.RS_BLOCK_TABLE=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],j.getRSBlocks=function(a,b){var c=j.getRsBlockTable(a,b);if(void 0==c)throw new Error("bad rs block @ typeNumber:"+a+"/errorCorrectLevel:"+b);for(var d=c.length/3,e=[],f=0;d>f;f++)for(var g=c[3*f+0],h=c[3*f+1],i=c[3*f+2],k=0;g>k;k++)e.push(new j(h,i));return e},j.getRsBlockTable=function(a,b){switch(b){case d.L:return j.RS_BLOCK_TABLE[4*(a-1)+0];case d.M:return j.RS_BLOCK_TABLE[4*(a-1)+1];case d.Q:return j.RS_BLOCK_TABLE[4*(a-1)+2];case d.H:return j.RS_BLOCK_TABLE[4*(a-1)+3];default:return void 0}},k.prototype={get:function(a){var b=Math.floor(a/8);return 1==(1&this.buffer[b]>>>7-a%8)},put:function(a,b){for(var c=0;b>c;c++)this.putBit(1==(1&a>>>b-c-1))},getLengthInBits:function(){return this.length},putBit:function(a){var b=Math.floor(this.length/8);this.buffer.length<=b&&this.buffer.push(0),a&&(this.buffer[b]|=128>>>this.length%8),this.length++}};var l=[[17,14,11,7],[32,26,20,14],[53,42,32,24],[78,62,46,34],[106,84,60,44],[134,106,74,58],[154,122,86,64],[192,152,108,84],[230,180,130,98],[271,213,151,119],[321,251,177,137],[367,287,203,155],[425,331,241,177],[458,362,258,194],[520,412,292,220],[586,450,322,250],[644,504,364,280],[718,560,394,310],[792,624,442,338],[858,666,482,382],[929,711,509,403],[1003,779,565,439],[1091,857,611,461],[1171,911,661,511],[1273,997,715,535],[1367,1059,751,593],[1465,1125,805,625],[1528,1190,868,658],[1628,1264,908,698],[1732,1370,982,742],[1840,1452,1030,790],[1952,1538,1112,842],[2068,1628,1168,898],[2188,1722,1228,958],[2303,1809,1283,983],[2431,1911,1351,1051],[2563,1989,1423,1093],[2699,2099,1499,1139],[2809,2213,1579,1219],[2953,2331,1663,1273]],o=function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){function g(a,b){var c=document.createElementNS("http://www.w3.org/2000/svg",a);for(var d in b)b.hasOwnProperty(d)&&c.setAttribute(d,b[d]);return c}var b=this._htOption,c=this._el,d=a.getModuleCount();Math.floor(b.width/d),Math.floor(b.height/d),this.clear();var h=g("svg",{viewBox:"0 0 "+String(d)+" "+String(d),width:"100%",height:"100%",fill:b.colorLight});h.setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xlink","http://www.w3.org/1999/xlink"),c.appendChild(h),h.appendChild(g("rect",{fill:b.colorDark,width:"1",height:"1",id:"template"}));for(var i=0;d>i;i++)for(var j=0;d>j;j++)if(a.isDark(i,j)){var k=g("use",{x:String(i),y:String(j)});k.setAttributeNS("http://www.w3.org/1999/xlink","href","#template"),h.appendChild(k)}},a.prototype.clear=function(){for(;this._el.hasChildNodes();)this._el.removeChild(this._el.lastChild)},a}(),p="svg"===document.documentElement.tagName.toLowerCase(),q=p?o:m()?function(){function a(){this._elImage.src=this._elCanvas.toDataURL("image/png"),this._elImage.style.display="block",this._elCanvas.style.display="none"}function d(a,b){var c=this;if(c._fFail=b,c._fSuccess=a,null===c._bSupportDataURI){var d=document.createElement("img"),e=function(){c._bSupportDataURI=!1,c._fFail&&_fFail.call(c)},f=function(){c._bSupportDataURI=!0,c._fSuccess&&c._fSuccess.call(c)};return d.onabort=e,d.onerror=e,d.onload=f,d.src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",void 0}c._bSupportDataURI===!0&&c._fSuccess?c._fSuccess.call(c):c._bSupportDataURI===!1&&c._fFail&&c._fFail.call(c)}if(this._android&&this._android<=2.1){var b=1/window.devicePixelRatio,c=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(a,d,e,f,g,h,i,j){if("nodeName"in a&&/img/i.test(a.nodeName))for(var l=arguments.length-1;l>=1;l--)arguments[l]=arguments[l]*b;else"undefined"==typeof j&&(arguments[1]*=b,arguments[2]*=b,arguments[3]*=b,arguments[4]*=b);c.apply(this,arguments)}}var e=function(a,b){this._bIsPainted=!1,this._android=n(),this._htOption=b,this._elCanvas=document.createElement("canvas"),this._elCanvas.width=b.width,this._elCanvas.height=b.height,a.appendChild(this._elCanvas),this._el=a,this._oContext=this._elCanvas.getContext("2d"),this._bIsPainted=!1,this._elImage=document.createElement("img"),this._elImage.style.display="none",this._el.appendChild(this._elImage),this._bSupportDataURI=null};return e.prototype.draw=function(a){var b=this._elImage,c=this._oContext,d=this._htOption,e=a.getModuleCount(),f=d.width/e,g=d.height/e,h=Math.round(f),i=Math.round(g);b.style.display="none",this.clear();for(var j=0;e>j;j++)for(var k=0;e>k;k++){var l=a.isDark(j,k),m=k*f,n=j*g;c.strokeStyle=l?d.colorDark:d.colorLight,c.lineWidth=1,c.fillStyle=l?d.colorDark:d.colorLight,c.fillRect(m,n,f,g),c.strokeRect(Math.floor(m)+.5,Math.floor(n)+.5,h,i),c.strokeRect(Math.ceil(m)-.5,Math.ceil(n)-.5,h,i)}this._bIsPainted=!0},e.prototype.makeImage=function(){this._bIsPainted&&d.call(this,a)},e.prototype.isPainted=function(){return this._bIsPainted},e.prototype.clear=function(){this._oContext.clearRect(0,0,this._elCanvas.width,this._elCanvas.height),this._bIsPainted=!1},e.prototype.round=function(a){return a?Math.floor(1e3*a)/1e3:a},e}():function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){for(var b=this._htOption,c=this._el,d=a.getModuleCount(),e=Math.floor(b.width/d),f=Math.floor(b.height/d),g=['<table style="border:0;border-collapse:collapse;">'],h=0;d>h;h++){g.push("<tr>");for(var i=0;d>i;i++)g.push('<td style="border:0;border-collapse:collapse;padding:0;margin:0;width:'+e+"px;height:"+f+"px;background-color:"+(a.isDark(h,i)?b.colorDark:b.colorLight)+';"></td>');g.push("</tr>")}g.push("</table>"),c.innerHTML=g.join("");var j=c.childNodes[0],k=(b.width-j.offsetWidth)/2,l=(b.height-j.offsetHeight)/2;k>0&&l>0&&(j.style.margin=l+"px "+k+"px")},a.prototype.clear=function(){this._el.innerHTML=""},a}();QRCode=function(a,b){if(this._htOption={width:256,height:256,typeNumber:4,colorDark:"#000000",colorLight:"#ffffff",correctLevel:d.H},"string"==typeof b&&(b={text:b}),b)for(var c in b)this._htOption[c]=b[c];"string"==typeof a&&(a=document.getElementById(a)),this._android=n(),this._el=a,this._oQRCode=null,this._oDrawing=new q(this._el,this._htOption),this._htOption.text&&this.makeCode(this._htOption.text)},QRCode.prototype.makeCode=function(a){this._oQRCode=new b(r(a,this._htOption.correctLevel),this._htOption.correctLevel),this._oQRCode.addData(a),this._oQRCode.make(),this._el.title=a,this._oDrawing.draw(this._oQRCode),this.makeImage()},QRCode.prototype.makeImage=function(){"function"==typeof this._oDrawing.makeImage&&(!this._android||this._android>=3)&&this._oDrawing.makeImage()},QRCode.prototype.clear=function(){this._oDrawing.clear()},QRCode.CorrectLevel=d}();
+</script>
+<script>
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const KEY="tdc-inbound-demo-v3";
+const DC={code:"D1",name:"示範物流中心"};
+
+/* ── 時間工具 ───────────────────────────── */
+const pad=n=>String(n).padStart(2,"0");
+const hhmm=m=>pad(Math.floor(m/60)%24)+":"+pad(m%60);
+const toMin=s=>{const[a,b]=s.split(":").map(Number);return a*60+b};
+const WD=["日","一","二","三","四","五","六"];
+const dstr=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const dshow=s=>{const d=new Date(s+"T00:00:00");return s.replace(/-/g,"/")+" ("+WD[d.getDay()]+")"};
+const addDays=(s,n)=>{const d=new Date(s+"T00:00:00");d.setDate(d.getDate()+n);return dstr(d)};
+
+/* ── 預設參數 ───────────────────────────── */
+const VTYPES=[
+  {id:"small",name:"11 噸以下",span:1,stand:"dock",hint:"靠碼頭下貨，佔 1 個時段"},
+  {id:"large",name:"11 噸以上",span:2,stand:"dock",hint:"靠碼頭下貨，佔 2 個連續時段"},
+  {id:"wing", name:"鷗翼車",   span:2,stand:"plaza",hint:"廣場下貨，佔 2 個連續時段"}
+];
+const vt=id=>VTYPES.find(v=>v.id===id);
+const STAND={dock:"碼頭",plaza:"廣場"};
+
+function defaultConfig(){
+  return{
+    callGraceMin:15, waitBufferMin:15,
+    warehouses:[
+      {id:"N1",name:"常溫 1",temp:"常溫",enabled:true,open:"06:00",close:"12:00",splitPerHour:2,unloadMin:30,
+       docks:[{id:"N1-D1",name:"1 號碼頭",type:"dock",enabled:true},{id:"N1-D2",name:"2 號碼頭",type:"dock",enabled:true},
+              {id:"N1-D3",name:"3 號碼頭",type:"dock",enabled:true},{id:"N1-D4",name:"4 號碼頭",type:"dock",enabled:false},
+              {id:"N1-P1",name:"廣場 1 號位",type:"plaza",enabled:true},{id:"N1-P2",name:"廣場 2 號位",type:"plaza",enabled:true}]},
+      {id:"N2",name:"常溫 2",temp:"常溫",enabled:true,open:"07:00",close:"12:00",splitPerHour:3,unloadMin:25,
+       docks:[{id:"N2-D1",name:"1 號碼頭",type:"dock",enabled:true},{id:"N2-D2",name:"2 號碼頭",type:"dock",enabled:true},
+              {id:"N2-P1",name:"廣場 1 號位",type:"plaza",enabled:true}]},
+      {id:"C1",name:"低溫倉",temp:"低溫",enabled:true,open:"06:00",close:"11:00",splitPerHour:2,unloadMin:35,
+       docks:[{id:"C1-D1",name:"1 號碼頭",type:"dock",enabled:true},{id:"C1-D2",name:"2 號碼頭",type:"dock",enabled:true},
+              {id:"C1-P1",name:"廣場 1 號位",type:"plaza",enabled:true}]},
+      {id:"F1",name:"冷凍倉",temp:"冷凍",enabled:true,open:"06:00",close:"10:00",splitPerHour:1,unloadMin:40,
+       docks:[{id:"F1-D1",name:"1 號碼頭",type:"dock",enabled:true},{id:"F1-D2",name:"2 號碼頭",type:"dock",enabled:false},
+              {id:"F1-P1",name:"廣場 1 號位",type:"plaza",enabled:true}]}
+    ]
+  };
+}
+
+/* ── 種子資料 ───────────────────────────── */
+const VENDORS=[
+  ["V0231","甲上食品股份有限公司"],["V0518","乙誠物流股份有限公司"],["V0742","丙原文化行銷"],
+  ["V0863","丁豐農產運銷"],["V1024","戊記食品工業"],["V1187","己盛冷凍食品"],
+  ["V1290","庚美生鮮"],["V1345","辛田乳品"],["V1402","壬京紙業"],["V1590","癸欣飲料"]
+];
+function seed(){
+  const today="2026-09-02";
+  const pos=[],bk=[];
+  let pn=1;
+  const mkPO=(vi,wh,date,pallets)=>{
+    const v=VENDORS[vi];
+    const po="PO-"+date.slice(2).replace(/-/g,"")+"-"+pad(pn++)+""+pad(Math.floor(Math.random()*90)+10);
+    pos.push({po,vendorCode:v[0],vendorName:v[1],whId:wh,date,pallets,items:Math.max(3,Math.round(pallets*2.4))});
+    return po;
+  };
+  // 今日採購單（部分已預約，部分尚未預約 → 供現場 demo 操作）
+  const todaySpec=[
+    [0,"N1",6,"small",0,"KFB-2071","done",  {ci:"05:52",cl:"06:02",en:"06:05",lv:"06:33",dock:"N1-D1"}],
+    [1,"N1",14,"large",2,"AXG-3318","done", {ci:"06:44",cl:"06:48",en:"06:52",lv:"07:04",dock:"N1-D2"}],
+    [2,"N1",8,"small",2,"TPL-9042","inyard",{ci:"06:55",cl:"07:00",en:"07:03",dock:"N1-D1"}],
+    [3,"C1",10,"large",2,"KKB-1188","inyard",{ci:"06:40",cl:"06:58",en:"07:01",dock:"C1-D1"}],
+    [4,"N1",5,"small",2,"RFD-5520","called",{ci:"06:58",cl:"07:01",dock:"N1-D3"}],
+    [5,"N1",9,"small",3,"MJC-7788","checkedin",{ci:"07:05"}],
+    [9,"N1",6,"wing",3,"WNG-0088","checkedin",{ci:"07:06"}],
+    [6,"N2",7,"small",1,"BQD-3391","checkedin",{ci:"07:08"}],
+    [7,"C1",12,"large",4,"HHT-2264","checkedin",{ci:"07:10"}],
+    [8,"N1",6,"small",6,"LNW-4417","booked",{}],
+    [9,"N1",11,"large",8,"SDG-6603","booked",{}],
+    [0,"N2",4,"small",4,"KFB-2071","booked",{}],
+    [3,"F1",16,"large",1,"GTR-1102","booked",{}],
+    [5,"C1",5,"small",1,"MJC-7788","noshow",{}]
+  ];
+  let seq={};
+  todaySpec.forEach(([vi,wh,pl,vtid,slotIdx,plate,status,ev])=>{
+    const po=mkPO(vi,wh,today,pl);
+    const p=pos[pos.length-1];
+    bk.push(mkBooking(p,vtid,slotIdx,plate,status,ev,today,seq));
+  });
+  // 未來兩日採購單（供「新增預約」demo）
+  [1,2].forEach(off=>{
+    const d=addDays(today,off);
+    [[1,"N1",9],[4,"N1",13],[7,"C1",6],[2,"N2",5],[9,"F1",11],[6,"N1",7],[8,"N2",4]].forEach(([vi,wh,pl])=>mkPO(vi,wh,d,pl));
+  });
+  // 明日已預約一筆（示範可修改）
+  {
+    const d=addDays(today,1);
+    const po=mkPO(0,"N1",d,8);
+    bk.push(mkBooking(pos[pos.length-1],"small",3,"KFB-2071","booked",{},d,seq));
+  }
+  // 歷史紀錄（供報表）
+  const hist=[
+    [0,"N1","small",0,"ontime"],[0,"N1","small",2,"ontime"],[0,"C1","large",1,"ontime"],[0,"N1","small",3,"late"],
+    [1,"N1","large",1,"ontime"],[1,"N1","large",4,"noshow"],[1,"N2","small",2,"passed"],[1,"N1","large",0,"ontime"],
+    [2,"N2","small",1,"ontime"],[2,"N1","small",5,"ontime"],[2,"N1","wing",2,"early"],[2,"C1","small",0,"ontime"],
+    [3,"C1","large",3,"late"],[3,"C1","large",2,"ontime"],[3,"F1","large",1,"noshow"],
+    [4,"N1","wing",4,"ontime"],[4,"N1","wing",1,"early"],[4,"N1","small",0,"ontime"],[4,"N1","small",2,"ontime"],
+    [5,"N1","small",5,"noshow"],[5,"C1","small",1,"noshow"],[5,"N1","small",3,"late"],[5,"N2","small",0,"ontime"],
+    [6,"N2","small",2,"ontime"],[6,"N2","small",4,"ontime"],[7,"C1","large",3,"ontime"],[7,"C1","large",1,"late"],
+    [8,"N1","small",1,"ontime"],[8,"N2","small",3,"ontime"],[9,"F1","large",0,"ontime"],[9,"F1","large",1,"passed"]
+  ];
+  hist.forEach(([vi,wh,vtid,slotIdx,kind],i)=>{
+    const d=addDays(today,-(1+(i%6)));
+    const po=mkPO(vi,wh,d,6+(i%9));
+    const p=pos[pos.length-1];
+    const st=slotsOfCfg(defaultConfig().warehouses.find(w=>w.id===wh))[slotIdx];
+    const base=st?st.start:400;
+    let status="done",ev={};
+    if(kind==="noshow"){status="noshow";}
+    else if(kind==="passed"){status="passed";ev={ci:hhmm(base-6),cl:hhmm(base+4)};}
+    else{
+      const off=kind==="late"?52:(kind==="early"?-18:-7);
+      ev={ci:hhmm(base+off),cl:hhmm(base+off+5),en:hhmm(base+off+8),lv:hhmm(base+off+36),dock:wh+"-D1"};
+    }
+    const b=mkBooking(p,vtid,slotIdx,"XXX-0000",status,ev,d,seq);
+    b.earlyFill=(kind==="early");
+    bk.push(b);
+  });
+  return{pos,bookings:bk};
+}
+function mkBooking(p,vtid,slotIdx,plate,status,ev,date,seq){
+  const k=p.whId+"|"+date+"|"+slotIdx;
+  seq[k]=(seq[k]||0)+1;
+  const letter=String.fromCharCode(65+slotIdx);
+  p.bookedBy=p.po;
+  return{
+    id:"B"+Math.random().toString(36).slice(2,9),
+    po:p.po,vendorCode:p.vendorCode,vendorName:p.vendorName,whId:p.whId,date,
+    vehicleId:vtid,span:vt(vtid).span,slotIdx,plate,
+    code:letter+"-"+pad(seq[k]),
+    status,
+    checkinAt:ev.ci?toMin(ev.ci):null, calledAt:ev.cl?toMin(ev.cl):null,
+    enterAt:ev.en?toMin(ev.en):null, leaveAt:ev.lv?toMin(ev.lv):null,
+    dockId:ev.dock||null, earlyFill:false, createdAt:Date.now()-Math.random()*1e7
+  };
+}
+
+/* ── 狀態 ───────────────────────────── */
+let S=null;
+function slotsOfCfg(wh){
+  const st=toMin(wh.open),en=toMin(wh.close),step=60/wh.splitPerHour,out=[];
+  for(let t=st;t+step<=en;t+=step)out.push({idx:out.length,start:t,end:t+step});
+  return out;
+}
+function load(){
+  try{const raw=localStorage.getItem(KEY);if(raw){S=JSON.parse(raw);return}}catch(e){}
+  fresh();
+}
+function fresh(){
+  const s=seed();
+  S={cfg:defaultConfig(),pos:s.pos,bookings:s.bookings,simDate:"2026-09-02",simMin:7*60+12,view:"book",ui:{}};
+  save();
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const wh=id=>S.cfg.warehouses.find(w=>w.id===id);
+const slotsOf=id=>slotsOfCfg(wh(id));
+const cap=(w,stand)=>w.docks.filter(d=>d.enabled&&d.type===stand).length;
+const LIVE=new Set(["booked","checkedin","called","inyard","done","passed","noshow"]);
+
+function usage(whId,date,stand,excludeId){
+  const w=wh(whId),n=slotsOfCfg(w).length,used=new Array(n).fill(0);
+  S.bookings.forEach(b=>{
+    if(b.whId!==whId||b.date!==date||!LIVE.has(b.status)||b.id===excludeId)return;
+    if(vt(b.vehicleId).stand!==stand)return;
+    for(let i=0;i<b.span;i++)if(b.slotIdx+i<n)used[b.slotIdx+i]++;
+  });
+  return used;
+}
+function canBook(whId,date,idx,v,used,capN){
+  const slots=slotsOf(whId);
+  if(capN===0||idx+v.span>slots.length)return false;
+  if(date<S.simDate)return false;
+  if(date===S.simDate&&slots[idx].start<=S.simMin)return false;
+  for(let i=0;i<v.span;i++)if(used[idx+i]>=capN)return false;
+  return true;
+}
+function nextCode(whId,date,idx){
+  const n=S.bookings.filter(b=>b.whId===whId&&b.date===date&&b.slotIdx===idx&&LIVE.has(b.status)).length+1;
+  return String.fromCharCode(65+idx)+"-"+pad(n);
+}
+const poOf=po=>S.pos.find(p=>p.po===po);
+const bookingOfPO=po=>S.bookings.find(b=>b.po===po&&LIVE.has(b.status));
+
+/* ── 現場推算 ───────────────────────────── */
+function dockState(whId){
+  const w=wh(whId),out={};
+  w.docks.forEach(d=>out[d.id]={dock:d,b:null});
+  S.bookings.forEach(b=>{
+    if(b.whId!==whId||b.date!==S.simDate)return;
+    if((b.status==="called"||b.status==="inyard")&&b.dockId&&out[b.dockId])out[b.dockId].b=b;
+  });
+  return out;
+}
+function estLeave(b){
+  const w=wh(b.whId);
+  return (b.enterAt||S.simMin)+w.unloadMin*b.span;
+}
+function queueOf(whId){
+  return S.bookings.filter(b=>b.whId===whId&&b.date===S.simDate&&b.status==="checkedin")
+    .sort((a,b)=>a.slotIdx-b.slotIdx||a.checkinAt-b.checkinAt||a.code.localeCompare(b.code));
+}
+/* 依碼頭釋出時間推估佇列每台的預估進場，等待時間 = 預估進場 − 現在 + 緩衝 */
+function projectQueue(whId){
+  const w=wh(whId),ds=dockState(whId),q=queueOf(whId),res=[];
+  const free={dock:[],plaza:[]};
+  w.docks.forEach(d=>{
+    if(!d.enabled)return;
+    const cur=ds[d.id].b;
+    let t=S.simMin;
+    if(cur)t=Math.max(S.simMin,cur.status==="inyard"?estLeave(cur):(cur.calledAt+S.cfg.callGraceMin));
+    free[d.type].push(t);
+  });
+  q.forEach(b=>{
+    const v=vt(b.vehicleId),pool=free[v.stand];
+    if(!pool.length){res.push({b,eta:null});return}
+    pool.sort((a,c)=>a-c);
+    const eta=pool[0];
+    pool[0]=eta+w.unloadMin*b.span;
+    res.push({b,eta,wait:Math.max(0,eta-S.simMin)+S.cfg.waitBufferMin});
+  });
+  return res;
+}
+function autoNoShow(){
+  let ch=false;
+  S.bookings.forEach(b=>{
+    if(b.status!=="booked")return;
+    if(b.date<S.simDate){b.status="noshow";ch=true;return}
+    if(b.date===S.simDate){
+      const s=slotsOf(b.whId)[b.slotIdx];
+      if(s&&S.simMin>s.end+30){b.status="noshow";ch=true}
+    }
+  });
+  if(ch)save();
+}
+function punctual(b){
+  if(b.status==="noshow")return"noshow";
+  if(b.status==="passed")return"passed";
+  if(b.checkinAt==null)return null;
+  const s=slotsOfCfg(wh(b.whId))[b.slotIdx];
+  if(!s)return null;
+  if(b.earlyFill)return"early";
+  return b.checkinAt<=s.end?"ontime":"late";
+}
+const PLABEL={ontime:"準時",late:"遲到",passed:"過號",noshow:"未到",early:"提早遞補"};
+
+/* ── 畫面 ───────────────────────────── */
+const V={};
+function render(){
+  autoNoShow();
+  $("#simTime").textContent=hhmm(S.simMin);
+  $("#simDate").textContent=dshow(S.simDate);
+  $("#dcTag").textContent=DC.name;
+  $$(".navbtn").forEach(b=>b.setAttribute("aria-current",String(b.dataset.view===S.view)));
+  $("#view").innerHTML=V[S.view]();
+  bind();
+}
+function toast(msg){
+  $$(".toast").forEach(x=>x.remove());
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2200);
+}
+function go(v){S.view=v;save();render();window.scrollTo(0,0)}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tempTag=w=>`<span class="temp"><i class="t-${w.temp}"></i>${w.temp}・${esc(w.name)}</span>`;
+
+function slotGridRows(whId,date,v,selIdx,excludeId,curIdx){
+  const w=wh(whId),slots=slotsOf(whId),capN=cap(w,v.stand),used=usage(whId,date,v.stand,excludeId),rows=[];
+  for(let h=toMin(w.open);h<toMin(w.close);h+=60){
+    const inHour=slots.filter(s=>s.start>=h&&s.start<h+60);
+    if(!inHour.length)continue;
+    rows.push(`<div class="slotrow"><div class="hourlab">${hhmm(h)}</div>
+      <div class="slots" style="grid-template-columns:repeat(${w.splitPerHour},1fr)">
+      ${inHour.map(s=>{
+        const ok=canBook(whId,date,s.idx,v,used,capN);
+        let left=capN-used[s.idx];
+        for(let k=1;k<v.span;k++)left=Math.min(left,(s.idx+k<slots.length)?capN-used[s.idx+k]:-1);
+        left=Math.max(0,left);
+        const past=(date===S.simDate&&s.start<=S.simMin);
+        const short=(s.idx+v.span>slots.length);
+        const sel=selIdx===s.idx, isCur=curIdx===s.idx;
+        return `<button class="slot${isCur?" cur":""}" data-slot="${s.idx}" ${ok?"":"disabled"} aria-pressed="${sel}" title="${hhmm(s.start)}\u2013${hhmm(slots[Math.min(s.idx+v.span-1,slots.length-1)].end)}">
+          <span class="st">${hhmm(s.start)}</span>
+          <span class="sc">${isCur?"\u76ee\u524d\u9810\u7d04":(ok?"\u9918 "+left+" \u4f4d":(past?"\u5df2\u904e\u6642":(short?"\u4e0d\u8db3 "+v.span+" \u683c":"\u5df2\u984d\u6eff")))}</span></button>`;
+      }).join("")}</div></div>`);
+  }
+  return{rows,open:slots.filter(s=>canBook(whId,date,s.idx,v,used,capN)).length,capN};
+}
+/* ---- 1. 採購單預約 ---- */
+V.book=()=>{
+  const u=S.ui, po=u.po||"", p=u.poData;
+  let body="";
+  if(!p){
+    body=`<div class="card card-pad grid" style="max-width:620px">
+      <div>
+        <div class="eyebrow">Step 1</div>
+        <h3 style="font-size:16px;margin-top:4px">輸入採購單號</h3>
+        <p style="color:var(--ink-2);margin:4px 0 0">採購下單後系統會把單號提供給廠商。單號本身就是預約憑證，進貨日與收貨倉別由採購單決定，廠商不需要也不能自行挑日期。</p>
+      </div>
+      <div class="row">
+        <input class="mono" id="poInput" placeholder="PO-260902-0117" value="${esc(po)}" style="flex:1;min-width:220px;letter-spacing:.04em">
+        <button class="btn pri" id="poGo">查詢採購單</button>
+      </div>
+      ${u.poErr?`<div class="note warn">${esc(u.poErr)}</div>`:""}
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px">Demo 可用單號</div>
+        <div class="row" style="gap:6px">
+          ${S.pos.filter(x=>x.date>=S.simDate&&!bookingOfPO(x.po)).slice(0,6).map(x=>`<button class="btn sm mono" data-fill="${x.po}">${x.po}</button>`).join("")}
+        </div>
+      </div>
+    </div>`;
+    return head("採購單預約","以採購單號進入預約，選好車輛噸數後直接點選還有空位的時段。")+body;
+  }
+  const w=wh(p.whId), v=vt(u.vtype||"small"), slots=slotsOf(p.whId);
+  const G=slotGridRows(p.whId,p.date,v,u.slot,null,null);
+  const capN=G.capN, open=G.open, rows=G.rows;
+  const sel=u.slot!=null?slots[u.slot]:null;
+  const endSlot=sel?slots[u.slot+v.span-1]:null;
+  body=`
+  <div class="grid" style="grid-template-columns:minmax(0,1fr) 300px;align-items:start">
+    <div class="grid">
+      <div class="card">
+        <div class="card-head"><h3>採購單 ${esc(p.po)}</h3><span class="pill p">已核可</span><div class="spacer"></div>
+          <button class="btn sm" id="poClear">換一張單</button></div>
+        <div class="card-pad">
+          <dl class="kv">
+            <dt>廠商</dt><dd>${esc(p.vendorName)} <span class="mono" style="color:var(--ink-3)">${esc(p.vendorCode)}</span></dd>
+            <dt>收貨</dt><dd>${DC.name}　${tempTag(w)}</dd>
+            <dt>指定進貨日</dt><dd class="mono">${dshow(p.date)}</dd>
+            <dt>單量</dt><dd class="mono">${p.items} 品項 / 約 ${p.pallets} 板</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="eyebrow">Step 2</div><h3>車輛噸數</h3></div>
+        <div class="card-pad">
+          <div class="vpick">${VTYPES.map(x=>`<button class="vopt" data-vt="${x.id}" aria-pressed="${x.id===v.id}">
+            <b>${x.name}</b><small>${x.hint}</small></button>`).join("")}</div>
+          <div class="note" style="margin-top:12px">噸數決定佔用的時段數與停靠位置：目前選擇為 <b>${v.name}</b>，佔 <b>${v.span}</b> 個連續時段、停靠 <b>${STAND[v.stand]}</b>，該倉可用${STAND[v.stand]}位 <b>${capN}</b> 個。</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="eyebrow">Step 3</div><h3>可預約時段</h3><div class="spacer"></div>
+          <span class="pill ${open?"o":"c"}">${open?"尚有 "+open+" 個時段":"今日已額滿"}</span></div>
+        <div class="card-pad">
+          ${open?`<div class="slotgrid">${rows.join("")}</div>
+          <div class="legend">
+            <span><i style="background:var(--surface)"></i>可預約</span>
+            <span><i style="background:var(--primary-soft);border-color:var(--primary)"></i>此車型將佔用</span>
+            <span><i style="background:var(--accent);border-color:var(--accent)"></i>已選擇</span>
+            <span><i style="background:var(--surface-2);border-style:dashed"></i>額滿或已過時</span>
+          </div>`:`<div class="empty">此進貨日已無可預約時段，請洽現場排隊進場，或改由採購調整進貨日。</div>`}
+        </div>
+      </div>
+    </div>
+    <div class="card" style="position:sticky;top:78px">
+      <div class="card-head"><h3>預約確認</h3></div>
+      <div class="card-pad grid" style="gap:12px">
+        <label class="fld">車牌號碼
+          <input class="mono" id="plate" placeholder="ABC-1234" value="${esc(u.plate||"")}" style="text-transform:uppercase"></label>
+        <dl class="kv">
+          <dt>車型</dt><dd>${v.name}</dd>
+          <dt>停靠</dt><dd>${STAND[v.stand]}</dd>
+          <dt>時段</dt><dd class="mono">${sel?hhmm(sel.start)+"–"+hhmm(endSlot.end):"—"}</dd>
+        </dl>
+        <button class="btn pri" id="confirm" ${sel&&(u.plate||"").trim()?"":"disabled"}>確認預約</button>
+        <div class="note" style="font-size:11.5px">預約成立後產生預約號碼與 QRcode，司機到場憑此過刷報到。</div>
+      </div>
+    </div>
+  </div>`;
+  return head("採購單預約","以採購單號進入預約，選好車輛噸數後直接點選還有空位的時段。")+body;
+};
+
+/* ---- 2b. 改約流程 ---- */
+V.edit=()=>{
+  const e=S.ui.edit;
+  if(!e)return V.mine();
+  const b=S.bookings.find(x=>x.id===e.bid);
+  if(!b)return V.mine();
+  const p=poOf(b.po), w=wh(b.whId), slots=slotsOf(b.whId);
+  if(b.status!=="booked"||b.date<=S.simDate){
+    return head("修改預約","此預約已無法修改。")+
+      `<div class="card card-pad grid" style="max-width:560px;gap:12px">
+        <div class="note warn">預約 ${b.code} 目前為「${statusText(b)}」或已進入進貨日，依規則不可自行改約。如需異動請聯繫採購或現場人員。</div>
+        <div><button class="btn pri" id="eBack">回預約查詢</button></div></div>`;
+  }
+  const v=vt(e.vtype), ov=vt(b.vehicleId);
+  const G=slotGridRows(b.whId,b.date,v,e.slot,b.id,b.slotIdx);
+  const oSt=slots[b.slotIdx], oEn=slots[b.slotIdx+b.span-1];
+  const nSt=e.slot!=null?slots[e.slot]:null, nEn=e.slot!=null?slots[e.slot+v.span-1]:null;
+  const plate=(e.plate||"").trim().toUpperCase();
+  const chgSlot=e.slot!=null&&e.slot!==b.slotIdx, chgVt=v.id!==b.vehicleId, chgPlate=plate!==b.plate;
+  const any=chgSlot||chgVt||chgPlate;
+  const ready=e.slot!=null&&!!plate&&any;
+  const newCode=chgSlot?nextCode(b.whId,b.date,e.slot):b.code;
+  const s1=!!plate, s2=e.slot!=null;
+  const row=(k,o,n,c)=>`<tr class="${c?"chg":""}"><td>${k}</td><td class="${c?"oldval":""}">${o}</td><td>${c?n:'<span style="color:var(--ink-3)">不變更</span>'}</td></tr>`;
+  return head("修改預約 "+b.code,"進貨日當天之前可改約。原預約在你按下確認前維持有效，時段仍為你保留；確認後才會寫入並釋出舊時段。")+
+  `<ol class="stepper">
+     <li class="${s1?"done":"now"}"><i>1</i>車輛與車牌</li>
+     <li class="${s2?"done":(s1?"now":"")}"><i>2</i>選擇新時段</li>
+     <li class="${ready?"now":""}"><i>3</i>核對並換發預約單</li>
+   </ol>
+   <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,340px);align-items:start">
+     <div class="grid">
+       <div class="card"><div class="card-head"><h3>採購單 ${esc(b.po)}</h3><span class="pill n">不可變更</span><div class="spacer"></div>
+         <span class="mono" style="font-size:12px;color:var(--ink-2)">${dshow(b.date)}　${w.temp}・${esc(w.name)}</span></div>
+         <div class="card-pad"><div class="note">採購單號、進貨日與收貨倉別由採購單決定，改約只能調整<b>車型、車牌與時段</b>。要換日期請洽採購重新開單。</div></div></div>
+
+       <div class="card"><div class="card-head stepsec"><b>1</b><h3>車輛與車牌</h3></div>
+         <div class="card-pad grid" style="gap:12px">
+           <div class="vpick">${VTYPES.map(x=>`<button class="vopt" data-evt="${x.id}" aria-pressed="${x.id===v.id}">
+             <b>${x.name}</b><small>${x.hint}</small>${x.id===b.vehicleId?'<small style="color:var(--primary);font-weight:700">目前車型</small>':""}</button>`).join("")}</div>
+           <label class="fld" style="max-width:260px">車牌號碼
+             <input class="mono" id="ePlate" value="${esc(e.plate||"")}" style="text-transform:uppercase"></label>
+           ${chgVt?`<div class="note warn">車型由 <b>${ov.name}</b> 改為 <b>${v.name}</b>，佔用時段由 ${ov.span} 格變成 ${v.span} 格、停靠位置為${STAND[v.stand]}，下方時段需重新選擇。</div>`:""}
+         </div></div>
+
+       <div class="card"><div class="card-head stepsec"><b>2</b><h3>選擇新時段</h3><div class="spacer"></div>
+         <span class="pill ${G.open?"o":"c"}">${G.open?"尚有 "+G.open+" 個時段":"已無其他時段"}</span></div>
+         <div class="card-pad">
+           ${G.open?`<div class="slotgrid">${G.rows.join("")}</div>
+           <div class="legend">
+             <span><i style="background:var(--surface)"></i>可改約</span>
+             <span><i style="background:var(--surface);box-shadow:inset 0 0 0 2px var(--primary)"></i>目前預約（保留中）</span>
+             <span><i style="background:var(--accent);border-color:var(--accent)"></i>已選新時段</span>
+             <span><i style="background:var(--surface-2);border-style:dashed"></i>額滿或已過時</span>
+           </div>`:`<div class="empty">目前沒有其他可改約的時段，可維持原時段或改車型後再試。</div>`}
+         </div></div>
+     </div>
+
+     <div class="card" style="position:sticky;top:78px">
+       <div class="card-head stepsec"><b>3</b><h3>變更對照</h3></div>
+       <div class="tbl-wrap"><table class="diff"><thead><tr><th></th><th>原預約</th><th>變更後</th></tr></thead><tbody>
+         ${row("預約時段",`<span class="mono">${hhmm(oSt.start)}–${hhmm(oEn.end)}</span>`,nSt?`<span class="mono">${hhmm(nSt.start)}–${hhmm(nEn.end)}</span>`:"—",chgSlot)}
+         ${row("車型",ov.name,v.name,chgVt)}
+         ${row("車牌",`<span class="mono">${esc(b.plate)}</span>`,`<span class="mono">${esc(plate||"—")}</span>`,chgPlate)}
+         <tr class="${chgSlot?"chg":""}"><td>預約號碼</td><td class="${chgSlot?"oldval":""}">${b.code}</td>
+           <td>${chgSlot?`<b class="mono">${newCode}</b>`:'<span style="color:var(--ink-3)">維持 '+b.code+'</span>'}</td></tr>
+       </tbody></table></div>
+       <div class="card-pad grid" style="gap:11px">
+         ${chgSlot?`<div class="note warn"><b>預約號碼將換發為 ${newCode}。</b>原預約單與 QRcode 於確認後立即失效，請務必把新的預約單重新提供給司機，否則到場過刷會被判定為非當日預約。</div>`:""}
+         ${!any?`<div class="note">尚未變更任何內容。</div>`:""}
+         ${e.err?`<div class="note warn">${esc(e.err)}</div>`:""}
+         <button class="btn pri" id="eConfirm" ${ready?"":"disabled"}>確認改約並換發預約單</button>
+         <button class="btn" id="eAbort">放棄修改，保留原預約</button>
+       </div>
+     </div>
+   </div>`;
+};
+function statusText(b){
+  const m={booked:"已預約",checkedin:"已報到",called:"叫號中",inyard:"下貨中",done:"已離場",passed:"過號",noshow:"未到",cancelled:"已取消"};
+  return m[b.status]||b.status;
+}
+/* ---- 2. 預約查詢（廠商端，僅限本單） ---- */
+V.mine=()=>{
+  const u=S.ui, p=u.qData;
+  const H=head("預約查詢","廠商端以採購單號查詢自己的預約狀態。查詢結果僅顯示該張採購單，不會列出其他廠商或其他單的資料。");
+  const form=`<div class="card card-pad grid" style="max-width:620px;gap:14px">
+      <div>
+        <div class="eyebrow">採購單號</div>
+        <h3 style="font-size:16px;margin-top:4px">查詢這張單約了沒</h3>
+        <p style="color:var(--ink-2);margin:4px 0 0">輸入採購單號即可查詢預約狀態與進度。單號就是身分憑證，沒有單號查不到任何資料。</p>
+      </div>
+      <div class="row">
+        <input class="mono" id="qInput" placeholder="PO-260902-0117" value="${esc(u.qPo||"")}" style="flex:1;min-width:220px;letter-spacing:.04em">
+        <button class="btn pri" id="qGo">查詢</button>
+      </div>
+      ${u.qErr?`<div class="note warn">${esc(u.qErr)}</div>`:""}
+    </div>`;
+  if(!p)return H+form;
+
+  const w=wh(p.whId), b=bookingOfPO(p.po);
+  const poCard=`<div class="card"><div class="card-head"><h3>採購單 ${esc(p.po)}</h3>
+      <span class="pill ${b?"p":"n"}">${b?"已預約":"尚未預約"}</span><div class="spacer"></div>
+      <button class="btn sm" id="qClear">查別張單</button></div>
+    <div class="card-pad"><dl class="kv">
+      <dt>廠商</dt><dd>${esc(p.vendorName)} <span class="mono" style="color:var(--ink-3)">${esc(p.vendorCode)}</span></dd>
+      <dt>收貨</dt><dd>${DC.name}　${tempTag(w)}</dd>
+      <dt>指定進貨日</dt><dd class="mono">${dshow(p.date)}</dd>
+      <dt>單量</dt><dd class="mono">${p.items} 品項 / 約 ${p.pallets} 板</dd>
+    </dl></div></div>`;
+
+  if(!b){
+    const gone=p.date<S.simDate;
+    return H+form+`<div class="grid" style="margin-top:16px;max-width:620px">${poCard}
+      <div class="card card-pad grid" style="gap:12px">
+        <div class="note ${gone?"warn":""}">${gone
+          ?"此採購單指定進貨日已過期，無法再預約，請洽採購重新開單。"
+          :"這張採購單<b>尚未預約</b>。請於進貨日前完成預約，未預約車輛到場需現場排隊等候空檔。"}</div>
+        ${gone?"":`<div><button class="btn pri" id="qBook">前往預約這張單</button></div>`}
+      </div></div>`;
+  }
+
+  const slots=slotsOf(b.whId), st=slots[b.slotIdx], en=slots[b.slotIdx+b.span-1];
+  const editable=b.date>S.simDate&&b.status==="booked";
+  let progress="";
+  if(b.date===S.simDate){
+    if(b.status==="booked"){
+      progress=`<div class="note">尚未報到。請司機於 <b class="mono">${hhmm(st.start)}</b> 前抵達警衛室過刷報到。</div>`;
+    }else if(b.status==="checkedin"){
+      const proj=projectQueue(b.whId), i=proj.findIndex(r=>r.b.id===b.id), me=proj[i];
+      progress=`<div class="stats"><div class="stat"><div class="v">${i>=0?i:"—"}</div><div class="l">前方等候車輛</div></div>
+        <div class="stat mid"><div class="v">${me&&me.wait!=null?me.wait:"—"}<small style="font-size:14px"> 分</small></div><div class="l">預估等待（含 ${S.cfg.waitBufferMin} 分緩衝）</div></div>
+        <div class="stat"><div class="v">${me&&me.eta!=null?hhmm(me.eta):"—"}</div><div class="l">預估叫號進場</div></div></div>
+        <div class="note">已報到，請注意叫號順序。叫號後 ${S.cfg.callGraceMin} 分未進場視為過號，須重新報到。</div>`;
+    }else if(b.status==="called"){
+      const left=S.cfg.callGraceMin-(S.simMin-b.calledAt);
+      progress=`<div class="note warn"><b>已叫號，請至 ${dockName(b)} 停靠下貨。</b>${left>0?` 剩餘 ${left} 分內進場，逾時視為過號。`:" 已逾時，請立即至警衛室重新報到。"}</div>`;
+    }else if(b.status==="inyard"){
+      progress=`<div class="note">下貨中（${dockName(b)}），預估離場 <b class="mono">${hhmm(estLeave(b))}</b>。完成後請做離場過刷。</div>`;
+    }else if(b.status==="done"){
+      progress=`<div class="note">已於 <b class="mono">${hhmm(b.leaveAt)}</b> 完成離場。</div>`;
+    }else if(b.status==="passed"){
+      progress=`<div class="note warn">已過號，請至警衛室重新過刷報到，系統會重新排入等候。</div>`;
+    }else if(b.status==="noshow"){
+      progress=`<div class="note warn">預約時段已過且未報到，本次列為未到並計入到場統計。如仍需進貨請洽現場排隊。</div>`;
+    }
+  }
+  return H+form+`<div class="grid" style="margin-top:16px;grid-template-columns:minmax(0,1fr) minmax(0,340px);align-items:start">
+    <div class="grid">${poCard}
+      <div class="card"><div class="card-head"><h3>預約進度</h3><div class="spacer"></div>${statusPill(b)}</div>
+        <div class="card-pad grid" style="gap:12px">${progress||`<div class="note">預約已成立，進貨日當天於警衛室過刷報到後即可查看排隊進度。</div>`}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>預約內容</h3></div>
+      <div class="card-pad grid" style="gap:14px">
+        <div><div class="eyebrow">預約號碼</div><div class="mono" style="font-size:34px;font-weight:600;line-height:1.1">${b.code}</div></div>
+        <dl class="kv">
+          <dt>預約時段</dt><dd class="mono" style="font-weight:600">${hhmm(st.start)}–${hhmm(en.end)}</dd>
+          <dt>車型</dt><dd>${vt(b.vehicleId).name}（${STAND[vt(b.vehicleId).stand]}停靠）</dd>
+          <dt>車牌</dt><dd class="mono">${esc(b.plate)}</dd>
+        </dl>
+        <div class="row" style="gap:8px">
+          <button class="btn pri" data-ticket="${b.id}">預約單 / QRcode</button>
+          ${editable?`<button class="btn" data-edit="${b.id}">改約</button>
+                      <button class="btn danger" data-cancel="${b.id}">取消預約</button>`:""}
+        </div>
+        ${editable?`<div class="note" style="font-size:11.5px">改約時依當下剩餘時段重新挑選，先搶先贏；原時段會立即釋出給其他廠商。</div>`
+                  :`<div class="note" style="font-size:11.5px">進貨日當天起不可自行改約或取消，如需異動請聯繫採購或現場。</div>`}
+      </div>
+    </div>
+  </div>`;
+};
+function statusPill(b){
+  const m={booked:["n","已預約"],checkedin:["p","已報到"],called:["a","叫號中"],inyard:["p","下貨中"],
+           done:["o","已離場"],passed:["c","過號"],noshow:["c","未到"],cancelled:["n","已取消"]};
+  const[k,t]=m[b.status]||["n",b.status];
+  return `<span class="pill ${k}">${t}</span>${b.earlyFill?' <span class="pill o">遞補</span>':""}`;
+}
+
+/* ---- 3. 警衛室 ---- */
+V.guard=()=>{
+  const whId=S.ui.gWh||S.cfg.warehouses[0].id;
+  const today=S.bookings.filter(b=>b.date===S.simDate&&b.whId===whId);
+  const waiting=today.filter(b=>b.status==="booked").sort((a,b)=>a.slotIdx-b.slotIdx);
+  const arrived=today.filter(b=>["checkedin","called","inyard","done"].includes(b.status))
+    .sort((a,b)=>(b.checkinAt||0)-(a.checkinAt||0));
+  const called=today.filter(b=>b.status==="called");
+  return head("警衛室過刷","司機到場過刷報到，叫號後進場、下貨完離場。前一位過號時可讓下一位提早進廠。")+
+  `<div class="row" style="margin-bottom:16px">
+     <label class="fld">倉別<select id="gWh">${S.cfg.warehouses.map(w=>`<option value="${w.id}" ${w.id===whId?"selected":""}>${w.temp}・${w.name}</option>`).join("")}</select></label>
+   </div>
+   <div class="grid" style="grid-template-columns:minmax(0,380px) minmax(0,1fr);align-items:start">
+     <div class="grid">
+       <div class="card">
+         <div class="card-head"><h3>過刷報到</h3></div>
+         <div class="card-pad grid" style="gap:10px">
+           <label class="fld">請過刷 QRcode（或輸入預約號碼 / 採購單號）
+             <input class="mono" id="scan" placeholder="A-01" style="text-transform:uppercase;font-size:16px"></label>
+           <button class="btn pri" id="scanGo">報到</button>
+           ${S.ui.scanMsg?`<div class="note ${S.ui.scanOk?"":"warn"}">${esc(S.ui.scanMsg)}</div>`:""}
+         </div>
+       </div>
+       ${called.length?`<div class="card"><div class="card-head"><h3>已叫號待進場</h3></div>
+         <div class="card-pad grid" style="gap:10px">${called.map(b=>{
+           const over=S.simMin-b.calledAt, late=over>S.cfg.callGraceMin;
+           return `<div class="row" style="justify-content:space-between;border:1px solid ${late?"var(--crit)":"var(--line)"};border-radius:var(--r);padding:10px 12px">
+             <div><div class="qnum">${b.code}</div><div style="font-size:12px;color:var(--ink-2)">${esc(b.vendorName)}<br><span class="num">${esc(b.plate)}</span>・${b.dockId?dockName(b):"未指派"}</div></div>
+             <div style="text-align:right">
+               <div class="num" style="color:${late?"var(--crit)":"var(--ink-2)"};font-size:12px">叫號 ${hhmm(b.calledAt)}（${over} 分）</div>
+               <div class="row" style="justify-content:flex-end;margin-top:6px">
+                 <button class="btn sm pri" data-enter="${b.id}">進場過刷</button>
+                 ${late?`<button class="btn sm danger" data-pass="${b.id}">判定過號</button>`:""}
+               </div></div></div>`;
+         }).join("")}</div></div>`:""}
+     </div>
+     <div class="grid">
+       <div class="card">
+         <div class="card-head"><h3>今日應到未到</h3><div class="spacer"></div><span class="pill n">${waiting.length}</span></div>
+         <div class="tbl-wrap"><table><thead><tr><th>號碼</th><th>時段</th><th>廠商</th><th>車型 / 車牌</th><th></th></tr></thead>
+         <tbody>${waiting.map(b=>{const s=slotsOf(b.whId)[b.slotIdx];return `<tr>
+           <td class="qnum">${b.code}</td><td class="num">${hhmm(s.start)}</td><td>${esc(b.vendorName)}</td>
+           <td>${vt(b.vehicleId).name}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(b.plate)}</span></td>
+           <td><button class="btn sm" data-checkin="${b.id}">代為報到</button></td></tr>`}).join("")
+           ||`<tr><td colspan="5" class="empty">全數報到完畢。</td></tr>`}</tbody></table></div>
+       </div>
+       <div class="card">
+         <div class="card-head"><h3>今日已報到</h3><div class="spacer"></div><span class="pill n">${arrived.length}</span></div>
+         <div class="tbl-wrap"><table><thead><tr><th>號碼</th><th>報到</th><th>廠商</th><th>狀態</th><th>碼頭</th><th></th></tr></thead>
+         <tbody>${arrived.map(b=>`<tr>
+           <td class="qnum">${b.code}</td><td class="num">${b.checkinAt!=null?hhmm(b.checkinAt):"—"}</td>
+           <td>${esc(b.vendorName)}</td><td>${statusPill(b)}</td><td>${b.dockId?dockName(b):"—"}</td>
+           <td>${b.status==="inyard"?`<button class="btn sm" data-leave="${b.id}">離場過刷</button>`:""}</td></tr>`).join("")
+           ||`<tr><td colspan="6" class="empty">尚無報到紀錄。</td></tr>`}</tbody></table></div>
+       </div>
+     </div>
+   </div>`;
+};
+function dockName(b){const w=wh(b.whId),d=w.docks.find(x=>x.id===b.dockId);return d?esc(d.name):"—"}
+
+/* ---- 4. 碼頭看板 ---- */
+V.board=()=>{
+  const whId=S.ui.bWh||S.cfg.warehouses[0].id, w=wh(whId), ds=dockState(whId), proj=projectQueue(whId);
+  const cards=w.docks.map(d=>{
+    if(!d.enabled)return `<div class="dock off"><div class="bar"></div><div class="body">
+      <div class="dn"><b>${esc(d.name)}</b><span class="pill n">未啟用</span></div>
+      <div style="color:var(--ink-3);font-size:12px">此${STAND[d.type]}位目前關閉，不計入可預約容量。</div></div></div>`;
+    const b=ds[d.id].b;
+    if(!b)return `<div class="dock"><div class="bar"></div><div class="body">
+      <div class="dn"><b>${esc(d.name)}</b><span class="pill o">可用</span></div>
+      <div class="code" style="color:var(--ink-3)">—</div>
+      <div class="meta">等待叫號車輛進場</div></div></div>`;
+    if(b.status==="called"){
+      const over=S.simMin-b.calledAt, late=over>S.cfg.callGraceMin;
+      return `<div class="dock ${late?"late":"called"}"><div class="bar"></div><div class="body">
+        <div class="dn"><b>${esc(d.name)}</b><span class="pill ${late?"c":"a"}">${late?"已過號":"已叫號未進場"}</span></div>
+        <div class="code">${b.code}</div>
+        <div class="meta">叫號 ${hhmm(b.calledAt)}<br>${late?"逾 "+(over-S.cfg.callGraceMin)+" 分，可放行下一位":(S.cfg.callGraceMin-over)+" 分後視為過號"}</div></div></div>`;
+    }
+    const out=estLeave(b), delay=S.simMin-out;
+    return `<div class="dock busy"><div class="bar"></div><div class="body">
+      <div class="dn"><b>${esc(d.name)}</b><span class="pill p">下貨中</span></div>
+      <div class="code">${b.code}</div>
+      <div class="meta">進倉 ${hhmm(b.enterAt)}　預估離場 ${hhmm(out)}<br>${delay>0?`<span style="color:var(--crit)">已延遲 ${delay} 分</span>`:esc(b.vendorName)}</div></div></div>`;
+  }).join("");
+  const nowCalling=S.bookings.filter(x=>x.whId===whId&&x.date===S.simDate&&(x.status==="called"||x.status==="inyard")).map(x=>x.code).join("、")||"—";
+  return head("碼頭看板","現場即時碼頭佔用與排隊順序。等待時間＝前車預估離場加 "+S.cfg.waitBufferMin+" 分緩衝。")+
+  `<div class="row" style="margin-bottom:16px">
+     <label class="fld">倉別<select id="bWh">${S.cfg.warehouses.map(x=>`<option value="${x.id}" ${x.id===whId?"selected":""}>${x.temp}・${x.name}</option>`).join("")}</select></label>
+     <div class="spacer"></div>
+     <div style="text-align:right"><div class="eyebrow">目前驗收編號</div><div class="mono" style="font-size:18px;font-weight:600">${nowCalling}</div></div>
+   </div>
+   <div class="docks" style="margin-bottom:20px">${cards}</div>
+   <div class="card">
+     <div class="card-head"><h3>進場排隊順序</h3><div class="spacer"></div><span class="pill n">${proj.length} 台等候</span></div>
+     <div class="tbl-wrap"><table><thead><tr>
+       <th>順位</th><th>號碼</th><th>預約時段</th><th>報到</th><th>廠商 / 車牌</th><th>車型</th><th>預估進場</th><th>預估等待</th><th></th>
+     </tr></thead><tbody>${proj.map((r,i)=>{
+       const s=slotsOf(whId)[r.b.slotIdx];
+       const wcls=r.wait==null?"":(r.wait<=25?"soon":(r.wait>60?"long":""));
+       return `<tr>
+         <td class="num" style="color:var(--ink-3)">${i+1}</td>
+         <td class="qnum">${r.b.code}</td>
+         <td class="num">${hhmm(s.start)}</td>
+         <td class="num">${hhmm(r.b.checkinAt)}</td>
+         <td>${esc(r.b.vendorName)}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(r.b.plate)}</span></td>
+         <td>${vt(r.b.vehicleId).name}</td>
+         <td class="num">${r.eta!=null?hhmm(r.eta):"—"}</td>
+         <td class="wait ${wcls}">${r.wait!=null?r.wait+" 分":"—"}</td>
+         <td><button class="btn sm pri" data-call="${r.b.id}">叫號指派</button></td></tr>`;
+     }).join("")||`<tr><td colspan="9" class="empty">目前沒有等候中的車輛。</td></tr>`}</tbody></table></div>
+   </div>`;
+};
+
+/* ---- 5. 報表 ---- */
+V.report=()=>{
+  const from=S.ui.rFrom||addDays(S.simDate,-14), to=S.ui.rTo||S.simDate;
+  const rows=S.bookings.filter(b=>b.date>=from&&b.date<=to&&LIVE.has(b.status));
+  const agg={};
+  rows.forEach(b=>{
+    const k=b.vendorCode;
+    agg[k]=agg[k]||{code:k,name:b.vendorName,ontime:0,late:0,passed:0,noshow:0,early:0,total:0};
+    const p=punctual(b);
+    if(!p)return;
+    agg[k][p]++;agg[k].total++;
+  });
+  const list=Object.values(agg).sort((a,b)=>(a.ontime+a.early)/(a.total||1)-(b.ontime+b.early)/(b.total||1));
+  const sum=list.reduce((a,x)=>({ontime:a.ontime+x.ontime,late:a.late+x.late,passed:a.passed+x.passed,noshow:a.noshow+x.noshow,early:a.early+x.early,total:a.total+x.total}),
+    {ontime:0,late:0,passed:0,noshow:0,early:0,total:0});
+  const rate=t=>sum.total?Math.round((sum.ontime+sum.early)/sum.total*100):0;
+  return head("到場準點報表","僅供採購與廠商檢討使用，不影響預約權限。統計區間可自訂並匯出。")+
+  `<div class="row" style="margin-bottom:16px">
+     <label class="fld">起<input type="date" id="rFrom" value="${from}"></label>
+     <label class="fld">迄<input type="date" id="rTo" value="${to}"></label>
+     <div class="spacer"></div><button class="btn" id="exportCsv">匯出 CSV</button>
+   </div>
+   <div class="stats" style="margin-bottom:20px">
+     <div class="stat good"><div class="v">${rate()}%</div><div class="l">整體準點率</div></div>
+     <div class="stat"><div class="v">${sum.ontime}</div><div class="l">準時到場</div></div>
+     <div class="stat good"><div class="v">${sum.early}</div><div class="l">提早遞補進場</div></div>
+     <div class="stat mid"><div class="v">${sum.late}</div><div class="l">遲到報到</div></div>
+     <div class="stat mid"><div class="v">${sum.passed}</div><div class="l">叫號過號</div></div>
+     <div class="stat bad"><div class="v">${sum.noshow}</div><div class="l">預約未到</div></div>
+   </div>
+   <div class="card">
+     <div class="card-head"><h3>廠商別統計</h3><div class="spacer"></div><span class="pill n">${list.length} 家・${sum.total} 車次</span></div>
+     <div class="tbl-wrap"><table><thead><tr>
+       <th>廠商代號</th><th>廠商名稱</th><th>車次</th><th>準時</th><th>提早遞補</th><th>遲到</th><th>過號</th><th>未到</th><th style="min-width:130px">準點率</th>
+     </tr></thead><tbody>${list.map(x=>{
+       const r=x.total?Math.round((x.ontime+x.early)/x.total*100):0;
+       const cls=r>=85?"":(r>=65?"mid":"bad");
+       return `<tr>
+         <td class="num">${x.code}</td><td>${esc(x.name)}</td>
+         <td class="num">${x.total}</td><td class="num">${x.ontime}</td><td class="num">${x.early}</td>
+         <td class="num" style="${x.late?"color:var(--accent)":""}">${x.late}</td>
+         <td class="num" style="${x.passed?"color:var(--accent)":""}">${x.passed}</td>
+         <td class="num" style="${x.noshow?"color:var(--crit);font-weight:600":""}">${x.noshow}</td>
+         <td><div class="row" style="gap:8px;flex-wrap:nowrap"><span class="num" style="width:38px">${r}%</span>
+           <div class="bar-mini" style="flex:1"><i class="${cls}" style="width:${r}%"></i></div></div></td></tr>`;
+     }).join("")||`<tr><td colspan="9" class="empty">此區間沒有紀錄。</td></tr>`}</tbody></table></div>
+   </div>
+   <div class="note" style="margin-top:14px">判定方式：報到時間早於或等於預約時段結束＝準時；晚於＝遲到；叫號後 ${S.cfg.callGraceMin} 分未進場＝過號；時段結束 30 分後仍未報到＝未到。因前車過號而被提前放行者另計為「提早遞補」，不影響該廠商準點率。</div>`;
+};
+
+/* ---- 6. 參數設定 ---- */
+V.param=()=>{
+  return head("參數設定","碼頭啟用與時段切分會直接改變廠商端看到的可預約格數，可現場調整後回到預約頁對照。")+
+  `<div class="grid" style="gap:16px">
+    <div class="card"><div class="card-head"><h3>全廠參數</h3></div><div class="card-pad row" style="gap:20px">
+      <label class="fld">叫號後過號寬限（分）<input type="number" class="mono" id="p-grace" value="${S.cfg.callGraceMin}" min="5" max="60" style="width:96px"></label>
+      <label class="fld">等待時間緩衝（分）<input type="number" class="mono" id="p-buffer" value="${S.cfg.waitBufferMin}" min="0" max="60" style="width:96px"></label>
+      <div class="note" style="flex:1;min-width:220px">車型佔用格數固定為：11 噸以下 1 格、11 噸以上 2 格、鷗翼車 2 格（廣場）。</div>
+    </div></div>
+    ${S.cfg.warehouses.map(w=>{
+      const slots=slotsOfCfg(w);
+      return `<div class="card">
+        <div class="card-head">${tempTag(w)}<div class="spacer"></div>
+          <span class="pill n">碼頭 ${cap(w,"dock")}・廣場 ${cap(w,"plaza")}</span>
+          <span class="pill p">每日 ${slots.length} 個時段</span></div>
+        <div class="card-pad grid" style="gap:14px">
+          <div class="row" style="gap:16px">
+            <label class="fld">開放起<input type="time" class="mono" data-wcfg="${w.id}:open" value="${w.open}"></label>
+            <label class="fld">開放迄<input type="time" class="mono" data-wcfg="${w.id}:close" value="${w.close}"></label>
+            <label class="fld">每小時切分<select data-wcfg="${w.id}:splitPerHour">
+              ${[1,2,3,4].map(n=>`<option value="${n}" ${n===w.splitPerHour?"selected":""}>${n} 段（每 ${60/n} 分）</option>`).join("")}</select></label>
+            <label class="fld">下貨工時（分/格）<input type="number" class="mono" data-wcfg="${w.id}:unloadMin" value="${w.unloadMin}" min="5" max="120" style="width:96px"></label>
+          </div>
+          <div>
+            <div class="eyebrow" style="margin-bottom:7px">碼頭啟用</div>
+            <div class="row" style="gap:8px">${w.docks.map(d=>`
+              <label class="row" style="gap:6px;border:1px solid ${d.enabled?"var(--primary)":"var(--line)"};border-radius:var(--r);padding:6px 11px;cursor:pointer;background:${d.enabled?"var(--primary-soft)":"var(--surface-2)"}">
+                <input type="checkbox" class="chk" data-dock="${w.id}:${d.id}" ${d.enabled?"checked":""}>
+                <span style="font-weight:500">${esc(d.name)}</span>
+                <span class="pill n">${STAND[d.type]}</span></label>`).join("")}</div>
+          </div>
+          <div class="note">目前設定產出時段：<span class="mono">${slots.map(s=>hhmm(s.start)).join("　")}</span></div>
+        </div></div>`;
+    }).join("")}
+   </div>`;
+};
+
+/* ---- 7. 規格說明 ---- */
+V.spec=()=>head("規格與待確認","本 Demo 依 2026/01/06 討論版收斂，以下列出已確定的規則，以及需要在下次會議拍板的項目。")+
+ `<div class="note warn" style="margin-bottom:16px">本頁為流程討論用的示範系統。<b>所有廠商名稱、採購單號、車牌與統計數據皆為虛構</b>，與任何實際公司或營運數據無關；碼頭數量與時段設定僅為說明用的預設值。</div>
+ <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+   <div class="card"><div class="card-head"><h3>已確定的規則</h3></div><div class="card-pad">
+     <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
+       <li><b>採購單號為預約 key。</b>有下採購單才拿得到單號，沒有單號就進不了預約頁，進貨日與收貨倉別由採購單決定。</li>
+       <li><b>餐廳訂位式選時段。</b>先選車輛噸數，系統直接列出剩餘時段，廠商不自行選小時再選分鐘。</li>
+       <li><b>噸數決定佔用格數。</b>11 噸以下 1 格、11 噸以上 2 格、鷗翼車 2 格且停靠廣場。</li>
+       <li><b>先搶先贏。</b>進貨日當天之前可改約或取消，改約時依當下剩餘時段重新挑選。</li>
+       <li><b>等待時間＝前車預估離場＋${S.cfg.waitBufferMin} 分緩衝。</b>叫號後 ${S.cfg.callGraceMin} 分未進場判定過號，由警衛室放行下一位提早進廠。</li>
+       <li><b>No-show 只做統計。</b>累計計點供採購與廠商檢討，不擋預約權限；準時與提早遞補進場同樣入帳。</li>
+       <li><b>廠商只看得到自己的單。</b>廠商端沒有預約總覽，必須輸入採購單號才查得到該張單的預約狀態與進度；碼頭看板與報表屬內部畫面，不對廠商開放。</li>
+     </ol></div></div>
+   <div class="card"><div class="card-head"><h3>待確認</h3></div><div class="card-pad">
+     <div class="openq"><b>一單多車 / 多單一車</b><p>目前 Demo 採一張採購單＝一次預約＝一台車。實務上大單分批送、或同廠商多單併一車都存在，且<b>不同溫層情境可能不同</b>（如冷凍多為專車、常溫易併車），需逐溫層確認後再定資料結構。</p></div>
+     <div class="openq"><b>一車跨溫層</b><p>一台車同時送常溫與低溫時，要算兩次預約各佔一格，還是一次預約佔用兩倉？影響碼頭調度與號碼編法。</p></div>
+     <div class="openq"><b>過號後的時段釋放</b><p>過號車輛重新排隊時，是排在當下佇列末端，還是保留原時段優先權？</p></div>
+     <div class="openq"><b>下貨工時參數</b><p>目前以每格固定分鐘估算。現場回饋每日板數在 200～400 浮動、堆高機台數不定，預估離場一旦失準會影響叫號可信度，是否改以板數估算需再評估。</p></div>
+     <div class="openq"><b>權限與掛載位置</b><p>討論版建議先寫死參數、不接權限系統，並掛在既有物流 e 化系統內。正式版是否改接 AD 帳號、預約頁與寫入程式是否分離，待資訊評估。</p></div>
+   </div></div>
+   <div class="card"><div class="card-head"><h3>改約 / 取消操作手順</h3></div><div class="card-pad">
+     <div class="eyebrow" style="margin-bottom:6px">廠商端・改約</div>
+     <ol style="margin:0 0 14px;padding-left:18px;display:grid;gap:6px">
+       <li>「預約查詢」輸入採購單號，確認查到的是自己那張單。</li>
+       <li>按「改約」進入修改流程，畫面上方會顯示三個步驟與目前進度。</li>
+       <li><b>步驟 1</b> 調整車型或車牌。車型一改，佔用格數或停靠位置就變了，系統會清掉已選時段要求重選。</li>
+       <li><b>步驟 2</b> 挑新時段。原時段以粗框標示「目前預約」並持續為你保留，可以隨時改回。</li>
+       <li><b>步驟 3</b> 右側「變更對照」逐項比對原值與新值，有變動的列會標色。時段一旦更動，預約號碼會換發。</li>
+       <li>按「確認改約並換發預約單」，系統重新檢核容量後才寫入，並立即彈出新的預約單與 QRcode。</li>
+       <li><b>把新預約單重新給司機。</b>舊單與舊 QRcode 於確認當下失效，司機拿舊單過刷會被判定為非當日預約。</li>
+     </ol>
+     <div class="eyebrow" style="margin-bottom:6px">廠商端・取消</div>
+     <ol style="margin:0 0 14px;padding-left:18px;display:grid;gap:6px">
+       <li>「預約查詢」找到該單後按「取消預約」，跳出確認視窗列出預約摘要。</li>
+       <li>確認後時段立即釋出，且不可復原；同一張採購單可重新預約，但要依當時剩餘時段重挑。</li>
+     </ol>
+     <div class="eyebrow" style="margin-bottom:6px">規則邊界</div>
+     <ul style="margin:0;padding-left:18px;display:grid;gap:6px">
+       <li>只能改車型、車牌、時段。採購單號、進貨日、收貨倉別由採購單決定，要換日期得請採購重新開單。</li>
+       <li>進貨日當天起不可自行改約或取消，畫面只保留查詢與預約單。</li>
+       <li>改約期間原預約持續有效、原時段保留，按下確認前放棄不會有任何異動。</li>
+       <li>確認當下若新時段已被搶走，系統退回步驟 2 並保留原預約，不會出現兩頭落空。</li>
+     </ul>
+   </div></div>
+   <div class="card"><div class="card-head"><h3>Demo 操作建議</h3></div><div class="card-pad">
+     <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
+       <li>到<b>採購單預約</b>挑一張單，切換車型看時段格數變化（大車會吃掉兩格）。</li>
+       <li>到<b>警衛室過刷</b>輸入號碼報到，例如未報到清單中的任一組。</li>
+       <li>到<b>碼頭看板</b>對排隊車輛按「叫號指派」，再回警衛室做進場過刷。</li>
+       <li>用上方<b>＋15 分</b>推進模擬時間，看叫號逾時如何轉為過號、以及後車遞補。</li>
+       <li>到<b>參數設定</b>關掉一個碼頭或改切分段數，回預約頁看剩餘席位如何連動。</li>
+     </ol>
+     <div class="note" style="margin-top:12px">所有資料存在瀏覽器本機，重新整理不會消失；要回到初始狀態按右上「重設 Demo 資料」。</div>
+   </div>
+ </div>`;
+
+function head(t,d){return `<div class="page-head"><div class="eyebrow">${DC.name}</div><h2>${t}</h2><p>${d}</p></div>`}
+
+/* ── 互動 ───────────────────────────── */
+function bind(){
+  const v=$("#view");
+  $$("[data-fill]",v).forEach(b=>b.onclick=()=>{$("#poInput").value=b.dataset.fill;lookupPO()});
+  const pg=$("#poGo",v); if(pg)pg.onclick=lookupPO;
+  const pi=$("#poInput",v); if(pi)pi.onkeydown=e=>{if(e.key==="Enter")lookupPO()};
+  const pc=$("#poClear",v); if(pc)pc.onclick=()=>{S.ui={};save();render()};
+  $$("[data-vt]",v).forEach(b=>b.onclick=()=>{S.ui.vtype=b.dataset.vt;S.ui.slot=null;save();render()});
+  const ctxVt=S.ui.edit?S.ui.edit.vtype:(S.ui.vtype||"small");
+  $$(".slot[data-slot]",v).forEach(b=>{
+    const i=+b.dataset.slot, span=vt(ctxVt).span;
+    b.onmouseenter=()=>{for(let k=0;k<span;k++){const el=v.querySelector('.slot[data-slot="'+(i+k)+'"]');if(el&&!el.disabled&&el.getAttribute("aria-pressed")!=="true")el.classList.add("hl")}};
+    b.onmouseleave=()=>$$(".slot.hl",v).forEach(e=>e.classList.remove("hl"));
+    b.onclick=()=>{if(S.ui.edit){S.ui.edit.slot=i;S.ui.edit.err=""}else{S.ui.slot=i}save();render()};
+  });
+  const pl=$("#plate",v); if(pl)pl.oninput=e=>{S.ui.plate=e.target.value.toUpperCase();save();
+    const c=$("#confirm");if(c)c.disabled=!(S.ui.slot!=null&&e.target.value.trim())};
+  const cf=$("#confirm",v); if(cf)cf.onclick=commit;
+  const ce=$("#cancelEdit",v); if(ce)ce.onclick=()=>{
+    const po=S.ui.poData; S.ui={qPo:po?po.po:"",qData:po||null}; save(); go("mine");
+  };
+
+  const qg=$("#qGo",v); if(qg)qg.onclick=lookupQuery;
+  const qi=$("#qInput",v); if(qi)qi.onkeydown=e=>{if(e.key==="Enter")lookupQuery()};
+  const qc=$("#qClear",v); if(qc)qc.onclick=()=>{S.ui={};save();render()};
+  const qb=$("#qBook",v); if(qb)qb.onclick=()=>{
+    const po=S.ui.qData; S.ui={po:po.po,poData:po,vtype:"small",slot:null,plate:""}; save(); go("book");
+  };
+  $$("[data-ticket]",v).forEach(b=>b.onclick=()=>showTicket(b.dataset.ticket));
+  $$("[data-edit]",v).forEach(b=>b.onclick=()=>{
+    const bk=S.bookings.find(x=>x.id===b.dataset.edit);
+    S.ui={qPo:bk.po,qData:poOf(bk.po),edit:{bid:bk.id,vtype:bk.vehicleId,plate:bk.plate,slot:bk.slotIdx,err:""}};
+    save();go("edit");
+  });
+  $$("[data-evt]",v).forEach(b=>b.onclick=()=>{
+    const e=S.ui.edit;e.vtype=b.dataset.evt;e.err="";
+    const bk=S.bookings.find(x=>x.id===e.bid);
+    if(vt(e.vtype).span!==vt(bk.vehicleId).span||vt(e.vtype).stand!==vt(bk.vehicleId).stand)e.slot=null;
+    save();render();
+  });
+  const ep=$("#ePlate",v); if(ep)ep.oninput=e2=>{S.ui.edit.plate=e2.target.value.toUpperCase();save();render()};
+  const ec=$("#eConfirm",v); if(ec)ec.onclick=commitEdit;
+  const ea=$("#eAbort",v); if(ea)ea.onclick=abortEdit;
+  const eb=$("#eBack",v); if(eb)eb.onclick=abortEdit;
+  $$("[data-cancel]",v).forEach(b=>b.onclick=()=>confirmCancel(b.dataset.cancel));
+
+  const gw=$("#gWh",v); if(gw)gw.onchange=e=>{S.ui.gWh=e.target.value;S.ui.scanMsg="";save();render()};
+  const bw=$("#bWh",v); if(bw)bw.onchange=e=>{S.ui.bWh=e.target.value;save();render()};
+  const sg=$("#scanGo",v); if(sg)sg.onclick=doScan;
+  const si=$("#scan",v); if(si){si.onkeydown=e=>{if(e.key==="Enter")doScan()};si.focus({preventScroll:true})}
+  $$("[data-checkin]",v).forEach(b=>b.onclick=()=>checkin(S.bookings.find(x=>x.id===b.dataset.checkin)));
+  $$("[data-call]",v).forEach(b=>b.onclick=()=>callUp(b.dataset.call));
+  $$("[data-enter]",v).forEach(b=>b.onclick=()=>{
+    const bk=S.bookings.find(x=>x.id===b.dataset.enter);
+    bk.status="inyard";bk.enterAt=S.simMin;save();render();toast(bk.code+" 進場，請至 "+dockName(bk));
+  });
+  $$("[data-leave]",v).forEach(b=>b.onclick=()=>{
+    const bk=S.bookings.find(x=>x.id===b.dataset.leave);
+    bk.status="done";bk.leaveAt=S.simMin;bk.dockId=null;save();render();toast(bk.code+" 確認離場，碼頭已釋放");
+  });
+  $$("[data-pass]",v).forEach(b=>b.onclick=()=>{
+    const bk=S.bookings.find(x=>x.id===b.dataset.pass), d=bk.dockId;
+    bk.status="passed";bk.dockId=null;save();
+    const q=projectQueue(bk.whId), nxt=q.find(r=>vt(r.b.vehicleId).stand===vt(bk.vehicleId).stand);
+    if(nxt&&d){nxt.b.status="called";nxt.b.calledAt=S.simMin;nxt.b.dockId=d;nxt.b.earlyFill=true;
+      save();render();toast(bk.code+" 過號，改由 "+nxt.b.code+" 提早進廠");}
+    else{render();toast(bk.code+" 判定過號，需重新報到")}
+  });
+
+  const gr=$("#p-grace",v); if(gr)gr.onchange=e=>{S.cfg.callGraceMin=+e.target.value||15;save();render()};
+  const bf=$("#p-buffer",v); if(bf)bf.onchange=e=>{S.cfg.waitBufferMin=+e.target.value||0;save();render()};
+  $$("[data-wcfg]",v).forEach(el=>el.onchange=e=>{
+    const[wid,f]=el.dataset.wcfg.split(":"),w=wh(wid);
+    w[f]=(f==="splitPerHour"||f==="unloadMin")?+e.target.value:e.target.value;
+    save();render();
+  });
+  $$("[data-dock]",v).forEach(el=>el.onchange=e=>{
+    const[wid,did]=el.dataset.dock.split(":"),w=wh(wid),d=w.docks.find(x=>x.id===did);
+    d.enabled=e.target.checked;save();render();
+  });
+
+  const rf=$("#rFrom",v); if(rf)rf.onchange=e=>{S.ui.rFrom=e.target.value;save();render()};
+  const rt=$("#rTo",v); if(rt)rt.onchange=e=>{S.ui.rTo=e.target.value;save();render()};
+  const ex=$("#exportCsv",v); if(ex)ex.onclick=exportCsv;
+}
+function lookupPO(){
+  const val=($("#poInput").value||"").trim().toUpperCase();
+  S.ui.po=val;S.ui.poErr="";
+  const p=S.pos.find(x=>x.po.toUpperCase()===val);
+  if(!p){S.ui.poErr="查無此採購單號。請確認採購提供的單號，或聯繫採購確認該單是否已核可。";S.ui.poData=null}
+  else if(bookingOfPO(p.po)){S.ui.poErr="採購單 "+p.po+" 已完成預約（"+bookingOfPO(p.po).code+"）。如需調整請至「預約查詢」。";S.ui.poData=null}
+  else if(p.date<S.simDate){S.ui.poErr="採購單指定進貨日 "+p.date+" 已過期，請洽採購重新開單。";S.ui.poData=null}
+  else{S.ui.poData=p;S.ui.vtype=S.ui.vtype||"small";S.ui.slot=null;S.ui.poErr=""}
+  save();render();
+}
+function lookupQuery(){
+  const val=($("#qInput").value||"").trim().toUpperCase();
+  S.ui.qPo=val;S.ui.qErr="";S.ui.qData=null;
+  if(!val){S.ui.qErr="請輸入採購單號。";save();render();return}
+  const p=S.pos.find(x=>x.po.toUpperCase()===val);
+  if(!p){S.ui.qErr="查無此採購單號。請確認採購提供的單號是否正確。";save();render();return}
+  S.ui.qData=p;save();render();
+}
+function commit(){
+  const u=S.ui,p=u.poData,v=vt(u.vtype);
+  const used=usage(p.whId,p.date,v.stand,null),capN=cap(wh(p.whId),v.stand);
+  if(!canBook(p.whId,p.date,u.slot,v,used,capN)){toast("此時段剛被訂走，請改選其他時段");S.ui.slot=null;save();render();return}
+  const b={id:"B"+Math.random().toString(36).slice(2,9),po:p.po,vendorCode:p.vendorCode,vendorName:p.vendorName,
+       whId:p.whId,date:p.date,vehicleId:v.id,span:v.span,slotIdx:u.slot,plate:u.plate.trim().toUpperCase(),
+       code:nextCode(p.whId,p.date,u.slot),status:"booked",checkinAt:null,calledAt:null,enterAt:null,
+       leaveAt:null,dockId:null,earlyFill:false,createdAt:Date.now()};
+  S.bookings.push(b);
+  S.ui={qPo:p.po,qData:p};S.view="mine";save();render();showTicket(b.id);
+}
+function abortEdit(){
+  const po=S.ui.qData||poOf(S.bookings.find(x=>x.id===(S.ui.edit||{}).bid)?.po);
+  S.ui={qPo:po?po.po:"",qData:po||null};save();go("mine");toast("已放棄修改，原預約維持不變");
+}
+function commitEdit(){
+  const e=S.ui.edit, b=S.bookings.find(x=>x.id===e.bid), v=vt(e.vtype);
+  const plate=(e.plate||"").trim().toUpperCase();
+  const used=usage(b.whId,b.date,v.stand,b.id), capN=cap(wh(b.whId),v.stand);
+  if(!canBook(b.whId,b.date,e.slot,v,used,capN)){
+    e.slot=null;e.err="你選的時段剛被其他廠商訂走，請重新挑選。原預約仍為 "+b.code+"，尚未變更。";
+    save();render();return;
+  }
+  const chgSlot=e.slot!==b.slotIdx, oldCode=b.code;
+  const nc=chgSlot?nextCode(b.whId,b.date,e.slot):b.code;
+  b.vehicleId=v.id;b.span=v.span;b.plate=plate;
+  if(chgSlot){b.slotIdx=e.slot;b.code=nc}
+  const po=poOf(b.po);
+  S.ui={qPo:po.po,qData:po};S.view="mine";save();render();showTicket(b.id);
+  toast(chgSlot?("改約完成，預約號碼由 "+oldCode+" 換發為 "+b.code):"改約完成，預約號碼維持 "+b.code);
+}
+function confirmCancel(id){
+  const b=S.bookings.find(x=>x.id===id), slots=slotsOf(b.whId);
+  const st=slots[b.slotIdx], en=slots[b.slotIdx+b.span-1];
+  $("#layer").innerHTML=`<div class="scrim" id="scrimX"><div class="modal" style="max-width:420px">
+    <div class="card-head"><h3>取消預約 ${b.code}</h3></div>
+    <div class="card-pad grid" style="gap:13px">
+      <dl class="kv">
+        <dt>採購單號</dt><dd class="mono">${b.po}</dd>
+        <dt>進貨日</dt><dd class="mono">${dshow(b.date)}</dd>
+        <dt>預約時段</dt><dd class="mono">${hhmm(st.start)}–${hhmm(en.end)}</dd>
+      </dl>
+      <div class="note warn">取消後時段立即釋出給其他廠商，<b>無法復原</b>。若之後仍要進貨，需以同一張採購單重新預約，並依當時剩餘時段挑選。</div>
+      <div class="row" style="gap:8px">
+        <button class="btn danger" id="doCancel" style="flex:1">確認取消預約</button>
+        <button class="btn" id="keepIt" style="flex:1">保留預約</button>
+      </div>
+    </div></div></div>`;
+  $("#doCancel").onclick=()=>{
+    b.status="cancelled";$("#layer").innerHTML="";save();render();
+    toast("已取消 "+b.code+"，時段已釋出");
+  };
+  $("#keepIt").onclick=()=>$("#layer").innerHTML="";
+  $("#scrimX").onclick=ev=>{if(ev.target.id==="scrimX")$("#layer").innerHTML=""};
+}
+function checkin(b){
+  if(!b)return;
+  b.status="checkedin";b.checkinAt=S.simMin;save();render();
+  const s=slotsOf(b.whId)[b.slotIdx];
+  toast(b.code+" 報到成功"+(S.simMin>s.end?"（已逾預約時段，列入遲到）":""));
+}
+function doScan(){
+  const raw=($("#scan").value||"").trim().toUpperCase();
+  const whId=S.ui.gWh||S.cfg.warehouses[0].id;
+  S.ui.scanOk=false;
+  if(!raw){S.ui.scanMsg="請先過刷 QRcode 或輸入預約號碼。";save();render();return}
+  const hit=S.bookings.find(b=>(b.code===raw||b.po.toUpperCase()===raw)&&LIVE.has(b.status));
+  if(!hit){S.ui.scanMsg="查無此預約：非本中心預約資料。";save();render();return}
+  if(hit.date!==S.simDate){S.ui.scanMsg="非今日進貨預約（預約日 "+hit.date+"）。";save();render();return}
+  if(hit.whId!==whId){S.ui.gWh=hit.whId}
+  if(hit.status==="checkedin"){S.ui.scanMsg=hit.code+" 尚未叫號，請注意叫號訊息。";save();render();return}
+  if(hit.status==="called"){S.ui.scanMsg=hit.code+" 已叫號，請至 "+dockName(hit)+" 停靠下貨。";S.ui.scanOk=true;save();render();return}
+  if(hit.status==="inyard"){S.ui.scanMsg=hit.code+" 下貨中，完成後請做離場過刷。";S.ui.scanOk=true;save();render();return}
+  if(hit.status==="done"){S.ui.scanMsg=hit.code+" 已完成離場。";save();render();return}
+  if(hit.status==="passed"){hit.status="checkedin";hit.checkinAt=S.simMin;hit.calledAt=null;
+    S.ui.scanMsg=hit.code+" 已過號，重新排入等候。";S.ui.scanOk=true;save();render();return}
+  checkin(hit);
+  S.ui.scanMsg=hit.code+"　"+hit.vendorName+" 報到成功，請注意叫號順序。";S.ui.scanOk=true;
+  save();render();
+}
+function callUp(id){
+  const b=S.bookings.find(x=>x.id===id),v=vt(b.vehicleId),ds=dockState(b.whId);
+  const free=wh(b.whId).docks.filter(d=>d.enabled&&d.type===v.stand&&!ds[d.id].b);
+  if(!free.length){toast("目前沒有空閒的"+STAND[v.stand]+"位，請待前車離場");return}
+  b.status="called";b.calledAt=S.simMin;b.dockId=free[0].id;
+  save();render();toast(b.code+" 叫號 → "+free[0].name);
+}
+function showTicket(id){
+  const b=S.bookings.find(x=>x.id===id),w=wh(b.whId),slots=slotsOf(b.whId);
+  const s=slots[b.slotIdx],e=slots[b.slotIdx+b.span-1];
+  $("#layer").innerHTML=`<div class="scrim" id="scrim"><div class="modal"><div class="ticket">
+    <div class="th"><div class="co">範例物流股份有限公司<small>SAMPLE LOGISTICS — DEMO ONLY</small></div>
+      <div style="text-align:right"><div class="eyebrow">預約號碼</div><div class="big">${b.code}</div></div></div>
+    <dl class="kv">
+      <dt>廠商</dt><dd>${esc(b.vendorName)}</dd>
+      <dt>採購單號</dt><dd class="mono">${b.po}</dd>
+      <dt>進貨指定日</dt><dd class="mono">${dshow(b.date)}</dd>
+      <dt>收貨</dt><dd>${DC.name}　${w.temp}・${esc(w.name)}</dd>
+      <dt>預約時段</dt><dd class="mono" style="font-weight:600">${hhmm(s.start)}–${hhmm(e.end)}</dd>
+      <dt>車型 / 車牌</dt><dd>${vt(b.vehicleId).name}　<span class="mono">${esc(b.plate)}</span>（${STAND[vt(b.vehicleId).stand]}停靠）</dd>
+    </dl>
+    <div class="qrbox" id="qr"></div>
+    <div class="rules"><ol>
+      <li>司機抵達物流中心後，先至警衛室過刷報到。</li>
+      <li>過刷 QRcode 可查詢驗收進度，請注意叫號順序。</li>
+      <li>叫號後 ${S.cfg.callGraceMin} 分未進場視為過號，須重新報到。</li>
+      <li>實際進場時間依現場叫號為主。</li>
+    </ol></div>
+    <div class="row" style="margin-top:16px"><button class="btn pri" id="closeT" style="flex:1">關閉</button></div>
+  </div></div></div>`;
+  try{
+    if(window.QRCode)new QRCode($("#qr"),{text:"TDC|"+DC.code+"|"+b.date+"|"+b.code+"|"+b.po,width:132,height:132,
+      colorDark:"#161B19",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
+    else $("#qr").innerHTML=fakeQR(b.code);
+  }catch(err){$("#qr").innerHTML=fakeQR(b.code)}
+  $("#closeT").onclick=()=>$("#layer").innerHTML="";
+  $("#scrim").onclick=ev=>{if(ev.target.id==="scrim")$("#layer").innerHTML=""};
+}
+function fakeQR(seed){
+  let h=0;for(const c of seed)h=(h*31+c.charCodeAt(0))>>>0;
+  let s="";const n=21;
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+    h=(h*1103515245+12345)>>>0;
+    if((h>>>16)%2)s+=`<rect x="${x*6}" y="${y*6}" width="6" height="6"/>`;
+  }
+  return `<svg width="126" height="126" viewBox="0 0 126 126" fill="#161B19">${s}</svg>`;
+}
+function exportCsv(){
+  const from=S.ui.rFrom||addDays(S.simDate,-14),to=S.ui.rTo||S.simDate;
+  const rows=S.bookings.filter(b=>b.date>=from&&b.date<=to&&LIVE.has(b.status));
+  const lines=["進貨日,採購單號,廠商代號,廠商名稱,倉別,預約號碼,預約時段,車型,車牌,報到時間,判定"];
+  rows.forEach(b=>{
+    const w=wh(b.whId),s=slotsOf(b.whId)[b.slotIdx],p=punctual(b);
+    lines.push([b.date,b.po,b.vendorCode,b.vendorName,w.temp+w.name,b.code,s?hhmm(s.start):"",
+      vt(b.vehicleId).name,b.plate,b.checkinAt!=null?hhmm(b.checkinAt):"",PLABEL[p]||""].join(","));
+  });
+  const csv=lines.join("\n");
+  $("#layer").innerHTML=`<div class="scrim" id="scrim2"><div class="modal" style="max-width:640px"><div class="card-head"><h3>匯出 CSV</h3></div>
+    <div class="card-pad grid" style="gap:10px">
+      <div class="note">共 ${rows.length} 筆。請複製下方內容貼入 Excel（分隔符號選逗號）。</div>
+      <textarea id="csvBox" readonly>${esc(csv)}</textarea>
+      <div class="row"><button class="btn pri" id="copyCsv">複製全部</button><button class="btn" id="closeC">關閉</button></div>
+    </div></div></div>`;
+  $("#copyCsv").onclick=()=>{const t=$("#csvBox");t.select();
+    try{navigator.clipboard.writeText(csv)}catch(e){try{document.execCommand("copy")}catch(e2){}}
+    toast("已複製 "+rows.length+" 筆")};
+  $("#closeC").onclick=()=>$("#layer").innerHTML="";
+  $("#scrim2").onclick=ev=>{if(ev.target.id==="scrim2")$("#layer").innerHTML=""};
+}
+
+/* ── 啟動 ───────────────────────────── */
+$$(".navbtn").forEach(b=>b.onclick=()=>{S.ui={};go(b.dataset.view)});
+$$("[data-adv]").forEach(b=>b.onclick=()=>{
+  S.simMin+=+b.dataset.adv;
+  if(S.simMin>=24*60){S.simMin-=24*60;S.simDate=addDays(S.simDate,1)}
+  save();render();
+});
+$("#resetBtn").onclick=()=>{fresh();render();toast("已重設為初始 Demo 資料")};
+load();render();
+</script>
