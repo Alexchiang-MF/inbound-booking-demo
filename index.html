@@ -1293,6 +1293,34 @@ function callUp(id){
   b.status="called";b.calledAt=S.simMin;b.dockId=free[0].id;
   save();render();toast(b.code+" 叫號 → "+free[0].name);
 }
+/* 預約單 QRcode 內容：指回本頁的深層連結，手機掃描直接開啟該單進度。
+   採購單號可還原廠商、倉別與進貨日，故只需再帶號碼、時段、車型、車牌四項。 */
+function ticketUrl(b){
+  const q=new URLSearchParams({po:b.po,c:b.code,s:String(b.slotIdx),v:b.vehicleId,p:b.plate});
+  return location.origin+location.pathname+"?"+q.toString();
+}
+/* 掃碼進來時：本機若沒有這筆預約（例如換一台手機開啟），依連結參數還原後再顯示 */
+function applyDeepLink(){
+  let q;
+  try{q=new URLSearchParams(location.search)}catch(e){return false}
+  const po=(q.get("po")||"").trim().toUpperCase();
+  if(!po)return false;
+  const p=S.pos.find(x=>x.po.toUpperCase()===po);
+  if(!p)return false;
+  if(!bookingOfPO(p.po)&&q.get("c")){
+    const v=vt(q.get("v"))||vt("small"), idx=parseInt(q.get("s"),10);
+    if(!isNaN(idx)&&idx>=0&&idx<slotsOf(p.whId).length){
+      S.bookings.push({id:"B"+Math.random().toString(36).slice(2,9),po:p.po,
+        vendorCode:p.vendorCode,vendorName:p.vendorName,whId:p.whId,date:p.date,
+        vehicleId:v.id,span:v.span,slotIdx:idx,plate:(q.get("p")||"").toUpperCase(),
+        code:q.get("c"),status:"booked",checkinAt:null,calledAt:null,enterAt:null,
+        leaveAt:null,dockId:null,earlyFill:false,createdAt:Date.now()});
+    }
+  }
+  S.ui={qPo:p.po,qData:p};S.view="mine";save();
+  try{history.replaceState(null,"",location.origin+location.pathname)}catch(e){}
+  return true;
+}
 function showTicket(id){
   const b=S.bookings.find(x=>x.id===id),w=wh(b.whId),slots=slotsOf(b.whId);
   const s=slots[b.slotIdx],e=slots[b.slotIdx+b.span-1];
@@ -1308,6 +1336,7 @@ function showTicket(id){
       <dt>車型 / 車牌</dt><dd>${vt(b.vehicleId).name}　<span class="mono">${esc(b.plate)}</span>（${STAND[vt(b.vehicleId).stand]}停靠）</dd>
     </dl>
     <div class="qrbox" id="qr"></div>
+    <div style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-bottom:2px">手機掃描即可查看本次進貨的即時進度</div>
     <div class="rules"><ol>
       <li>司機抵達物流中心後，先至警衛室過刷報到。</li>
       <li>過刷 QRcode 可查詢驗收進度，請注意叫號順序。</li>
@@ -1317,7 +1346,7 @@ function showTicket(id){
     <div class="row" style="margin-top:16px"><button class="btn pri" id="closeT" style="flex:1">關閉</button></div>
   </div></div></div>`;
   try{
-    if(window.QRCode)new QRCode($("#qr"),{text:"TDC|"+DC.code+"|"+b.date+"|"+b.code+"|"+b.po,width:132,height:132,
+    if(window.QRCode)new QRCode($("#qr"),{text:ticketUrl(b),width:156,height:156,
       colorDark:"#161B19",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
     else $("#qr").innerHTML=fakeQR(b.code);
   }catch(err){$("#qr").innerHTML=fakeQR(b.code)}
@@ -1364,7 +1393,7 @@ $$("[data-adv]").forEach(b=>b.onclick=()=>{
   save();render();
 });
 $("#resetBtn").onclick=()=>{fresh();render();toast("已重設為初始 Demo 資料")};
-load();render();
+load();applyDeepLink();render();
 </script>
 </body>
 </html>

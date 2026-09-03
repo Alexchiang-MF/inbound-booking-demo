@@ -364,7 +364,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-3);font
         <li>選車輛噸數，觀察時段格數變化</li>
         <li>點一個還有空位的時段</li>
         <li>填車牌，按「確認預約」</li>
-        <li>畫面跳出預約單，可列印或下載給司機</li>
+        <li>畫面跳出預約單，<b>手機掃 QRcode</b> 即為司機視角的進度頁</li>
       </ol>
     </div>
     <div class="role">
@@ -418,11 +418,13 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-3);font
         <li>注意畫面上<b>沒有日期選單也沒有倉別選單</b></li>
         <li>車型選「11 噸以下」，觀察時段格子的「餘 N 位」</li>
         <li>點一個時段，填車牌 <code>ABC-1234</code>，確認預約</li>
+        <li><b>拿手機掃描預約單上的 QRcode</b>——會直接開啟這張單的進度頁，這就是司機看到的畫面</li>
       </ol>
-      <div class="expect"><b>預期：</b>產生預約號碼（字母對應第幾個時段，如第四格為 D）與可掃描的 QRcode，畫面自動停在「預約查詢」並顯示這張單。</div>
+      <div class="expect"><b>預期：</b>產生預約號碼（字母對應第幾個時段，如第四格為 D）與 QRcode。手機掃碼會開啟同一張單的進度頁，不需要再輸入單號。</div>
       <div class="ask"><b>請幫我確認</b><ul>
         <li>廠商不能自己選進貨日，一律以採購單為準——實務上會不會卡到「提前送」或「延後送」的常見狀況？</li>
         <li>時段直接列出來給點選，比起讓廠商自己填時間，現場接受度如何？</li>
+        <li>司機用手機掃碼看進度這條路可行嗎？還是現場多半只認紙本？</li>
       </ul></div>
     </div>
   </div>
