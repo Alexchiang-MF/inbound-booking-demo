@@ -223,7 +223,7 @@ textarea{width:100%;min-height:150px;font-family:var(--f-mono);font-size:11.5px;
     <div class="topbar">
       <div>
         <div class="clock-label">模擬時間</div>
-        <div class="clock"><span class="t mono" id="simTime">07:50</span><span class="d mono" id="simDate">2026/09/08 (二)</span></div>
+        <div class="clock"><span class="t mono" id="simTime">09:10</span><span class="d mono" id="simDate">2026/09/08 (二)</span></div>
       </div>
       <div class="row" style="gap:6px">
         <button class="btn sm" data-adv="5">＋5 分</button>
@@ -282,18 +282,20 @@ function defaultConfig(){
   return{
     graceMin:10,          // 報到晚於預約時段起始這麼多分鐘內，仍算準點
     noShowAfterMin:30,    // 時段結束再過這麼久仍未報到，判定未到
+    /* booking:false 的倉別不開放預約，車輛依原有方式直接到廠。 */
+    noBookingNote:"低溫進貨集中在夜間時段，現場沒有排隊問題，因此第一階段不納入預約。",
     dcs:[
       {code:"N",name:"北區物流中心",warehouses:[
-        {id:"N1",name:"常溫倉",temp:"常溫",pools:{
+        {id:"N1",name:"常溫倉",temp:"常溫",booking:true,pools:{
           dock:{open:"08:00",close:"15:00",split:3,capacity:3},
           wing:{open:"08:00",close:"15:00",split:2,capacity:1}}},
-        {id:"C1",name:"低溫倉",temp:"低溫",pools:{
-          dock:{open:"06:00",close:"12:00",split:4,capacity:2},
-          wing:{open:"06:00",close:"12:00",split:1,capacity:1}}}
+        {id:"C1",name:"低溫倉",temp:"低溫",booking:false,pools:{
+          dock:{open:"18:00",close:"23:00",split:4,capacity:2},
+          wing:{open:"18:00",close:"23:00",split:1,capacity:1}}}
       ]},
       {code:"M",name:"中區物流中心",warehouses:[
-        {id:"N1",name:"常溫倉",temp:"常溫",pools:{
-          dock:{open:"07:00",close:"14:00",split:2,capacity:2},
+        {id:"N1",name:"常溫倉",temp:"常溫",booking:true,pools:{
+          dock:{open:"07:00",close:"14:00",split:4,capacity:2},
           wing:{open:"07:00",close:"14:00",split:1,capacity:1}}}
       ]}
     ]
@@ -342,32 +344,37 @@ function seed(){
     });
   };
 
-  /* 今日：北區低溫（06:00 起，每 15 分）、北區常溫（08:00 起，每 20 分）、中區常溫（07:00 起，每 30 分） */
-  const A=mkPO("V742","N","C1",TODAY,9), B=mkPO("V102","N","C1",TODAY,6),
-        C=mkPO("V863","N","C1",TODAY,12), D=mkPO("V742","N","C1",TODAY,7);
-  mk("T01","N","C1","dock",TODAY,toMin("06:30"),"KBC-7712",[A],{st:"arrived",ci:toMin("06:28"),pg:"P-01"});
-  mk("T03","N","C1","dock",TODAY,toMin("07:00"),"RDA-2081",[B],{st:"arrived",ci:toMin("07:04"),pg:"P-02"});
-  mk("T02","N","C1","dock",TODAY,toMin("07:15"),"HAA-6305",[C],{st:"arrived",ci:toMin("07:33"),pg:"P-03"});
-  mk("T02","N","C1","dock",TODAY,toMin("06:00"),"MJC-7788",[D],{});   // 早已逾時未報到
+  /* 今日一律為常溫倉：北區（08:00 起，每 20 分）、中區（07:00 起，每 15 分）。
+     低溫倉不開放預約，因此今日沒有低溫的預約紀錄。 */
+  const A=mkPO("V231","N","N1",TODAY,8), B=mkPO("V518","N","N1",TODAY,6),
+        C=mkPO("V742","N","N1",TODAY,12),D=mkPO("V863","N","N1",TODAY,7),
+        E=mkPO("V102","N","N1",TODAY,9);
+  mk("T01","N","N1","dock",TODAY,toMin("08:00"),"KBC-7712",[A],{st:"arrived",ci:toMin("07:58"),pg:"P-01"});
+  mk("T03","N","N1","dock",TODAY,toMin("08:00"),"RDA-2081",[B],{st:"arrived",ci:toMin("08:07"),pg:"P-02"});
+  mk("T02","N","N1","dock",TODAY,toMin("08:20"),"HAA-6305",[C],{st:"arrived",ci:toMin("08:38"),pg:"P-03"});
+  mk("T04","N","N1","dock",TODAY,toMin("08:40"),"DYA-4408",[D],{st:"arrived",ci:toMin("08:36"),pg:"P-04"});
+  mk("T02","N","N1","dock",TODAY,toMin("08:40"),"MJC-7788",[E],{});   // 已逾準點時限、尚未判未到
 
-  const E=mkPO("V231","N","N1",TODAY,8), F=mkPO("V231","N","N1",TODAY,5),
-        G=mkPO("V518","N","N1",TODAY,11),H=mkPO("V863","N","N1",TODAY,4),
-        I=mkPO("V102","N","N1",TODAY,9);
-  mk("T01","N","N1","dock",TODAY,toMin("08:00"),"ABC-1234",[E],{});
-  mk("T03","N","N1","dock",TODAY,toMin("08:20"),"TPL-9042",[F,G,H],{});  // 一車三單
-  mk("T05","N","N1","wing",TODAY,toMin("08:00"),"WNG-7788",[I],{});
+  const F=mkPO("V231","N","N1",TODAY,5), G=mkPO("V518","N","N1",TODAY,11),
+        H=mkPO("V863","N","N1",TODAY,4), I=mkPO("V102","N","N1",TODAY,9),
+        J=mkPO("V742","N","N1",TODAY,6);
+  mk("T01","N","N1","dock",TODAY,toMin("09:20"),"ABC-1234",[F],{});
+  mk("T03","N","N1","dock",TODAY,toMin("09:20"),"TPL-9042",[G,H,I],{});  // 一車三單
+  mk("T05","N","N1","wing",TODAY,toMin("08:00"),"WNG-7788",[J],{st:"arrived",ci:toMin("08:02"),pg:"P-05"});
 
-  const J=mkPO("V518","M","N1",TODAY,7), K=mkPO("V102","M","N1",TODAY,10);
-  mk("T04","M","N1","dock",TODAY,toMin("07:00"),"DYA-4408",[J],{st:"arrived",ci:toMin("06:55"),pg:"P-01"});
-  mk("T02","M","N1","dock",TODAY,toMin("07:30"),"LNW-4417",[K],{});   // 已過準點時限、尚未判未到
+  const K=mkPO("V518","M","N1",TODAY,7), L=mkPO("V102","M","N1",TODAY,10),
+        M=mkPO("V231","M","N1",TODAY,6);
+  mk("T04","M","N1","dock",TODAY,toMin("07:30"),"GTR-1102",[K],{st:"arrived",ci:toMin("07:26"),pg:"P-01"});
+  mk("T02","M","N1","dock",TODAY,toMin("08:00"),"LNW-4417",[L],{});   // 已判定未到
+  mk("T01","M","N1","dock",TODAY,toMin("09:45"),"PLM-3021",[M],{});
 
-  /* 未預約的採購單，供演練新增 */
-  [["V231","N","N1",6],["V518","N","N1",13],["V742","N","C1",8],["V863","M","N1",5],["V102","M","N1",9]]
-    .forEach(([s,dc,wh,p])=>mkPO(s,dc,wh,TODAY,p));
+  /* 未預約的採購單，供演練新增。低溫那張用來示範「此倉別不需預約」。 */
+  [["V231","N","N1",6],["V518","N","N1",13],["V863","M","N1",5],["V102","M","N1",9],
+   ["V742","N","C1",8]].forEach(([s,dc,wh,p])=>mkPO(s,dc,wh,TODAY,p));
   [1,2].forEach(off=>{
     const d=addDays(TODAY,off);
-    [["V231","N","N1",7],["V518","N","N1",12],["V742","N","C1",6],["V863","N","C1",10],
-     ["V102","M","N1",8],["V231","M","N1",5]].forEach(([s,dc,wh,p])=>mkPO(s,dc,wh,d,p));
+    [["V231","N","N1",7],["V518","N","N1",12],["V102","M","N1",8],["V231","M","N1",5],
+     ["V742","N","C1",6]].forEach(([s,dc,wh,p])=>mkPO(s,dc,wh,d,p));
   });
   mkPO("V231","N","N1",TODAY,4,false);   // 已作廢採購單
 
@@ -393,7 +400,7 @@ function seed(){
       const spread=outs.map((o,k)=>[o,(k*7)%outs.length]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
       spread.forEach((kind,i)=>{
         const date=month+"-"+pad(2+((i*2+ci*3)%26));
-        const dc=(i%3===0)?"M":"N", wh=(dc==="M")?"N1":(i%2?"N1":"C1"), g=(i%7===0)?"wing":"dock";
+        const dc=(i%3===0)?"M":"N", wh="N1", g=(i%7===0)?"wing":"dock";  // 只統計常溫
         const sl=slotsOf(dc,wh,g); if(!sl.length)return;
         const s=sl[(i*3+ci)%sl.length].start;
         const po=mkPO(SUPPLIERS[(i+ci)%5].code,dc,wh,date,5+(i%10));
@@ -412,7 +419,7 @@ let S=null;
 function fresh(){
   // 先建立設定，seed() 產生種子時要靠 S.cfg 推算時段與名額
   S={cfg:defaultConfig(),orders:[],bookings:[],
-     simDate:TODAY,simMin:toMin("07:50"),view:"book",ui:{}};
+     simDate:TODAY,simMin:toMin("09:10"),view:"book",ui:{}};
   const s=seed();
   S.orders=s.orders;S.bookings=s.bookings;
   save();
@@ -471,7 +478,8 @@ V.book=()=>{
   const u=S.ui, o=u.order;
   const H=head("預約申請","貨運業者收到供應商轉來的採購單號後，用其中<b>任何一張</b>單號即可預約。一台車只需要一個時段，不必每張單都預約。");
   if(!o){
-    const free=S.orders.filter(x=>x.valid&&x.date>=S.simDate).slice(0,6);
+    const free=S.orders.filter(x=>x.valid&&x.date>=S.simDate
+      &&!S.bookings.some(b=>b.poRefs.includes(x.po))).slice(0,6);
     return H+`<div class="card card-pad grid" style="max-width:660px">
       <div><div class="eyebrow">Step 1</div><h3 style="font-size:16px;margin-top:4px">採購單號、貨運業者與車牌</h3>
         <p style="color:var(--ink-2);margin:4px 0 0">進貨日與收貨物流中心由採購單決定。貨運業者代號用來累計到場準點紀錄，車牌是這次預約的識別。</p></div>
@@ -486,7 +494,9 @@ V.book=()=>{
       <div><button class="btn pri" id="lookup">查詢可預約時段</button></div>
       ${u.err?`<div class="note ${u.errKind||"warn"}">${u.err}</div>`:""}
       <div><div class="eyebrow" style="margin-bottom:6px">Demo 可用資料</div>
-        <div class="row" style="gap:6px">${free.map(x=>`<button class="btn sm mono" data-fill="${x.po}">${x.po}</button>`).join("")}</div>
+        <div class="row" style="gap:6px">${free.map(x=>{const w=whOf(x.dc,x.wh);
+          return `<button class="btn sm mono" data-fill="${x.po}" title="${esc(dcOf(x.dc).name)}　${w.temp}${w.name}">${x.po}
+            <span style="font-family:var(--f-body);color:var(--ink-3);font-weight:400">${w.temp}${w.booking?"":"・免預約"}</span></button>`}).join("")}</div>
         <div class="note" style="margin-top:8px">貨運業者代號：${CARRIERS.map(c=>`<b class="mono">${c.code}</b> ${c.name}`).join("　")}</div>
       </div>
     </div>`;
@@ -760,12 +770,20 @@ V.param=()=>head("參數設定","準點寬限與各物流中心、各倉別、�
      <label class="fld">未到判定：時段結束後（分）<input type="number" class="mono" id="p-noshow" value="${S.cfg.noShowAfterMin}" min="0" max="180" style="width:96px"></label>
      <div class="note" style="flex:1;min-width:240px">過刷時間不晚於預約時段起始 <b>${S.cfg.graceMin}</b> 分鐘即算準點；超過即為延遲。時段結束後 <b>${S.cfg.noShowAfterMin}</b> 分鐘仍未過刷，判定為未到。</div>
    </div></div>
+   <div class="card"><div class="card-head"><h3>哪些倉別要預約</h3></div><div class="card-pad">
+     <div class="note key">第一階段<b>以常溫為主</b>。${S.cfg.noBookingNote}下方可切換各倉別是否開放預約——關閉後，該倉別的採購單在預約頁會被擋下並提示不需預約。</div>
+   </div></div>
    ${S.cfg.dcs.map(d=>`<div class="card">
      <div class="card-head"><h3>${esc(d.name)}</h3><span class="pill n mono">${d.code}</span></div>
      <div class="tbl-wrap"><table><thead><tr><th>倉別</th><th>車型 / 下貨區</th><th>開放時間</th><th>每小時切分</th><th>每段名額</th><th>每日時段數</th></tr></thead>
-     <tbody>${d.warehouses.flatMap(w=>GROUPS.map(g=>{
+     <tbody>${d.warehouses.flatMap(w=>GROUPS.map((g,gi)=>{
        const p=w.pools[g.id], n=slotsOf(d.code,w.id,g.id).length;
-       return `<tr><td>${tempTag(w)}</td><td>${g.name}<br><span style="font-size:12px;color:var(--ink-2)">${g.stand}下貨</span></td>
+       return `<tr${w.booking?"":' style="opacity:.5"'}>
+         ${gi===0?`<td rowspan="2">${tempTag(w)}
+           <label class="row" style="gap:6px;margin-top:7px;cursor:pointer;font-size:12px">
+             <input type="checkbox" data-book="${d.code}|${w.id}" ${w.booking?"checked":""} style="width:15px;height:15px;accent-color:var(--primary)">
+             ${w.booking?"開放預約":"不開放預約"}</label></td>`:""}
+         <td>${g.name}<br><span style="font-size:12px;color:var(--ink-2)">${g.stand}下貨</span></td>
          <td class="row" style="gap:5px;flex-wrap:nowrap">
            <input type="time" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|open" value="${p.open}" style="width:110px">
            <input type="time" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|close" value="${p.close}" style="width:110px"></td>
@@ -786,6 +804,7 @@ V.spec=()=>head("規格與待確認","D 案依 2026/09/08 內部討論的實際�
        <li><b>只過刷一次。</b>廠門口過刷即完成報到，當下顯示準時或延遲並發放震動器。系統不做叫號、不指派碼頭、不追蹤進場與離場。</li>
        <li><b>準點定義：過刷時間不晚於預約時段起始 ${S.cfg.graceMin} 分鐘。</b>超過即為延遲，時段結束後 ${S.cfg.noShowAfterMin} 分鐘未過刷為未到。</li>
        <li><b>進場順序完全人工。</b>延遲者可能延後一兩台再進場，現場沒有其他車等待時也可直接放行——這段由警衛判斷，系統只留紀錄。</li>
+       <li><b>第一階段只做常溫。</b>${S.cfg.noBookingNote}低溫倉的採購單在預約頁會被擋下並提示不需預約，車輛依原有方式直接到廠。倉別是否開放預約是參數，未來要納入低溫隨時可開。</li>
        <li><b>支援多個物流中心。</b>貨運業者一天可能跑多個 DC，收貨地點由採購單決定，各 DC 各倉各車型池的時段與名額獨立設定。</li>
      </ol></div></div>
    <div class="card"><div class="card-head"><h3>待確認</h3></div><div class="card-pad">
@@ -798,7 +817,8 @@ V.spec=()=>head("規格與待確認","D 案依 2026/09/08 內部討論的實際�
    </div></div>
    <div class="card"><div class="card-head"><h3>建議操作順序</h3></div><div class="card-pad">
      <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
-       <li><b>預約申請</b>挑一張採購單，填貨運業者代號與車牌，選車型後挑時段。試著切換鷗翼與非鷗翼，看名額是分開的。</li>
+       <li><b>預約申請</b>挑一張<b>常溫</b>採購單，填貨運業者代號與車牌，選車型後挑時段。試著切換鷗翼與非鷗翼，看名額是分開的。</li>
+       <li>再挑一張標示<b>低溫・免預約</b>的採購單，確認系統會擋下並說明不需預約。</li>
        <li>在第 2 步<b>加入同車其他採購單</b>，看預約單上會一併列出供警衛核對。</li>
        <li>到<b>廠門口過刷</b>輸入剛拿到的預約單號或車牌，看畫面判定準時。</li>
        <li>按上方<b>＋15 分</b>推進時間，再過刷另一筆，看判定變成延遲並顯示遲到分鐘數。</li>
@@ -865,6 +885,12 @@ function lookup(){
   if(!o){S.ui.err="查無此採購單號。請確認供應商提供的單號是否正確。";save();render();return}
   if(!o.valid){S.ui.err="採購單 "+o.po+" 已作廢，無法預約。";save();render();return}
   if(o.date<S.simDate){S.ui.err="採購單指定進貨日 "+o.date+" 已過期。";save();render();return}
+  const ow=whOf(o.dc,o.wh);
+  if(!ow.booking){
+    S.ui.err="採購單 "+o.po+" 的收貨倉別是 <b>"+ow.temp+"・"+ow.name+"</b>，<b>目前不需預約</b>。"
+      +S.cfg.noBookingNote+"請依原有方式直接到廠卸貨。";
+    S.ui.errKind="key";save();render();return;
+  }
   if(!carrierOf(car)){S.ui.err="查無此貨運業者代號。可用："+CARRIERS.map(c=>c.code).join("、");save();render();return}
   if(!/^[A-Z0-9-]{4,12}$/.test(plate)){S.ui.err="車牌格式請填 4～12 碼英數，可含連字號。";save();render();return}
   const dup=bookingOfTruck(plate,o.date,o.dc);
@@ -1018,6 +1044,11 @@ function bind(){
 
   const pg=$("#p-grace",v); if(pg)pg.onchange=e=>{S.cfg.graceMin=Math.max(0,+e.target.value||0);save();render()};
   const pn=$("#p-noshow",v); if(pn)pn.onchange=e=>{S.cfg.noShowAfterMin=Math.max(0,+e.target.value||0);save();render()};
+  $$("[data-book]",v).forEach(el=>el.onchange=e=>{
+    const[dc,wh]=el.dataset.book.split("|");
+    whOf(dc,wh).booking=e.target.checked;save();render();
+    toast(whOf(dc,wh).name+(e.target.checked?" 已開放預約":" 已停止開放預約"));
+  });
   $$("[data-cfg]",v).forEach(el=>el.onchange=e=>{
     const[dc,wh,g,f]=el.dataset.cfg.split("|");
     const p=poolOf(dc,wh,g);
