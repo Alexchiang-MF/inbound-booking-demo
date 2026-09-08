@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="進貨預約 D 案 Demo：貨運業者為申請者、車牌為預約主鍵、單次過刷判定準點。">
+<meta name="robots" content="noindex">
+<title>進貨預約 D 案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<style>
+:root{
+  --ground:#EDEFEC; --surface:#FFFFFF; --surface-2:#F6F7F5; --surface-3:#E4E8E3;
+  --ink:#161B19; --ink-2:#5C6663; --ink-3:#89918D;
+  --line:#D6DAD5; --line-2:#C2C8C1;
+  --primary:#0B4F4A; --primary-ink:#FFFFFF; --primary-soft:#DCEAE7;
+  --accent:#D98A14; --accent-soft:#FBEDD4;
+  --ok:#2E7D5B; --ok-soft:#DDEEE5;
+  --crit:#B03A2E; --crit-soft:#F6DEDA;
+  --t-amb:#B07C15; --t-chill:#3E7CA8;
+  --shadow:0 1px 2px rgba(22,27,25,.06),0 6px 18px rgba(22,27,25,.05);
+  --r:6px;
+  --f-display:"Noto Serif TC",Georgia,serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
+    --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
+    --line:#2A3331; --line-2:#3A4643;
+    --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
+    --accent:#E8A33C; --accent-soft:#3A2C13;
+    --ok:#4FA57D; --ok-soft:#173029;
+    --crit:#D2685A; --crit-soft:#3A211D;
+    --t-amb:#D2A03E; --t-chill:#6BA6CF;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
+  --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
+  --line:#2A3331; --line-2:#3A4643;
+  --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
+  --accent:#E8A33C; --accent-soft:#3A2C13;
+  --ok:#4FA57D; --ok-soft:#173029;
+  --crit:#D2685A; --crit-soft:#3A211D;
+  --t-amb:#D2A03E; --t-chill:#6BA6CF;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0}
+button{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.app{display:grid;grid-template-columns:214px 1fr;min-height:100vh}
+.rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{padding:0 8px 15px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.brand h1{font-size:17px}
+.brand .sub{font-size:10.5px;color:var(--ink-3);letter-spacing:.13em;text-transform:uppercase;font-family:var(--f-mono);margin-top:4px}
+.rail-group{font-size:10.5px;letter-spacing:.16em;color:var(--ink-3);text-transform:uppercase;font-weight:700;padding:13px 8px 5px}
+.navbtn{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:0;border-radius:var(--r);padding:8px 9px;cursor:pointer;color:var(--ink-2);font-weight:500;transition:background .12s,color .12s}
+.navbtn:hover{background:var(--surface-2);color:var(--ink)}
+.navbtn[aria-current="true"]{background:var(--primary-soft);color:var(--primary);font-weight:700}
+.navbtn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.45;flex:none}
+.navbtn[aria-current="true"] .dot{opacity:1}
+
+main{min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 26px;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.clock{display:flex;align-items:baseline;gap:8px}
+.clock .t{font-family:var(--f-mono);font-size:22px;font-weight:600}
+.clock .d{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.clock-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.spacer{flex:1}
+.wrap{padding:26px;max-width:1180px;width:100%}
+.page-head{margin-bottom:20px}
+.page-head h2{font-size:22px}
+.page-head p{margin:5px 0 0;color:var(--ink-2);max-width:66ch}
+.eyebrow{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700;font-family:var(--f-mono)}
+
+.btn{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:7px 13px;cursor:pointer;font-weight:500;transition:border-color .12s,background .12s}
+.btn:hover{border-color:var(--ink-3);background:var(--surface-2)}
+.btn.pri{background:var(--primary);border-color:var(--primary);color:var(--primary-ink);font-weight:700}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card-pad{padding:18px 20px}
+.card-head{padding:13px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card-head h3{font-size:15px}
+.grid{display:grid;gap:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+label.fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink-2);font-weight:500}
+input,select{font-family:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--surface);color:var(--ink);min-width:0}
+input.mono{font-family:var(--f-mono)}
+input:focus,select:focus{outline:2px solid var(--primary);outline-offset:-1px;border-color:var(--primary)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill.n{background:var(--surface-3);color:var(--ink-2)}
+.pill.p{background:var(--primary-soft);color:var(--primary)}
+.pill.a{background:var(--accent-soft);color:var(--accent)}
+.pill.o{background:var(--ok-soft);color:var(--ok)}
+.pill.c{background:var(--crit-soft);color:var(--crit)}
+.temp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+.temp i{width:3px;height:12px;border-radius:2px;display:inline-block}
+.t-常溫{background:var(--t-amb)} .t-低溫{background:var(--t-chill)}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.empty{padding:32px 20px;text-align:center;color:var(--ink-3)}
+.note{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border-left:2px solid var(--line-2);padding:9px 13px;border-radius:0 var(--r) var(--r) 0}
+.note.warn{border-left-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.note.key{border-left-color:var(--primary);background:var(--primary-soft);color:var(--ink)}
+.note.bad{border-left-color:var(--crit);background:var(--crit-soft);color:var(--ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px}
+.kv dt{color:var(--ink-2)} .kv dd{margin:0;font-weight:500}
+.stepsec{display:flex;align-items:center;gap:10px}
+.stepsec b{width:22px;height:22px;border-radius:50%;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;flex:none;font-weight:600}
+
+.slotgrid{display:flex;flex-direction:column;gap:6px}
+.slotrow{display:grid;grid-template-columns:56px 1fr;align-items:center;gap:10px}
+.hourlab{font-family:var(--f-mono);font-size:13px;color:var(--ink-2);text-align:right}
+.slots{display:grid;gap:6px}
+.slot{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:8px 6px 7px;cursor:pointer;text-align:center;transition:border-color .12s,background .12s,transform .1s}
+.slot .st{display:block;font-family:var(--f-mono);font-size:13.5px;font-weight:600}
+.slot .sc{display:block;font-size:11px;color:var(--ink-3);margin-top:1px}
+.slot:hover:not(:disabled){border-color:var(--primary);transform:translateY(-1px)}
+.slot[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#1B1206}
+.slot[aria-pressed="true"] .sc{color:#1B1206;opacity:.8}
+.slot:disabled{cursor:not-allowed;background:var(--surface-2);border-style:dashed;border-color:var(--line);color:var(--ink-3)}
+.slot:disabled .st{text-decoration:line-through;opacity:.55}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:13px;height:13px;border-radius:3px;border:1px solid var(--line-2);display:inline-block}
+
+.vpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}
+.vopt{border:1px solid var(--line-2);border-radius:var(--r);padding:11px 13px;cursor:pointer;background:var(--surface);text-align:left;transition:border-color .12s,background .12s}
+.vopt:hover{border-color:var(--primary)}
+.vopt[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft);box-shadow:inset 0 0 0 1px var(--primary)}
+.vopt b{display:block;font-size:14px}
+.vopt small{color:var(--ink-2);font-size:11.5px}
+
+.verdict{border-radius:8px;padding:22px 24px;margin-bottom:16px;border:1px solid}
+.verdict.ok{background:var(--ok-soft);border-color:var(--ok)}
+.verdict.late{background:var(--accent-soft);border-color:var(--accent)}
+.verdict.bad{background:var(--crit-soft);border-color:var(--crit)}
+.verdict .big{font-family:var(--f-display);font-size:34px;font-weight:700;line-height:1.15}
+.verdict.ok .big{color:var(--ok)} .verdict.late .big{color:var(--accent)} .verdict.bad .big{color:var(--crit)}
+.verdict .sub{font-size:14px;color:var(--ink-2);margin-top:4px}
+.pager{display:inline-flex;align-items:center;gap:9px;background:var(--surface);border:1px dashed var(--line-2);border-radius:var(--r);padding:8px 14px;margin-top:12px;font-size:13px}
+.pager b{font-family:var(--f-mono);font-size:20px;font-weight:600}
+
+.polist{display:flex;flex-wrap:wrap;gap:6px}
+.potag{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:3px 6px 3px 9px;font-family:var(--f-mono);font-size:12px}
+.potag button{border:0;background:none;cursor:pointer;color:var(--ink-3);font-size:14px;line-height:1;padding:0 2px}
+.potag button:hover{color:var(--crit)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--surface);padding:13px 15px}
+.stat .v{font-family:var(--f-mono);font-size:25px;font-weight:600;line-height:1.15}
+.stat .l{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.stat.good .v{color:var(--ok)} .stat.bad .v{color:var(--crit)} .stat.mid .v{color:var(--accent)}
+.bar-mini{height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden;margin-top:6px;min-width:70px}
+.bar-mini i{display:block;height:100%;background:var(--ok)}
+.bar-mini i.mid{background:var(--accent)} .bar-mini i.bad{background:var(--crit)}
+
+.scrim{position:fixed;inset:0;background:rgba(10,14,13,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60;overflow-y:auto}
+.modal{background:var(--surface);border-radius:8px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);border:1px solid var(--line)}
+.ticket{padding:22px 24px}
+.ticket .th{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:14px}
+.ticket .th .co{font-family:var(--f-display);font-size:15px;font-weight:700}
+.ticket .th .co small{display:block;font-family:var(--f-mono);font-size:9px;letter-spacing:.1em;color:var(--ink-3);font-weight:400}
+.ticket .big{font-family:var(--f-mono);font-size:27px;font-weight:600;line-height:1.1}
+.qrbox{background:#fff;padding:10px;border-radius:var(--r);width:max-content;margin:14px auto 4px;border:1px solid var(--line)}
+.qrbox img,.qrbox canvas{display:block}
+.rules{font-size:11.5px;color:var(--ink-2);border-top:1px dashed var(--line-2);margin-top:12px;padding-top:11px}
+.rules ol{margin:0;padding-left:18px}
+.rules li{margin-bottom:3px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 18px;border-radius:99px;font-weight:500;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+textarea{width:100%;min-height:150px;font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line-2);border-radius:var(--r);padding:10px;background:var(--surface-2);color:var(--ink);resize:vertical}
+.openq{border-left:2px solid var(--accent);padding:2px 0 2px 14px;margin-bottom:15px}
+.openq b{display:block;font-size:14px}
+.openq p{margin:3px 0 0;color:var(--ink-2);font-size:13px}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);align-items:center}
+  .brand{border-bottom:0;margin:0;padding:0 12px 0 0;flex:none}
+  .rail-group{display:none}
+  .navbtn{width:auto}
+  .wrap{padding:18px 16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <h1>進貨預約 D 案</h1>
+      <div class="sub">Carrier booking</div>
+    </div>
+    <div class="rail-group">貨運業者</div>
+    <button class="navbtn" data-view="book"><i class="dot"></i>預約申請</button>
+    <button class="navbtn" data-view="query"><i class="dot"></i>預約查詢</button>
+    <div class="rail-group">現場</div>
+    <button class="navbtn" data-view="gate"><i class="dot"></i>廠門口過刷</button>
+    <div class="rail-group">管理</div>
+    <button class="navbtn" data-view="report"><i class="dot"></i>貨運準點報表</button>
+    <button class="navbtn" data-view="param"><i class="dot"></i>參數設定</button>
+    <div class="rail-group">Demo</div>
+    <button class="navbtn" data-view="spec"><i class="dot"></i>規格與待確認</button>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <div class="clock-label">模擬時間</div>
+        <div class="clock"><span class="t mono" id="simTime">07:50</span><span class="d mono" id="simDate">2026/09/08 (二)</span></div>
+      </div>
+      <div class="row" style="gap:6px">
+        <button class="btn sm" data-adv="5">＋5 分</button>
+        <button class="btn sm" data-adv="15">＋15 分</button>
+        <button class="btn sm" data-adv="60">＋1 小時</button>
+      </div>
+      <div class="spacer"></div>
+      <span class="pill a" title="本頁所有貨運業者、供應商、採購單與統計數據皆為虛構">示範資料</span>
+      <button class="btn sm" id="resetBtn">重設 Demo 資料</button>
+    </div>
+    <div class="wrap" id="view"></div>
+  </main>
+</div>
+<div id="layer"></div>
+
+<!-- qrcodejs 1.0.0 (MIT, davidshimjs) — 內嵌以確保離線／內網環境可用 -->
+<script>
+var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this.parsedData=[];for(var b=[],d=0,e=this.data.length;e>d;d++){var f=this.data.charCodeAt(d);f>65536?(b[0]=240|(1835008&f)>>>18,b[1]=128|(258048&f)>>>12,b[2]=128|(4032&f)>>>6,b[3]=128|63&f):f>2048?(b[0]=224|(61440&f)>>>12,b[1]=128|(4032&f)>>>6,b[2]=128|63&f):f>128?(b[0]=192|(1984&f)>>>6,b[1]=128|63&f):b[0]=f,this.parsedData=this.parsedData.concat(b)}this.parsedData.length!=this.data.length&&(this.parsedData.unshift(191),this.parsedData.unshift(187),this.parsedData.unshift(239))}function b(a,b){this.typeNumber=a,this.errorCorrectLevel=b,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}function i(a,b){if(void 0==a.length)throw new Error(a.length+"/"+b);for(var c=0;c<a.length&&0==a[c];)c++;this.num=new Array(a.length-c+b);for(var d=0;d<a.length-c;d++)this.num[d]=a[d+c]}function j(a,b){this.totalCount=a,this.dataCount=b}function k(){this.buffer=[],this.length=0}function m(){return"undefined"!=typeof CanvasRenderingContext2D}function n(){var a=!1,b=navigator.userAgent;return/android/i.test(b)&&(a=!0,aMat=b.toString().match(/android ([0-9]\.[0-9])/i),aMat&&aMat[1]&&(a=parseFloat(aMat[1]))),a}function r(a,b){for(var c=1,e=s(a),f=0,g=l.length;g>=f;f++){var h=0;switch(b){case d.L:h=l[f][0];break;case d.M:h=l[f][1];break;case d.Q:h=l[f][2];break;case d.H:h=l[f][3]}if(h>=e)break;c++}if(c>l.length)throw new Error("Too long data");return c}function s(a){var b=encodeURI(a).toString().replace(/\%[0-9a-fA-F]{2}/g,"a");return b.length+(b.length!=a?3:0)}a.prototype={getLength:function(){return this.parsedData.length},write:function(a){for(var b=0,c=this.parsedData.length;c>b;b++)a.put(this.parsedData[b],8)}},b.prototype={addData:function(b){var c=new a(b);this.dataList.push(c),this.dataCache=null},isDark:function(a,b){if(0>a||this.moduleCount<=a||0>b||this.moduleCount<=b)throw new Error(a+","+b);return this.modules[a][b]},getModuleCount:function(){return this.moduleCount},make:function(){this.makeImpl(!1,this.getBestMaskPattern())},makeImpl:function(a,c){this.moduleCount=4*this.typeNumber+17,this.modules=new Array(this.moduleCount);for(var d=0;d<this.moduleCount;d++){this.modules[d]=new Array(this.moduleCount);for(var e=0;e<this.moduleCount;e++)this.modules[d][e]=null}this.setupPositionProbePattern(0,0),this.setupPositionProbePattern(this.moduleCount-7,0),this.setupPositionProbePattern(0,this.moduleCount-7),this.setupPositionAdjustPattern(),this.setupTimingPattern(),this.setupTypeInfo(a,c),this.typeNumber>=7&&this.setupTypeNumber(a),null==this.dataCache&&(this.dataCache=b.createData(this.typeNumber,this.errorCorrectLevel,this.dataList)),this.mapData(this.dataCache,c)},setupPositionProbePattern:function(a,b){for(var c=-1;7>=c;c++)if(!(-1>=a+c||this.moduleCount<=a+c))for(var d=-1;7>=d;d++)-1>=b+d||this.moduleCount<=b+d||(this.modules[a+c][b+d]=c>=0&&6>=c&&(0==d||6==d)||d>=0&&6>=d&&(0==c||6==c)||c>=2&&4>=c&&d>=2&&4>=d?!0:!1)},getBestMaskPattern:function(){for(var a=0,b=0,c=0;8>c;c++){this.makeImpl(!0,c);var d=f.getLostPoint(this);(0==c||a>d)&&(a=d,b=c)}return b},createMovieClip:function(a,b,c){var d=a.createEmptyMovieClip(b,c),e=1;this.make();for(var f=0;f<this.modules.length;f++)for(var g=f*e,h=0;h<this.modules[f].length;h++){var i=h*e,j=this.modules[f][h];j&&(d.beginFill(0,100),d.moveTo(i,g),d.lineTo(i+e,g),d.lineTo(i+e,g+e),d.lineTo(i,g+e),d.endFill())}return d},setupTimingPattern:function(){for(var a=8;a<this.moduleCount-8;a++)null==this.modules[a][6]&&(this.modules[a][6]=0==a%2);for(var b=8;b<this.moduleCount-8;b++)null==this.modules[6][b]&&(this.modules[6][b]=0==b%2)},setupPositionAdjustPattern:function(){for(var a=f.getPatternPosition(this.typeNumber),b=0;b<a.length;b++)for(var c=0;c<a.length;c++){var d=a[b],e=a[c];if(null==this.modules[d][e])for(var g=-2;2>=g;g++)for(var h=-2;2>=h;h++)this.modules[d+g][e+h]=-2==g||2==g||-2==h||2==h||0==g&&0==h?!0:!1}},setupTypeNumber:function(a){for(var b=f.getBCHTypeNumber(this.typeNumber),c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[Math.floor(c/3)][c%3+this.moduleCount-8-3]=d}for(var c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[c%3+this.moduleCount-8-3][Math.floor(c/3)]=d}},setupTypeInfo:function(a,b){for(var c=this.errorCorrectLevel<<3|b,d=f.getBCHTypeInfo(c),e=0;15>e;e++){var g=!a&&1==(1&d>>e);6>e?this.modules[e][8]=g:8>e?this.modules[e+1][8]=g:this.modules[this.moduleCount-15+e][8]=g}for(var e=0;15>e;e++){var g=!a&&1==(1&d>>e);8>e?this.modules[8][this.moduleCount-e-1]=g:9>e?this.modules[8][15-e-1+1]=g:this.modules[8][15-e-1]=g}this.modules[this.moduleCount-8][8]=!a},mapData:function(a,b){for(var c=-1,d=this.moduleCount-1,e=7,g=0,h=this.moduleCount-1;h>0;h-=2)for(6==h&&h--;;){for(var i=0;2>i;i++)if(null==this.modules[d][h-i]){var j=!1;g<a.length&&(j=1==(1&a[g]>>>e));var k=f.getMask(b,d,h-i);k&&(j=!j),this.modules[d][h-i]=j,e--,-1==e&&(g++,e=7)}if(d+=c,0>d||this.moduleCount<=d){d-=c,c=-c;break}}}},b.PAD0=236,b.PAD1=17,b.createData=function(a,c,d){for(var e=j.getRSBlocks(a,c),g=new k,h=0;h<d.length;h++){var i=d[h];g.put(i.mode,4),g.put(i.getLength(),f.getLengthInBits(i.mode,a)),i.write(g)}for(var l=0,h=0;h<e.length;h++)l+=e[h].dataCount;if(g.getLengthInBits()>8*l)throw new Error("code length overflow. ("+g.getLengthInBits()+">"+8*l+")");for(g.getLengthInBits()+4<=8*l&&g.put(0,4);0!=g.getLengthInBits()%8;)g.putBit(!1);for(;;){if(g.getLengthInBits()>=8*l)break;if(g.put(b.PAD0,8),g.getLengthInBits()>=8*l)break;g.put(b.PAD1,8)}return b.createBytes(g,e)},b.createBytes=function(a,b){for(var c=0,d=0,e=0,g=new Array(b.length),h=new Array(b.length),j=0;j<b.length;j++){var k=b[j].dataCount,l=b[j].totalCount-k;d=Math.max(d,k),e=Math.max(e,l),g[j]=new Array(k);for(var m=0;m<g[j].length;m++)g[j][m]=255&a.buffer[m+c];c+=k;var n=f.getErrorCorrectPolynomial(l),o=new i(g[j],n.getLength()-1),p=o.mod(n);h[j]=new Array(n.getLength()-1);for(var m=0;m<h[j].length;m++){var q=m+p.getLength()-h[j].length;h[j][m]=q>=0?p.get(q):0}}for(var r=0,m=0;m<b.length;m++)r+=b[m].totalCount;for(var s=new Array(r),t=0,m=0;d>m;m++)for(var j=0;j<b.length;j++)m<g[j].length&&(s[t++]=g[j][m]);for(var m=0;e>m;m++)for(var j=0;j<b.length;j++)m<h[j].length&&(s[t++]=h[j][m]);return s};for(var c={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8},d={L:1,M:0,Q:3,H:2},e={PATTERN000:0,PATTERN001:1,PATTERN010:2,PATTERN011:3,PATTERN100:4,PATTERN101:5,PATTERN110:6,PATTERN111:7},f={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(a){for(var b=a<<10;f.getBCHDigit(b)-f.getBCHDigit(f.G15)>=0;)b^=f.G15<<f.getBCHDigit(b)-f.getBCHDigit(f.G15);return(a<<10|b)^f.G15_MASK},getBCHTypeNumber:function(a){for(var b=a<<12;f.getBCHDigit(b)-f.getBCHDigit(f.G18)>=0;)b^=f.G18<<f.getBCHDigit(b)-f.getBCHDigit(f.G18);return a<<12|b},getBCHDigit:function(a){for(var b=0;0!=a;)b++,a>>>=1;return b},getPatternPosition:function(a){return f.PATTERN_POSITION_TABLE[a-1]},getMask:function(a,b,c){switch(a){case e.PATTERN000:return 0==(b+c)%2;case e.PATTERN001:return 0==b%2;case e.PATTERN010:return 0==c%3;case e.PATTERN011:return 0==(b+c)%3;case e.PATTERN100:return 0==(Math.floor(b/2)+Math.floor(c/3))%2;case e.PATTERN101:return 0==b*c%2+b*c%3;case e.PATTERN110:return 0==(b*c%2+b*c%3)%2;case e.PATTERN111:return 0==(b*c%3+(b+c)%2)%2;default:throw new Error("bad maskPattern:"+a)}},getErrorCorrectPolynomial:function(a){for(var b=new i([1],0),c=0;a>c;c++)b=b.multiply(new i([1,g.gexp(c)],0));return b},getLengthInBits:function(a,b){if(b>=1&&10>b)switch(a){case c.MODE_NUMBER:return 10;case c.MODE_ALPHA_NUM:return 9;case c.MODE_8BIT_BYTE:return 8;case c.MODE_KANJI:return 8;default:throw new Error("mode:"+a)}else if(27>b)switch(a){case c.MODE_NUMBER:return 12;case c.MODE_ALPHA_NUM:return 11;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 10;default:throw new Error("mode:"+a)}else{if(!(41>b))throw new Error("type:"+b);switch(a){case c.MODE_NUMBER:return 14;case c.MODE_ALPHA_NUM:return 13;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 12;default:throw new Error("mode:"+a)}}},getLostPoint:function(a){for(var b=a.getModuleCount(),c=0,d=0;b>d;d++)for(var e=0;b>e;e++){for(var f=0,g=a.isDark(d,e),h=-1;1>=h;h++)if(!(0>d+h||d+h>=b))for(var i=-1;1>=i;i++)0>e+i||e+i>=b||(0!=h||0!=i)&&g==a.isDark(d+h,e+i)&&f++;f>5&&(c+=3+f-5)}for(var d=0;b-1>d;d++)for(var e=0;b-1>e;e++){var j=0;a.isDark(d,e)&&j++,a.isDark(d+1,e)&&j++,a.isDark(d,e+1)&&j++,a.isDark(d+1,e+1)&&j++,(0==j||4==j)&&(c+=3)}for(var d=0;b>d;d++)for(var e=0;b-6>e;e++)a.isDark(d,e)&&!a.isDark(d,e+1)&&a.isDark(d,e+2)&&a.isDark(d,e+3)&&a.isDark(d,e+4)&&!a.isDark(d,e+5)&&a.isDark(d,e+6)&&(c+=40);for(var e=0;b>e;e++)for(var d=0;b-6>d;d++)a.isDark(d,e)&&!a.isDark(d+1,e)&&a.isDark(d+2,e)&&a.isDark(d+3,e)&&a.isDark(d+4,e)&&!a.isDark(d+5,e)&&a.isDark(d+6,e)&&(c+=40);for(var k=0,e=0;b>e;e++)for(var d=0;b>d;d++)a.isDark(d,e)&&k++;var l=Math.abs(100*k/b/b-50)/5;return c+=10*l}},g={glog:function(a){if(1>a)throw new Error("glog("+a+")");return g.LOG_TABLE[a]},gexp:function(a){for(;0>a;)a+=255;for(;a>=256;)a-=255;return g.EXP_TABLE[a]},EXP_TABLE:new Array(256),LOG_TABLE:new Array(256)},h=0;8>h;h++)g.EXP_TABLE[h]=1<<h;for(var h=8;256>h;h++)g.EXP_TABLE[h]=g.EXP_TABLE[h-4]^g.EXP_TABLE[h-5]^g.EXP_TABLE[h-6]^g.EXP_TABLE[h-8];for(var h=0;255>h;h++)g.LOG_TABLE[g.EXP_TABLE[h]]=h;i.prototype={get:function(a){return this.num[a]},getLength:function(){return this.num.length},multiply:function(a){for(var b=new Array(this.getLength()+a.getLength()-1),c=0;c<this.getLength();c++)for(var d=0;d<a.getLength();d++)b[c+d]^=g.gexp(g.glog(this.get(c))+g.glog(a.get(d)));return new i(b,0)},mod:function(a){if(this.getLength()-a.getLength()<0)return this;for(var b=g.glog(this.get(0))-g.glog(a.get(0)),c=new Array(this.getLength()),d=0;d<this.getLength();d++)c[d]=this.get(d);for(var d=0;d<a.getLength();d++)c[d]^=g.gexp(g.glog(a.get(d))+b);return new i(c,0).mod(a)}},j.RS_BLOCK_TABLE=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],j.getRSBlocks=function(a,b){var c=j.getRsBlockTable(a,b);if(void 0==c)throw new Error("bad rs block @ typeNumber:"+a+"/errorCorrectLevel:"+b);for(var d=c.length/3,e=[],f=0;d>f;f++)for(var g=c[3*f+0],h=c[3*f+1],i=c[3*f+2],k=0;g>k;k++)e.push(new j(h,i));return e},j.getRsBlockTable=function(a,b){switch(b){case d.L:return j.RS_BLOCK_TABLE[4*(a-1)+0];case d.M:return j.RS_BLOCK_TABLE[4*(a-1)+1];case d.Q:return j.RS_BLOCK_TABLE[4*(a-1)+2];case d.H:return j.RS_BLOCK_TABLE[4*(a-1)+3];default:return void 0}},k.prototype={get:function(a){var b=Math.floor(a/8);return 1==(1&this.buffer[b]>>>7-a%8)},put:function(a,b){for(var c=0;b>c;c++)this.putBit(1==(1&a>>>b-c-1))},getLengthInBits:function(){return this.length},putBit:function(a){var b=Math.floor(this.length/8);this.buffer.length<=b&&this.buffer.push(0),a&&(this.buffer[b]|=128>>>this.length%8),this.length++}};var l=[[17,14,11,7],[32,26,20,14],[53,42,32,24],[78,62,46,34],[106,84,60,44],[134,106,74,58],[154,122,86,64],[192,152,108,84],[230,180,130,98],[271,213,151,119],[321,251,177,137],[367,287,203,155],[425,331,241,177],[458,362,258,194],[520,412,292,220],[586,450,322,250],[644,504,364,280],[718,560,394,310],[792,624,442,338],[858,666,482,382],[929,711,509,403],[1003,779,565,439],[1091,857,611,461],[1171,911,661,511],[1273,997,715,535],[1367,1059,751,593],[1465,1125,805,625],[1528,1190,868,658],[1628,1264,908,698],[1732,1370,982,742],[1840,1452,1030,790],[1952,1538,1112,842],[2068,1628,1168,898],[2188,1722,1228,958],[2303,1809,1283,983],[2431,1911,1351,1051],[2563,1989,1423,1093],[2699,2099,1499,1139],[2809,2213,1579,1219],[2953,2331,1663,1273]],o=function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){function g(a,b){var c=document.createElementNS("http://www.w3.org/2000/svg",a);for(var d in b)b.hasOwnProperty(d)&&c.setAttribute(d,b[d]);return c}var b=this._htOption,c=this._el,d=a.getModuleCount();Math.floor(b.width/d),Math.floor(b.height/d),this.clear();var h=g("svg",{viewBox:"0 0 "+String(d)+" "+String(d),width:"100%",height:"100%",fill:b.colorLight});h.setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xlink","http://www.w3.org/1999/xlink"),c.appendChild(h),h.appendChild(g("rect",{fill:b.colorDark,width:"1",height:"1",id:"template"}));for(var i=0;d>i;i++)for(var j=0;d>j;j++)if(a.isDark(i,j)){var k=g("use",{x:String(i),y:String(j)});k.setAttributeNS("http://www.w3.org/1999/xlink","href","#template"),h.appendChild(k)}},a.prototype.clear=function(){for(;this._el.hasChildNodes();)this._el.removeChild(this._el.lastChild)},a}(),p="svg"===document.documentElement.tagName.toLowerCase(),q=p?o:m()?function(){function a(){this._elImage.src=this._elCanvas.toDataURL("image/png"),this._elImage.style.display="block",this._elCanvas.style.display="none"}function d(a,b){var c=this;if(c._fFail=b,c._fSuccess=a,null===c._bSupportDataURI){var d=document.createElement("img"),e=function(){c._bSupportDataURI=!1,c._fFail&&_fFail.call(c)},f=function(){c._bSupportDataURI=!0,c._fSuccess&&c._fSuccess.call(c)};return d.onabort=e,d.onerror=e,d.onload=f,d.src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",void 0}c._bSupportDataURI===!0&&c._fSuccess?c._fSuccess.call(c):c._bSupportDataURI===!1&&c._fFail&&c._fFail.call(c)}if(this._android&&this._android<=2.1){var b=1/window.devicePixelRatio,c=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(a,d,e,f,g,h,i,j){if("nodeName"in a&&/img/i.test(a.nodeName))for(var l=arguments.length-1;l>=1;l--)arguments[l]=arguments[l]*b;else"undefined"==typeof j&&(arguments[1]*=b,arguments[2]*=b,arguments[3]*=b,arguments[4]*=b);c.apply(this,arguments)}}var e=function(a,b){this._bIsPainted=!1,this._android=n(),this._htOption=b,this._elCanvas=document.createElement("canvas"),this._elCanvas.width=b.width,this._elCanvas.height=b.height,a.appendChild(this._elCanvas),this._el=a,this._oContext=this._elCanvas.getContext("2d"),this._bIsPainted=!1,this._elImage=document.createElement("img"),this._elImage.style.display="none",this._el.appendChild(this._elImage),this._bSupportDataURI=null};return e.prototype.draw=function(a){var b=this._elImage,c=this._oContext,d=this._htOption,e=a.getModuleCount(),f=d.width/e,g=d.height/e,h=Math.round(f),i=Math.round(g);b.style.display="none",this.clear();for(var j=0;e>j;j++)for(var k=0;e>k;k++){var l=a.isDark(j,k),m=k*f,n=j*g;c.strokeStyle=l?d.colorDark:d.colorLight,c.lineWidth=1,c.fillStyle=l?d.colorDark:d.colorLight,c.fillRect(m,n,f,g),c.strokeRect(Math.floor(m)+.5,Math.floor(n)+.5,h,i),c.strokeRect(Math.ceil(m)-.5,Math.ceil(n)-.5,h,i)}this._bIsPainted=!0},e.prototype.makeImage=function(){this._bIsPainted&&d.call(this,a)},e.prototype.isPainted=function(){return this._bIsPainted},e.prototype.clear=function(){this._oContext.clearRect(0,0,this._elCanvas.width,this._elCanvas.height),this._bIsPainted=!1},e.prototype.round=function(a){return a?Math.floor(1e3*a)/1e3:a},e}():function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){for(var b=this._htOption,c=this._el,d=a.getModuleCount(),e=Math.floor(b.width/d),f=Math.floor(b.height/d),g=['<table style="border:0;border-collapse:collapse;">'],h=0;d>h;h++){g.push("<tr>");for(var i=0;d>i;i++)g.push('<td style="border:0;border-collapse:collapse;padding:0;margin:0;width:'+e+"px;height:"+f+"px;background-color:"+(a.isDark(h,i)?b.colorDark:b.colorLight)+';"></td>');g.push("</tr>")}g.push("</table>"),c.innerHTML=g.join("");var j=c.childNodes[0],k=(b.width-j.offsetWidth)/2,l=(b.height-j.offsetHeight)/2;k>0&&l>0&&(j.style.margin=l+"px "+k+"px")},a.prototype.clear=function(){this._el.innerHTML=""},a}();QRCode=function(a,b){if(this._htOption={width:256,height:256,typeNumber:4,colorDark:"#000000",colorLight:"#ffffff",correctLevel:d.H},"string"==typeof b&&(b={text:b}),b)for(var c in b)this._htOption[c]=b[c];"string"==typeof a&&(a=document.getElementById(a)),this._android=n(),this._el=a,this._oQRCode=null,this._oDrawing=new q(this._el,this._htOption),this._htOption.text&&this.makeCode(this._htOption.text)},QRCode.prototype.makeCode=function(a){this._oQRCode=new b(r(a,this._htOption.correctLevel),this._htOption.correctLevel),this._oQRCode.addData(a),this._oQRCode.make(),this._el.title=a,this._oDrawing.draw(this._oQRCode),this.makeImage()},QRCode.prototype.makeImage=function(){"function"==typeof this._oDrawing.makeImage&&(!this._android||this._android>=3)&&this._oDrawing.makeImage()},QRCode.prototype.clear=function(){this._oDrawing.clear()},QRCode.CorrectLevel=d}();
+</script>
+<script>
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const KEY="tdc-plan-d-v1";
+
+/* ── 工具 ───────────────────────────── */
+const pad=n=>String(n).padStart(2,"0");
+const hhmm=m=>pad(Math.floor(m/60)%24)+":"+pad(m%60);
+const toMin=s=>{const[a,b]=s.split(":").map(Number);return a*60+b};
+const WD=["日","一","二","三","四","五","六"];
+const dstr=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const dshow=s=>{const d=new Date(s+"T00:00:00");return s.replace(/-/g,"/")+" ("+WD[d.getDay()]+")"};
+const addDays=(s,n)=>{const d=new Date(s+"T00:00:00");d.setDate(d.getDate()+n);return dstr(d)};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ── 主檔 ───────────────────────────── */
+/* 車型只分兩類：非鷗翼靠碼頭、鷗翼在廣場。兩池名額各自獨立，不互相挪用。 */
+const GROUPS=[
+  {id:"dock",name:"非鷗翼車",stand:"碼頭",hint:"靠碼頭下貨"},
+  {id:"wing",name:"鷗翼車",  stand:"廣場",hint:"廣場下貨"}
+];
+const grp=id=>GROUPS.find(g=>g.id===id)||GROUPS[0];
+
+const CARRIERS=[
+  {code:"T01",name:"大順通運"},{code:"T02",name:"宏昌貨運"},{code:"T03",name:"立通物流"},
+  {code:"T04",name:"永泰運輸"},{code:"T05",name:"昇富貨運"}
+];
+const carrierOf=c=>CARRIERS.find(x=>x.code===String(c||"").toUpperCase());
+
+const SUPPLIERS=[
+  {code:"V231",name:"甲上食品"},{code:"V518",name:"乙誠食品"},{code:"V742",name:"丙原冷凍"},
+  {code:"V863",name:"丁豐農產"},{code:"V102",name:"戊記飲料"}
+];
+const supplierOf=c=>SUPPLIERS.find(x=>x.code===c);
+
+function defaultConfig(){
+  return{
+    graceMin:10,          // 報到晚於預約時段起始這麼多分鐘內，仍算準點
+    noShowAfterMin:30,    // 時段結束再過這麼久仍未報到，判定未到
+    dcs:[
+      {code:"N",name:"北區物流中心",warehouses:[
+        {id:"N1",name:"常溫倉",temp:"常溫",pools:{
+          dock:{open:"08:00",close:"15:00",split:3,capacity:3},
+          wing:{open:"08:00",close:"15:00",split:2,capacity:1}}},
+        {id:"C1",name:"低溫倉",temp:"低溫",pools:{
+          dock:{open:"06:00",close:"12:00",split:4,capacity:2},
+          wing:{open:"06:00",close:"12:00",split:1,capacity:1}}}
+      ]},
+      {code:"M",name:"中區物流中心",warehouses:[
+        {id:"N1",name:"常溫倉",temp:"常溫",pools:{
+          dock:{open:"07:00",close:"14:00",split:2,capacity:2},
+          wing:{open:"07:00",close:"14:00",split:1,capacity:1}}}
+      ]}
+    ]
+  };
+}
+const dcOf=code=>S.cfg.dcs.find(d=>d.code===code);
+const whOf=(dc,id)=>dcOf(dc)?.warehouses.find(w=>w.id===id);
+const poolOf=(dc,wh,g)=>whOf(dc,wh)?.pools[g];
+
+/* ── 時段 ───────────────────────────── */
+function slotsOf(dc,wh,g){
+  const p=poolOf(dc,wh,g); if(!p)return [];
+  const st=toMin(p.open),en=toMin(p.close),step=60/p.split,out=[];
+  for(let t=st;t+step<=en;t+=step)out.push({start:t,end:t+step});
+  return out;
+}
+/* 名額：同 DC＋同倉＋同池＋同日＋同時段的有效預約數 */
+function usedAt(dc,wh,g,date,start,excludeId){
+  return S.bookings.filter(b=>b.dc===dc&&b.wh===wh&&b.group===g&&b.date===date
+    &&b.slot===start&&b.status!=="cancelled"&&b.id!==excludeId).length;
+}
+function remainAt(dc,wh,g,date,start,excludeId){
+  return (poolOf(dc,wh,g)?.capacity||0)-usedAt(dc,wh,g,date,start,excludeId);
+}
+const isFuture=(date,start)=>date>S.simDate||(date===S.simDate&&start>S.simMin);
+
+/* ── 種子資料 ───────────────────────────── */
+const TODAY="2026-09-08";
+function seed(){
+  const orders=[],bookings=[];
+  let pn=0;
+  const mkPO=(sup,dc,wh,date,pallets,valid=true)=>{
+    const po="PO-"+date.slice(2).replace(/-/g,"")+"-"+String(++pn).padStart(3,"0");
+    orders.push({po,supplier:sup,dc,wh,date,pallets,valid});
+    return po;
+  };
+  const seq={};
+  const mk=(carrier,dc,wh,g,date,slot,plate,pos,ev)=>{
+    const k=dc+"|"+date; seq[k]=(seq[k]||0)+1;
+    const p=poolOf(dc,wh,g),step=60/p.split;
+    bookings.push({
+      id:dc+"-"+date.slice(5).replace("-","")+"-"+pad(seq[k]),
+      carrier,dc,wh,group:g,date,slot,end:slot+step,plate,poRefs:pos,
+      status:ev.st||"booked",checkinAt:ev.ci??null,pager:ev.pg||null,
+      createdAt:Date.now()-Math.random()*1e7
+    });
+  };
+
+  /* 今日：北區低溫（06:00 起，每 15 分）、北區常溫（08:00 起，每 20 分）、中區常溫（07:00 起，每 30 分） */
+  const A=mkPO("V742","N","C1",TODAY,9), B=mkPO("V102","N","C1",TODAY,6),
+        C=mkPO("V863","N","C1",TODAY,12), D=mkPO("V742","N","C1",TODAY,7);
+  mk("T01","N","C1","dock",TODAY,toMin("06:30"),"KBC-7712",[A],{st:"arrived",ci:toMin("06:28"),pg:"P-01"});
+  mk("T03","N","C1","dock",TODAY,toMin("07:00"),"RDA-2081",[B],{st:"arrived",ci:toMin("07:04"),pg:"P-02"});
+  mk("T02","N","C1","dock",TODAY,toMin("07:15"),"HAA-6305",[C],{st:"arrived",ci:toMin("07:33"),pg:"P-03"});
+  mk("T02","N","C1","dock",TODAY,toMin("06:00"),"MJC-7788",[D],{});   // 早已逾時未報到
+
+  const E=mkPO("V231","N","N1",TODAY,8), F=mkPO("V231","N","N1",TODAY,5),
+        G=mkPO("V518","N","N1",TODAY,11),H=mkPO("V863","N","N1",TODAY,4),
+        I=mkPO("V102","N","N1",TODAY,9);
+  mk("T01","N","N1","dock",TODAY,toMin("08:00"),"ABC-1234",[E],{});
+  mk("T03","N","N1","dock",TODAY,toMin("08:20"),"TPL-9042",[F,G,H],{});  // 一車三單
+  mk("T05","N","N1","wing",TODAY,toMin("08:00"),"WNG-7788",[I],{});
+
+  const J=mkPO("V518","M","N1",TODAY,7), K=mkPO("V102","M","N1",TODAY,10);
+  mk("T04","M","N1","dock",TODAY,toMin("07:00"),"DYA-4408",[J],{st:"arrived",ci:toMin("06:55"),pg:"P-01"});
+  mk("T02","M","N1","dock",TODAY,toMin("07:30"),"LNW-4417",[K],{});   // 已過準點時限、尚未判未到
+
+  /* 未預約的採購單，供演練新增 */
+  [["V231","N","N1",6],["V518","N","N1",13],["V742","N","C1",8],["V863","M","N1",5],["V102","M","N1",9]]
+    .forEach(([s,dc,wh,p])=>mkPO(s,dc,wh,TODAY,p));
+  [1,2].forEach(off=>{
+    const d=addDays(TODAY,off);
+    [["V231","N","N1",7],["V518","N","N1",12],["V742","N","C1",6],["V863","N","C1",10],
+     ["V102","M","N1",8],["V231","M","N1",5]].forEach(([s,dc,wh,p])=>mkPO(s,dc,wh,d,p));
+  });
+  mkPO("V231","N","N1",TODAY,4,false);   // 已作廢採購單
+
+  /* 歷史：兩個月的到場紀錄，供準點報表。用固定配額而非亂數，讓每次重設看到的數字一致。
+     宏昌貨運（T02）刻意設為明顯偏低，正是報表要抓出來的對象。 */
+  const HIST={
+    "2026-07":{T01:{n:13,late:1,noshow:0},T02:{n:15,late:5,noshow:2},T03:{n:11,late:1,noshow:1},
+               T04:{n:9, late:1,noshow:0},T05:{n:12,late:2,noshow:1}},
+    "2026-08":{T01:{n:14,late:1,noshow:1},T02:{n:16,late:6,noshow:3},T03:{n:12,late:2,noshow:0},
+               T04:{n:10,late:0,noshow:1},T05:{n:13,late:3,noshow:1}}
+  };
+  const FLEET={T01:["KBC-7712","DYA-4408","PLM-3021"],T02:["HAA-6305","MJC-7788","LNW-4417"],
+               T03:["RDA-2081","TPL-9042","QSE-6614"],T04:["GTR-1102","BQD-3391","VHN-8250"],
+               T05:["WNG-7788","SDG-6603","FKR-9174"]};
+  Object.entries(HIST).forEach(([month,byCarrier])=>{
+    CARRIERS.forEach((c,ci)=>{
+      const q=byCarrier[c.code];
+      const outs=[];
+      for(let k=0;k<q.late;k++)outs.push("late");
+      for(let k=0;k<q.noshow;k++)outs.push("noshow");
+      while(outs.length<q.n)outs.push("ontime");
+      // 確定性打散，避免延遲全擠在月初
+      const spread=outs.map((o,k)=>[o,(k*7)%outs.length]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+      spread.forEach((kind,i)=>{
+        const date=month+"-"+pad(2+((i*2+ci*3)%26));
+        const dc=(i%3===0)?"M":"N", wh=(dc==="M")?"N1":(i%2?"N1":"C1"), g=(i%7===0)?"wing":"dock";
+        const sl=slotsOf(dc,wh,g); if(!sl.length)return;
+        const s=sl[(i*3+ci)%sl.length].start;
+        const po=mkPO(SUPPLIERS[(i+ci)%5].code,dc,wh,date,5+(i%10));
+        const ev=kind==="noshow"?{st:"noshow"}
+          :kind==="late"?{st:"arrived",ci:s+13+(i%22)}      // 超過 10 分寬限
+          :{st:"arrived",ci:s-5+(i%14)};                    // 早到或晚 10 分內
+        mk(c.code,dc,wh,g,date,s,FLEET[c.code][i%3],[po],ev);
+      });
+    });
+  });
+  return{orders,bookings};
+}
+
+/* ── 狀態 ───────────────────────────── */
+let S=null;
+function fresh(){
+  // 先建立設定，seed() 產生種子時要靠 S.cfg 推算時段與名額
+  S={cfg:defaultConfig(),orders:[],bookings:[],
+     simDate:TODAY,simMin:toMin("07:50"),view:"book",ui:{}};
+  const s=seed();
+  S.orders=s.orders;S.bookings=s.bookings;
+  save();
+}
+function load(){
+  try{const raw=localStorage.getItem(KEY);if(raw){const x=JSON.parse(raw);if(x&&Array.isArray(x.bookings)){S=x;return}}}catch(e){}
+  fresh();
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+const orderOf=po=>S.orders.find(o=>o.po.toUpperCase()===String(po||"").trim().toUpperCase());
+/* 預約主鍵：車牌＋進貨日＋DC。採購單號只是資格憑證，不是鎖。 */
+const bookingOfTruck=(plate,date,dc)=>S.bookings.find(b=>
+  b.plate===plate&&b.date===date&&b.dc===dc&&b.status!=="cancelled");
+const bookingById=id=>S.bookings.find(b=>b.id===String(id||"").trim().toUpperCase());
+
+/* ── 準點判定 ───────────────────────────── */
+function punctuality(b){
+  if(b.status==="noshow")return"noshow";
+  if(b.status!=="arrived"||b.checkinAt==null)return null;
+  return b.checkinAt<=b.slot+S.cfg.graceMin?"ontime":"late";
+}
+const PLABEL={ontime:"準點",late:"延遲",noshow:"未到"};
+const lateBy=b=>Math.max(0,(b.checkinAt??0)-b.slot);
+
+function autoNoShow(){
+  let ch=false;
+  S.bookings.forEach(b=>{
+    if(b.status!=="booked")return;
+    if(b.date<S.simDate||(b.date===S.simDate&&S.simMin>b.end+S.cfg.noShowAfterMin)){b.status="noshow";ch=true}
+  });
+  if(ch)save();
+}
+
+/* ── 畫面 ───────────────────────────── */
+const V={};
+function render(){
+  autoNoShow();
+  $("#simTime").textContent=hhmm(S.simMin);
+  $("#simDate").textContent=dshow(S.simDate);
+  $$(".navbtn").forEach(b=>b.setAttribute("aria-current",String(b.dataset.view===S.view)));
+  $("#view").innerHTML=V[S.view]();
+  bind();
+}
+function toast(msg){
+  $$(".toast").forEach(x=>x.remove());
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2400);
+}
+function go(v){S.view=v;save();render();window.scrollTo(0,0)}
+function head(t,d){return `<div class="page-head"><div class="eyebrow">貨運業者進貨預約</div><h2>${t}</h2><p>${d}</p></div>`}
+const tempTag=w=>`<span class="temp"><i class="t-${w.temp}"></i>${w.temp}・${esc(w.name)}</span>`;
+
+/* ---- 1. 預約申請 ---- */
+V.book=()=>{
+  const u=S.ui, o=u.order;
+  const H=head("預約申請","貨運業者收到供應商轉來的採購單號後，用其中<b>任何一張</b>單號即可預約。一台車只需要一個時段，不必每張單都預約。");
+  if(!o){
+    const free=S.orders.filter(x=>x.valid&&x.date>=S.simDate).slice(0,6);
+    return H+`<div class="card card-pad grid" style="max-width:660px">
+      <div><div class="eyebrow">Step 1</div><h3 style="font-size:16px;margin-top:4px">採購單號、貨運業者與車牌</h3>
+        <p style="color:var(--ink-2);margin:4px 0 0">進貨日與收貨物流中心由採購單決定。貨運業者代號用來累計到場準點紀錄，車牌是這次預約的識別。</p></div>
+      <div class="row">
+        <label class="fld" style="flex:2;min-width:190px">採購單號
+          <input class="mono" id="poIn" placeholder="PO-260908-006" value="${esc(u.po||"")}"></label>
+        <label class="fld" style="flex:1;min-width:120px">貨運業者代號
+          <input class="mono" id="carIn" placeholder="T01" value="${esc(u.carrier||"")}" style="text-transform:uppercase"></label>
+        <label class="fld" style="flex:1;min-width:130px">車牌號碼
+          <input class="mono" id="plateIn" placeholder="ABC-1234" value="${esc(u.plate||"")}" style="text-transform:uppercase"></label>
+      </div>
+      <div><button class="btn pri" id="lookup">查詢可預約時段</button></div>
+      ${u.err?`<div class="note ${u.errKind||"warn"}">${u.err}</div>`:""}
+      <div><div class="eyebrow" style="margin-bottom:6px">Demo 可用資料</div>
+        <div class="row" style="gap:6px">${free.map(x=>`<button class="btn sm mono" data-fill="${x.po}">${x.po}</button>`).join("")}</div>
+        <div class="note" style="margin-top:8px">貨運業者代號：${CARRIERS.map(c=>`<b class="mono">${c.code}</b> ${c.name}`).join("　")}</div>
+      </div>
+    </div>`;
+  }
+
+  const w=whOf(o.dc,o.wh), dc=dcOf(o.dc), g=grp(u.group||"dock");
+  const slots=slotsOf(o.dc,o.wh,g.id), cap=poolOf(o.dc,o.wh,g.id).capacity;
+  const p=poolOf(o.dc,o.wh,g.id);
+  const openN=slots.filter(s=>isFuture(o.date,s.start)&&remainAt(o.dc,o.wh,g.id,o.date,s.start)>0).length;
+  const rows=[];
+  for(let h=toMin(p.open);h<toMin(p.close);h+=60){
+    const inH=slots.filter(s=>s.start>=h&&s.start<h+60);
+    if(!inH.length)continue;
+    rows.push(`<div class="slotrow"><div class="hourlab">${hhmm(h)}</div>
+      <div class="slots" style="grid-template-columns:repeat(${p.split},1fr)">
+      ${inH.map(s=>{
+        const left=remainAt(o.dc,o.wh,g.id,o.date,s.start), fut=isFuture(o.date,s.start), ok=fut&&left>0;
+        return `<button class="slot" data-slot="${s.start}" ${ok?"":"disabled"} aria-pressed="${u.slot===s.start}">
+          <span class="st">${hhmm(s.start)}</span>
+          <span class="sc">${ok?"餘 "+left+" 位":(fut?"已額滿":"已過時")}</span></button>`;
+      }).join("")}</div></div>`);
+  }
+  const extras=u.extras||[];
+  return H+`<div class="grid" style="grid-template-columns:minmax(0,1fr) 320px;align-items:start">
+    <div class="grid">
+      <div class="card"><div class="card-head"><h3>採購單 ${esc(o.po)}</h3><span class="pill p">有效</span>
+        <div class="spacer"></div><button class="btn sm" id="clear">重新輸入</button></div>
+        <div class="card-pad"><dl class="kv">
+          <dt>供應商</dt><dd>${esc(supplierOf(o.supplier).name)} <span class="mono" style="color:var(--ink-3)">${o.supplier}</span></dd>
+          <dt>收貨</dt><dd>${esc(dc.name)}　${tempTag(w)}</dd>
+          <dt>指定進貨日</dt><dd class="mono">${dshow(o.date)}</dd>
+          <dt>參考板數</dt><dd class="mono">約 ${o.pallets} 板</dd>
+          <dt>貨運業者</dt><dd>${esc(carrierOf(u.carrier).name)} <span class="mono" style="color:var(--ink-3)">${u.carrier}</span></dd>
+          <dt>車牌</dt><dd class="mono">${esc(u.plate)}</dd>
+        </dl></div></div>
+
+      <div class="card"><div class="card-head stepsec"><b>2</b><h3>同車其他採購單</h3>
+        <div class="spacer"></div><span class="pill n">選填</span></div>
+        <div class="card-pad grid" style="gap:11px">
+          <div class="note">一台車常常帶多張採購單。這裡加入的單號只是<b>讓警衛核對時知道車上還有哪些貨</b>，不會多佔一個時段，也不影響名額。沒加入的採購單不會被視為未到。</div>
+          <div class="row">
+            <input class="mono" id="extraIn" placeholder="PO-260908-007" style="flex:1;min-width:180px">
+            <button class="btn" id="addExtra">加入</button>
+          </div>
+          ${u.exErr?`<div class="note warn">${u.exErr}</div>`:""}
+          ${extras.length?`<div class="polist">${extras.map(x=>`<span class="potag">${x}<button data-rmextra="${x}" title="移除">×</button></span>`).join("")}</div>`:""}
+        </div></div>
+
+      <div class="card"><div class="card-head stepsec"><b>3</b><h3>車型</h3></div>
+        <div class="card-pad">
+          <div class="vpick">${GROUPS.map(x=>`<button class="vopt" data-g="${x.id}" aria-pressed="${x.id===g.id}">
+            <b>${x.name}</b><small>${x.hint}・${dc.name}${w.name}可用 ${poolOf(o.dc,o.wh,x.id).capacity} 位</small></button>`).join("")}</div>
+          <div class="note" style="margin-top:11px">鷗翼車在廣場下貨、非鷗翼車靠碼頭，<b>兩邊名額各自獨立</b>，碼頭額滿不會影響廣場。</div>
+        </div></div>
+
+      <div class="card"><div class="card-head stepsec"><b>4</b><h3>可預約時段</h3><div class="spacer"></div>
+        <span class="pill ${openN?"o":"c"}">${openN?"尚有 "+openN+" 個時段":"已無可預約時段"}</span></div>
+        <div class="card-pad">
+          ${openN?`<div class="slotgrid">${rows.join("")}</div>
+          <div class="legend">
+            <span><i style="background:var(--surface)"></i>可預約</span>
+            <span><i style="background:var(--accent);border-color:var(--accent)"></i>已選擇</span>
+            <span><i style="background:var(--surface-2);border-style:dashed"></i>額滿或已過時</span>
+          </div>`:`<div class="empty">此進貨日的${g.name}時段已無空位，請改選車型或洽物流中心現場安排。</div>`}
+        </div></div>
+    </div>
+
+    <div class="card" style="position:sticky;top:78px">
+      <div class="card-head"><h3>預約確認</h3></div>
+      <div class="card-pad grid" style="gap:12px">
+        <dl class="kv">
+          <dt>物流中心</dt><dd>${esc(dc.name)}</dd>
+          <dt>車型</dt><dd>${g.name}（${g.stand}）</dd>
+          <dt>採購單</dt><dd class="mono">${1+extras.length} 張</dd>
+          <dt>時段</dt><dd class="mono" style="font-weight:600">${u.slot!=null?hhmm(u.slot)+"–"+hhmm(u.slot+60/p.split):"—"}</dd>
+        </dl>
+        <button class="btn pri" id="confirm" ${u.slot!=null?"":"disabled"}>確認預約</button>
+        <div class="note" style="font-size:11.5px">預約成立後產生預約單與 QRcode，司機到廠門口過刷即可完成報到。</div>
+      </div>
+    </div>
+  </div>`;
+};
+
+/* ---- 2. 預約查詢 ---- */
+V.query=()=>{
+  const u=S.ui, list=u.qResult;
+  const H=head("預約查詢","以車牌加進貨日查詢，或直接輸入預約單號。同一台車同一天若跑兩個物流中心，會列出兩筆。");
+  const form=`<div class="card card-pad grid" style="max-width:620px;gap:13px">
+    <div class="row">
+      <label class="fld" style="flex:1;min-width:140px">車牌號碼
+        <input class="mono" id="qPlate" placeholder="ABC-1234" value="${esc(u.qPlate||"")}" style="text-transform:uppercase"></label>
+      <label class="fld" style="flex:1;min-width:150px">進貨日
+        <input type="date" id="qDate" value="${esc(u.qDate||S.simDate)}"></label>
+    </div>
+    <div class="row"><button class="btn pri" id="qGo">查詢</button>
+      <span style="color:var(--ink-3);font-size:12.5px">或直接輸入預約單號</span>
+      <input class="mono" id="qId" placeholder="N-0908-05" value="${esc(u.qId||"")}" style="width:130px;text-transform:uppercase">
+      <button class="btn" id="qGoId">查單號</button></div>
+    ${u.qErr?`<div class="note warn">${esc(u.qErr)}</div>`:""}
+  </div>`;
+  if(!list||!list.length)return H+form;
+  return H+form+`<div class="grid" style="margin-top:16px">${list.map(b=>{
+    const dc=dcOf(b.dc), w=whOf(b.dc,b.wh), pu=punctuality(b);
+    let progress="";
+    if(b.status==="arrived"){
+      progress=`<div class="note ${pu==="ontime"?"key":"warn"}">已於 <b class="mono">${hhmm(b.checkinAt)}</b> 完成過刷報到，判定為 <b>${PLABEL[pu]}</b>${pu==="late"?`（延遲 ${lateBy(b)} 分）`:""}。${b.pager?`震動器號碼 <b class="mono">${b.pager}</b>，`:""}請依現場人員指示進場。</div>`;
+    }else if(b.status==="noshow"){
+      progress=`<div class="note bad">預約時段已過且未過刷報到，本次列為<b>未到</b>並計入貨運業者到場紀錄。</div>`;
+    }else if(b.date===S.simDate&&S.simMin>b.slot+S.cfg.graceMin){
+      progress=`<div class="note warn">已超過準點時限（${hhmm(b.slot+S.cfg.graceMin)}），現在過刷將判定為<b>延遲</b>。</div>`;
+    }else{
+      progress=`<div class="note">請於 <b class="mono">${hhmm(b.slot)}</b> 前抵達廠門口過刷。晚到 ${S.cfg.graceMin} 分鐘內仍算準點。</div>`;
+    }
+    return `<div class="card"><div class="card-head"><h3 class="mono">${b.id}</h3>${statusPill(b)}
+      <div class="spacer"></div><span class="mono" style="font-size:12px;color:var(--ink-2)">${dshow(b.date)}</span></div>
+      <div class="card-pad grid" style="grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start">
+        <div class="grid" style="gap:11px">
+          <dl class="kv">
+            <dt>貨運業者</dt><dd>${esc(carrierOf(b.carrier).name)} <span class="mono" style="color:var(--ink-3)">${b.carrier}</span></dd>
+            <dt>車牌</dt><dd class="mono" style="font-weight:600">${esc(b.plate)}</dd>
+            <dt>收貨</dt><dd>${esc(dc.name)}　${tempTag(w)}</dd>
+            <dt>車型</dt><dd>${grp(b.group).name}（${grp(b.group).stand}下貨）</dd>
+            <dt>預約時段</dt><dd class="mono" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
+            <dt>採購單</dt><dd class="mono">${b.poRefs.join("、")}</dd>
+          </dl>
+          ${progress}
+        </div>
+        <div class="row" style="flex-direction:column;align-items:stretch;gap:8px;min-width:130px">
+          <button class="btn pri" data-ticket="${b.id}">預約單 / QRcode</button>
+        </div>
+      </div></div>`;
+  }).join("")}</div>`;
+};
+function statusPill(b){
+  const pu=punctuality(b);
+  if(b.status==="arrived")return `<span class="pill ${pu==="ontime"?"o":"a"}">${PLABEL[pu]}報到</span>`;
+  if(b.status==="noshow")return `<span class="pill c">未到</span>`;
+  return `<span class="pill n">待報到</span>`;
+}
+
+/* ---- 3. 廠門口過刷 ---- */
+V.gate=()=>{
+  const dcCode=S.ui.gateDc||S.cfg.dcs[0].code;
+  const today=S.bookings.filter(b=>b.dc===dcCode&&b.date===S.simDate).sort((a,b)=>a.slot-b.slot);
+  const waiting=today.filter(b=>b.status==="booked");
+  const arrived=today.filter(b=>b.status==="arrived").sort((a,b)=>b.checkinAt-a.checkinAt);
+  const missed=today.filter(b=>b.status==="noshow");
+  const hit=S.ui.gateHit?bookingById(S.ui.gateHit):null;
+  let verdict="";
+  if(hit){
+    const pu=punctuality(hit), dc=dcOf(hit.dc), w=whOf(hit.dc,hit.wh);
+    const cls=pu==="ontime"?"ok":(pu==="late"?"late":"bad");
+    const title=pu==="ontime"?"準時抵達":(pu==="late"?"延遲抵達":"未完成報到");
+    verdict=`<div class="verdict ${cls}">
+      <div class="eyebrow">${esc(hit.id)}　${esc(hit.plate)}</div>
+      <div class="big">${title}</div>
+      <div class="sub">預約 <b class="mono">${hhmm(hit.slot)}</b>　實際過刷 <b class="mono">${hit.checkinAt!=null?hhmm(hit.checkinAt):"—"}</b>
+        ${pu==="late"?`　<b style="color:var(--accent)">延遲 ${lateBy(hit)} 分鐘</b>`:(pu==="ontime"&&hit.checkinAt>hit.slot?`　（晚 ${lateBy(hit)} 分，在 ${S.cfg.graceMin} 分寬限內）`:"")}</div>
+      ${hit.pager?`<div class="pager">請領取震動器 <b>${hit.pager}</b></div>`:""}
+      ${S.ui.gateDup?`<div class="note" style="margin-top:12px;background:var(--surface)">此單稍早已完成報到，重複過刷不會更改原判定與時間。</div>`:""}
+    </div>
+    <div class="card"><div class="card-head"><h3>核對資料</h3><div class="spacer"></div>
+      <span class="pill p">${grp(hit.group).stand}下貨</span></div>
+      <div class="card-pad"><dl class="kv">
+        <dt>貨運業者</dt><dd>${esc(carrierOf(hit.carrier).name)} <span class="mono" style="color:var(--ink-3)">${hit.carrier}</span></dd>
+        <dt>車牌</dt><dd class="mono" style="font-weight:600;font-size:16px">${esc(hit.plate)}</dd>
+        <dt>收貨</dt><dd>${esc(dc.name)}　${tempTag(w)}</dd>
+        <dt>車型</dt><dd>${grp(hit.group).name}</dd>
+        <dt>預約時段</dt><dd class="mono">${hhmm(hit.slot)}–${hhmm(hit.end)}</dd>
+        <dt>採購單</dt><dd class="mono">${hit.poRefs.join("、")}</dd>
+        <dt>供應商</dt><dd>${[...new Set(hit.poRefs.map(p=>orderOf(p)?.supplier).filter(Boolean))].map(c=>esc(supplierOf(c).name)).join("、")||"—"}</dd>
+      </dl>
+      <div class="note" style="margin-top:12px">進場順序由現場人員判斷，系統不指派碼頭。延遲者可視現場狀況延後或直接放行。</div>
+      </div></div>`;
+  }
+  return head("廠門口過刷","司機到廠門口過刷預約單，畫面立即顯示準時或延遲，並發放震動器。進場順序由現場人工控管。")+
+  `<div class="row" style="margin-bottom:16px">
+     <label class="fld">物流中心<select id="gateDc">${S.cfg.dcs.map(d=>`<option value="${d.code}" ${d.code===dcCode?"selected":""}>${d.name}</option>`).join("")}</select></label>
+   </div>
+   <div class="grid" style="grid-template-columns:minmax(0,420px) minmax(0,1fr);align-items:start">
+     <div class="grid">
+       <div class="card"><div class="card-head"><h3>過刷報到</h3></div>
+         <div class="card-pad grid" style="gap:10px">
+           <label class="fld">掃描 QRcode，或輸入預約單號 / 車牌
+             <input class="mono" id="scan" placeholder="N-0908-05" style="text-transform:uppercase;font-size:17px"></label>
+           <button class="btn pri" id="scanGo">過刷</button>
+           ${S.ui.gateMsg?`<div class="note ${S.ui.gateMsgKind||"warn"}">${S.ui.gateMsg}</div>`:""}
+         </div></div>
+       ${verdict}
+     </div>
+     <div class="grid">
+       <div class="card"><div class="card-head"><h3>今日尚未報到</h3><div class="spacer"></div><span class="pill n">${waiting.length}</span></div>
+         <div class="tbl-wrap"><table><thead><tr><th>時段</th><th>單號</th><th>貨運業者 / 車牌</th><th>倉別</th><th></th></tr></thead>
+         <tbody>${waiting.map(b=>{
+           const over=S.simMin>b.slot+S.cfg.graceMin;
+           return `<tr><td class="num" style="font-weight:600">${hhmm(b.slot)}</td>
+           <td class="num" style="font-size:12px">${b.id}</td>
+           <td>${esc(carrierOf(b.carrier).name)}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(b.plate)}</span></td>
+           <td>${tempTag(whOf(b.dc,b.wh))}</td>
+           <td>${over?`<span class="pill a">已逾準點</span>`:""}</td></tr>`}).join("")
+           ||`<tr><td colspan="5" class="empty">今日預約皆已報到。</td></tr>`}</tbody></table></div></div>
+       <div class="card"><div class="card-head"><h3>今日已報到</h3><div class="spacer"></div>
+         <span class="pill o">${arrived.filter(b=>punctuality(b)==="ontime").length} 準點</span>
+         <span class="pill a">${arrived.filter(b=>punctuality(b)==="late").length} 延遲</span>
+         ${missed.length?`<span class="pill c">${missed.length} 未到</span>`:""}</div>
+         <div class="tbl-wrap"><table><thead><tr><th>過刷</th><th>單號</th><th>貨運業者 / 車牌</th><th>預約</th><th>判定</th><th>震動器</th></tr></thead>
+         <tbody>${arrived.map(b=>{const pu=punctuality(b);return `<tr>
+           <td class="num" style="font-weight:600">${hhmm(b.checkinAt)}</td>
+           <td class="num" style="font-size:12px">${b.id}</td>
+           <td>${esc(carrierOf(b.carrier).name)}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(b.plate)}</span></td>
+           <td class="num">${hhmm(b.slot)}</td>
+           <td><span class="pill ${pu==="ontime"?"o":"a"}">${PLABEL[pu]}</span>${pu==="late"?` <span class="num" style="font-size:12px;color:var(--accent)">+${lateBy(b)}分</span>`:""}</td>
+           <td class="num">${b.pager||"—"}</td></tr>`}).join("")
+           ||`<tr><td colspan="6" class="empty">尚無報到紀錄。</td></tr>`}</tbody></table></div></div>
+     </div>
+   </div>`;
+};
+
+/* ---- 4. 貨運準點報表 ---- */
+V.report=()=>{
+  const u=S.ui, mode=u.rMode||"month", period=u.rPeriod||"2026-08";
+  const inRange=b=>{
+    if(mode==="month")return b.date.slice(0,7)===period;
+    const[y,q]=period.split("-Q"), m=+b.date.slice(5,7);
+    return b.date.slice(0,4)===y&&Math.ceil(m/3)===+q;
+  };
+  const rows=S.bookings.filter(b=>inRange(b)&&b.status!=="cancelled"&&punctuality(b));
+  const agg={};
+  CARRIERS.forEach(c=>agg[c.code]={code:c.code,name:c.name,ontime:0,late:0,noshow:0,total:0});
+  rows.forEach(b=>{const p=punctuality(b);if(!agg[b.carrier])return;agg[b.carrier][p]++;agg[b.carrier].total++});
+  const list=Object.values(agg).filter(x=>x.total).sort((a,b)=>a.ontime/a.total-b.ontime/b.total);
+  const sum=list.reduce((a,x)=>({ontime:a.ontime+x.ontime,late:a.late+x.late,noshow:a.noshow+x.noshow,total:a.total+x.total}),{ontime:0,late:0,noshow:0,total:0});
+  const months=[...new Set(S.bookings.map(b=>b.date.slice(0,7)))].sort();
+  const quarters=[...new Set(S.bookings.map(b=>b.date.slice(0,4)+"-Q"+Math.ceil(+b.date.slice(5,7)/3)))].sort();
+  return head("貨運業者到場準點報表","依貨運業者統計到場紀錄，供採購與物流檢討使用。準點定義：過刷時間不晚於預約時段起始 "+S.cfg.graceMin+" 分鐘。")+
+  `<div class="row" style="margin-bottom:16px">
+     <label class="fld">統計區間
+       <select id="rMode"><option value="month" ${mode==="month"?"selected":""}>月報</option><option value="quarter" ${mode==="quarter"?"selected":""}>季報</option></select></label>
+     <label class="fld">期間
+       <select id="rPeriod">${(mode==="month"?months:quarters).map(m=>`<option value="${m}" ${m===period?"selected":""}>${m}</option>`).join("")}</select></label>
+     <div class="spacer"></div><button class="btn" id="exportCsv">匯出 CSV</button>
+   </div>
+   <div class="stats" style="margin-bottom:20px">
+     <div class="stat good"><div class="v">${sum.total?Math.round(sum.ontime/sum.total*100):0}%</div><div class="l">整體準點率</div></div>
+     <div class="stat"><div class="v">${sum.total}</div><div class="l">總到場車次</div></div>
+     <div class="stat good"><div class="v">${sum.ontime}</div><div class="l">準點</div></div>
+     <div class="stat mid"><div class="v">${sum.late}</div><div class="l">延遲</div></div>
+     <div class="stat bad"><div class="v">${sum.noshow}</div><div class="l">未到</div></div>
+   </div>
+   <div class="card"><div class="card-head"><h3>貨運業者別</h3><div class="spacer"></div>
+     <span class="pill n">${list.length} 家</span></div>
+     <div class="tbl-wrap"><table><thead><tr>
+       <th>代號</th><th>貨運業者</th><th>車次</th><th>準點</th><th>延遲</th><th>未到</th><th style="min-width:140px">準點率</th>
+     </tr></thead><tbody>${list.map(x=>{
+       const r=Math.round(x.ontime/x.total*100), cls=r>=85?"":(r>=70?"mid":"bad");
+       return `<tr><td class="num">${x.code}</td><td><b>${esc(x.name)}</b></td>
+         <td class="num">${x.total}</td><td class="num">${x.ontime}</td>
+         <td class="num" style="${x.late?"color:var(--accent)":""}">${x.late}</td>
+         <td class="num" style="${x.noshow?"color:var(--crit);font-weight:600":""}">${x.noshow}</td>
+         <td><div class="row" style="gap:8px;flex-wrap:nowrap"><span class="num" style="width:38px">${r}%</span>
+           <div class="bar-mini" style="flex:1"><i class="${cls}" style="width:${r}%"></i></div></div></td></tr>`;
+     }).join("")||`<tr><td colspan="7" class="empty">此區間沒有紀錄。</td></tr>`}</tbody></table></div></div>
+   <div class="note" style="margin-top:14px">目前僅供檢討，不影響預約權限。是否要對長期延遲的貨運業者採取措施（例如限制可預約時段），屬待確認事項。</div>`;
+};
+
+/* ---- 5. 參數設定 ---- */
+V.param=()=>head("參數設定","準點寬限與各物流中心、各倉別、各車型池的時段設定。調整後回預約頁即可看到差異。")+
+ `<div class="grid">
+   <div class="card"><div class="card-head"><h3>全廠參數</h3></div><div class="card-pad row" style="gap:20px">
+     <label class="fld">準點寬限（分）<input type="number" class="mono" id="p-grace" value="${S.cfg.graceMin}" min="0" max="60" style="width:96px"></label>
+     <label class="fld">未到判定：時段結束後（分）<input type="number" class="mono" id="p-noshow" value="${S.cfg.noShowAfterMin}" min="0" max="180" style="width:96px"></label>
+     <div class="note" style="flex:1;min-width:240px">過刷時間不晚於預約時段起始 <b>${S.cfg.graceMin}</b> 分鐘即算準點；超過即為延遲。時段結束後 <b>${S.cfg.noShowAfterMin}</b> 分鐘仍未過刷，判定為未到。</div>
+   </div></div>
+   ${S.cfg.dcs.map(d=>`<div class="card">
+     <div class="card-head"><h3>${esc(d.name)}</h3><span class="pill n mono">${d.code}</span></div>
+     <div class="tbl-wrap"><table><thead><tr><th>倉別</th><th>車型 / 下貨區</th><th>開放時間</th><th>每小時切分</th><th>每段名額</th><th>每日時段數</th></tr></thead>
+     <tbody>${d.warehouses.flatMap(w=>GROUPS.map(g=>{
+       const p=w.pools[g.id], n=slotsOf(d.code,w.id,g.id).length;
+       return `<tr><td>${tempTag(w)}</td><td>${g.name}<br><span style="font-size:12px;color:var(--ink-2)">${g.stand}下貨</span></td>
+         <td class="row" style="gap:5px;flex-wrap:nowrap">
+           <input type="time" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|open" value="${p.open}" style="width:110px">
+           <input type="time" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|close" value="${p.close}" style="width:110px"></td>
+         <td><select data-cfg="${d.code}|${w.id}|${g.id}|split">${[1,2,3,4].map(x=>`<option value="${x}" ${x===p.split?"selected":""}>${x} 段（每 ${60/x} 分）</option>`).join("")}</select></td>
+         <td><input type="number" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|capacity" value="${p.capacity}" min="0" max="20" style="width:76px"></td>
+         <td class="num">${n}</td></tr>`;
+     })).join("")}</tbody></table></div></div>`).join("")}
+ </div>`;
+
+/* ---- 6. 規格與待確認 ---- */
+V.spec=()=>head("規格與待確認","D 案依 2026/09/08 內部討論的實際作業流程重做。以下區分已確認的規則與仍待拍板的項目。")+
+ `<div class="note warn" style="margin-bottom:16px">本頁為流程討論用的示範系統。<b>所有貨運業者、供應商、採購單號、車牌與統計數據皆為虛構</b>，與任何實際公司或營運數據無關。</div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+   <div class="card"><div class="card-head"><h3>D 案與 A／B／C 的關鍵差異</h3></div><div class="card-pad">
+     <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
+       <li><b>申請者是貨運業者，不是供應商。</b>採購下單後由供應商把採購單號轉給貨運，貨運才是預約的人。因此入口需要貨運業者代號，準點統計的對象也是貨運業者。</li>
+       <li><b>預約主鍵是「車牌＋進貨日＋物流中心」，不是採購單。</b>一台車帶多張採購單時，<b>取其中任一張單號預約即可</b>；其餘採購單可選填帶上供現場核對，<b>不會被視為未到</b>。</li>
+       <li><b>只過刷一次。</b>廠門口過刷即完成報到，當下顯示準時或延遲並發放震動器。系統不做叫號、不指派碼頭、不追蹤進場與離場。</li>
+       <li><b>準點定義：過刷時間不晚於預約時段起始 ${S.cfg.graceMin} 分鐘。</b>超過即為延遲，時段結束後 ${S.cfg.noShowAfterMin} 分鐘未過刷為未到。</li>
+       <li><b>進場順序完全人工。</b>延遲者可能延後一兩台再進場，現場沒有其他車等待時也可直接放行——這段由警衛判斷，系統只留紀錄。</li>
+       <li><b>支援多個物流中心。</b>貨運業者一天可能跑多個 DC，收貨地點由採購單決定，各 DC 各倉各車型池的時段與名額獨立設定。</li>
+     </ol></div></div>
+   <div class="card"><div class="card-head"><h3>待確認</h3></div><div class="card-pad">
+     <div class="openq"><b>貨運業者代號從哪裡來</b><p>目前 Demo 假設已有代號可填。實務上要不要建貨運業者主檔、由誰維護、供應商轉單時要不要一併指定貨運業者？<b>沒有穩定的識別就做不出月報與季報。</b></p></div>
+     <div class="openq"><b>同一張採購單被多台車預約</b><p>量大分批送時會發生。目前不擋，因為主鍵是車牌。要不要設上限，或要求註記分批？</p></div>
+     <div class="openq"><b>震動器號碼由誰發</b><p>Demo 由系統依當日該 DC 序號發放。實務上是現場人工遞出、還是系統指定？要不要把震動器編號與預約綁定以便叫車？</p></div>
+     <div class="openq"><b>改約與取消</b><p>目前不提供。貨運業者臨時換車、換時段的頻率有多高？若要開放，截止時間怎麼訂？</p></div>
+     <div class="openq"><b>延遲與未到要不要有後果</b><p>目前純統計。是否要對長期延遲者限制可預約時段，或列入年度評鑑？這關係到報表要送給誰。</p></div>
+     <div class="openq"><b>收費可行性</b><p>以節省的司機等待工時為基礎收取系統手續費，正在評估中。牽涉成本是否轉嫁回自身、收費後的服務承諾，以及法規面，尚未列入 Demo。</p></div>
+   </div></div>
+   <div class="card"><div class="card-head"><h3>建議操作順序</h3></div><div class="card-pad">
+     <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
+       <li><b>預約申請</b>挑一張採購單，填貨運業者代號與車牌，選車型後挑時段。試著切換鷗翼與非鷗翼，看名額是分開的。</li>
+       <li>在第 2 步<b>加入同車其他採購單</b>，看預約單上會一併列出供警衛核對。</li>
+       <li>到<b>廠門口過刷</b>輸入剛拿到的預約單號或車牌，看畫面判定準時。</li>
+       <li>按上方<b>＋15 分</b>推進時間，再過刷另一筆，看判定變成延遲並顯示遲到分鐘數。</li>
+       <li>到<b>貨運準點報表</b>切換月報與季報，注意宏昌貨運（T02）的準點率明顯偏低——這正是這份報表要抓的對象。</li>
+       <li>到<b>參數設定</b>把準點寬限從 ${S.cfg.graceMin} 分改成 20 分，回報表看準點率如何變動。</li>
+     </ol>
+     <div class="note" style="margin-top:12px">資料存在瀏覽器本機，重新整理不會消失；要回到初始狀態按右上「重設 Demo 資料」。</div>
+   </div>
+ </div>`;
+
+/* ── 預約單 ───────────────────────────── */
+function ticketUrl(b){return location.origin+location.pathname+"?id="+encodeURIComponent(b.id)}
+function showTicket(id){
+  const b=bookingById(id); if(!b)return;
+  const dc=dcOf(b.dc), w=whOf(b.dc,b.wh), g=grp(b.group);
+  $("#layer").innerHTML=`<div class="scrim" id="scrim"><div class="modal"><div class="ticket">
+    <div class="th"><div class="co">範例物流股份有限公司<small>SAMPLE LOGISTICS — DEMO ONLY</small></div>
+      <div style="text-align:right"><div class="eyebrow">預約單號</div><div class="big">${b.id}</div></div></div>
+    <dl class="kv">
+      <dt>貨運業者</dt><dd>${esc(carrierOf(b.carrier).name)} <span class="mono">${b.carrier}</span></dd>
+      <dt>車牌</dt><dd class="mono" style="font-weight:700;font-size:17px">${esc(b.plate)}</dd>
+      <dt>收貨</dt><dd>${esc(dc.name)}　${w.temp}・${esc(w.name)}</dd>
+      <dt>進貨日</dt><dd class="mono">${dshow(b.date)}</dd>
+      <dt>預約時段</dt><dd class="mono" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
+      <dt>車型</dt><dd>${g.name}（${g.stand}下貨）</dd>
+      <dt>採購單</dt><dd class="mono">${b.poRefs.join("<br>")}</dd>
+    </dl>
+    <div class="qrbox" id="qr"></div>
+    <div style="text-align:center;font-size:11.5px;color:var(--ink-3)">廠門口過刷此碼完成報到</div>
+    <div class="rules"><ol>
+      <li>請於預約時段 <b>${hhmm(b.slot)}</b> 前抵達廠門口過刷，晚到 ${S.cfg.graceMin} 分鐘內仍算準點。</li>
+      <li>過刷後領取震動器，依現場人員指示進場。</li>
+      <li>進場順序由現場控管，延遲抵達可能需再等候。</li>
+      <li>未過刷即離開將列為未到，並計入貨運業者到場紀錄。</li>
+    </ol></div>
+    <div class="row" style="margin-top:15px">
+      <button class="btn" id="printT" style="flex:1">列印</button>
+      <button class="btn pri" id="closeT" style="flex:1">關閉</button></div>
+  </div></div></div>`;
+  try{
+    if(window.QRCode)new QRCode($("#qr"),{text:ticketUrl(b),width:148,height:148,
+      colorDark:"#161B19",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
+    else $("#qr").innerHTML=fakeQR(b.id);
+  }catch(e){$("#qr").innerHTML=fakeQR(b.id)}
+  $("#closeT").onclick=()=>$("#layer").innerHTML="";
+  $("#printT").onclick=()=>window.print();
+  $("#scrim").onclick=ev=>{if(ev.target.id==="scrim")$("#layer").innerHTML=""};
+}
+function fakeQR(seed){
+  let h=0;for(const c of seed)h=(h*31+c.charCodeAt(0))>>>0;
+  let s="";const n=21;
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){h=(h*1103515245+12345)>>>0;if((h>>>16)%2)s+=`<rect x="${x*6}" y="${y*6}" width="6" height="6"/>`}
+  return `<svg width="126" height="126" viewBox="0 0 126 126" fill="#161B19">${s}</svg>`;
+}
+
+/* ── 動作 ───────────────────────────── */
+function lookup(){
+  const po=($("#poIn").value||"").trim().toUpperCase();
+  const car=($("#carIn").value||"").trim().toUpperCase();
+  const plate=($("#plateIn").value||"").trim().toUpperCase();
+  S.ui={po,carrier:car,plate,err:"",errKind:"warn"};
+  const o=orderOf(po);
+  if(!po||!car||!plate){S.ui.err="請完整填寫採購單號、貨運業者代號與車牌。";save();render();return}
+  if(!o){S.ui.err="查無此採購單號。請確認供應商提供的單號是否正確。";save();render();return}
+  if(!o.valid){S.ui.err="採購單 "+o.po+" 已作廢，無法預約。";save();render();return}
+  if(o.date<S.simDate){S.ui.err="採購單指定進貨日 "+o.date+" 已過期。";save();render();return}
+  if(!carrierOf(car)){S.ui.err="查無此貨運業者代號。可用："+CARRIERS.map(c=>c.code).join("、");save();render();return}
+  if(!/^[A-Z0-9-]{4,12}$/.test(plate)){S.ui.err="車牌格式請填 4～12 碼英數，可含連字號。";save();render();return}
+  const dup=bookingOfTruck(plate,o.date,o.dc);
+  if(dup){
+    S.ui={qPlate:plate,qDate:o.date,qResult:[dup],qErr:""};
+    save();go("query");toast("這台車在 "+dcOf(o.dc).name+" 當日已有預約 "+dup.id);return;
+  }
+  S.ui.order=o;S.ui.group="dock";S.ui.slot=null;S.ui.extras=[];
+  save();render();
+}
+function addExtra(){
+  const u=S.ui,o=u.order,v=($("#extraIn").value||"").trim().toUpperCase();
+  u.exErr="";
+  const x=orderOf(v);
+  if(!x)u.exErr="查無此採購單號。";
+  else if(!x.valid)u.exErr=x.po+" 已作廢。";
+  else if(x.po===o.po)u.exErr="這已經是主要採購單。";
+  else if(u.extras.includes(x.po))u.exErr=x.po+" 已加入。";
+  else if(x.dc!==o.dc||x.date!==o.date)u.exErr=x.po+" 的收貨中心或進貨日不同，無法併在同一車。";
+  else u.extras.push(x.po);
+  save();render();
+  const el=$("#extraIn");if(el&&!u.exErr)el.focus();
+}
+function confirmBooking(){
+  const u=S.ui,o=u.order,g=grp(u.group);
+  if(u.slot==null)return;
+  if(remainAt(o.dc,o.wh,g.id,o.date,u.slot)<=0||!isFuture(o.date,u.slot)){
+    u.slot=null;save();render();toast("此時段剛被訂走或已過時，請改選其他時段");return;
+  }
+  if(bookingOfTruck(u.plate,o.date,o.dc)){save();render();toast("這台車當日在此物流中心已有預約");return}
+  const step=60/poolOf(o.dc,o.wh,g.id).split;
+  const n=S.bookings.filter(b=>b.dc===o.dc&&b.date===o.date).length+1;
+  const b={id:o.dc+"-"+o.date.slice(5).replace("-","")+"-"+pad(n),
+    carrier:u.carrier,dc:o.dc,wh:o.wh,group:g.id,date:o.date,slot:u.slot,end:u.slot+step,
+    plate:u.plate,poRefs:[o.po,...u.extras],status:"booked",checkinAt:null,pager:null,createdAt:Date.now()};
+  S.bookings.push(b);
+  S.ui={qPlate:b.plate,qDate:b.date,qResult:[b],qErr:""};S.view="query";
+  save();render();showTicket(b.id);
+  toast("預約成立："+b.id);
+}
+function doQuery(byId){
+  const u=S.ui;
+  if(byId){
+    const id=($("#qId").value||"").trim().toUpperCase();
+    const b=bookingById(id);
+    S.ui={qId:id,qErr:b?"":"查無此預約單號。",qResult:b?[b]:null};
+  }else{
+    const plate=($("#qPlate").value||"").trim().toUpperCase();
+    const date=$("#qDate").value;
+    const list=S.bookings.filter(b=>b.plate===plate&&b.date===date&&b.status!=="cancelled");
+    S.ui={qPlate:plate,qDate:date,qErr:list.length?"":"查無這台車在該日的預約。",qResult:list.length?list:null};
+  }
+  save();render();
+}
+/* 過刷：掃到即完成報到，並立即顯示判定。重複過刷不覆寫原時間與判定。 */
+function doScan(){
+  let raw=($("#scan").value||"").trim();
+  const dcCode=S.ui.gateDc||S.cfg.dcs[0].code;
+  S.ui.gateMsg="";S.ui.gateMsgKind="warn";S.ui.gateHit=null;S.ui.gateDup=false;
+  if(!raw){S.ui.gateMsg="請掃描 QRcode 或輸入預約單號 / 車牌。";save();render();return}
+  const m=raw.match(/[?&]id=([^&]+)/); if(m)raw=decodeURIComponent(m[1]);
+  raw=raw.toUpperCase();
+  let b=bookingById(raw);
+  if(!b){
+    const hits=S.bookings.filter(x=>x.plate===raw&&x.date===S.simDate&&x.status!=="cancelled");
+    if(hits.length===1)b=hits[0];
+    else if(hits.length>1){
+      b=hits.find(x=>x.dc===dcCode)||hits[0];
+      S.ui.gateMsg="車牌 "+raw+" 今日有 "+hits.length+" 筆預約（不同物流中心），已比對 "+dcOf(b.dc).name+"。";
+    }
+  }
+  if(!b){
+    const any=S.bookings.find(x=>x.plate===raw||x.id===raw);
+    S.ui.gateMsg=any?("查到 "+any.plate+" 的預約，但進貨日為 "+any.date+"，非今日預約。"):"查無此預約單號或車牌。";
+    save();render();return;
+  }
+  if(b.date!==S.simDate){S.ui.gateMsg="非今日進貨預約（預約日 "+b.date+"），不可報到。";save();render();return}
+  if(b.dc!==dcCode){S.ui.gateDc=b.dc;S.ui.gateMsg="此單的收貨中心是 "+dcOf(b.dc).name+"，已自動切換。"}
+  if(b.status==="arrived"){S.ui.gateDup=true;S.ui.gateHit=b.id;save();render();return}
+  const dayN=S.bookings.filter(x=>x.dc===b.dc&&x.date===S.simDate&&x.pager).length+1;
+  b.status="arrived";b.checkinAt=S.simMin;b.pager="P-"+pad(dayN);
+  S.ui.gateHit=b.id;
+  save();render();
+  const pu=punctuality(b);
+  toast(b.id+" 報到完成："+PLABEL[pu]+(pu==="late"?"（延遲 "+lateBy(b)+" 分）":""));
+}
+function exportCsv(){
+  const u=S.ui,mode=u.rMode||"month",period=u.rPeriod||"2026-08";
+  const inRange=b=>{
+    if(mode==="month")return b.date.slice(0,7)===period;
+    const[y,q]=period.split("-Q");return b.date.slice(0,4)===y&&Math.ceil(+b.date.slice(5,7)/3)===+q;
+  };
+  const rows=S.bookings.filter(b=>inRange(b)&&punctuality(b));
+  const lines=["進貨日,預約單號,貨運業者代號,貨運業者,車牌,物流中心,倉別,車型,預約時段,過刷時間,遲到分鐘,判定"];
+  rows.forEach(b=>{
+    const w=whOf(b.dc,b.wh),pu=punctuality(b);
+    lines.push([b.date,b.id,b.carrier,carrierOf(b.carrier).name,b.plate,dcOf(b.dc).name,
+      w.temp+w.name,grp(b.group).name,hhmm(b.slot),b.checkinAt!=null?hhmm(b.checkinAt):"",
+      pu==="late"?lateBy(b):"",PLABEL[pu]].join(","));
+  });
+  const csv=lines.join("\n");
+  $("#layer").innerHTML=`<div class="scrim" id="scrimC"><div class="modal" style="max-width:640px">
+    <div class="card-head"><h3>匯出 CSV</h3></div>
+    <div class="card-pad grid" style="gap:10px">
+      <div class="note">${period}　共 ${rows.length} 筆。請複製下方內容貼入 Excel（分隔符號選逗號）。</div>
+      <textarea id="csvBox" readonly>${esc(csv)}</textarea>
+      <div class="row"><button class="btn pri" id="copyCsv">複製全部</button><button class="btn" id="closeC">關閉</button></div>
+    </div></div></div>`;
+  $("#copyCsv").onclick=()=>{const t=$("#csvBox");t.select();
+    try{navigator.clipboard.writeText(csv)}catch(e){try{document.execCommand("copy")}catch(e2){}}
+    toast("已複製 "+rows.length+" 筆")};
+  $("#closeC").onclick=()=>$("#layer").innerHTML="";
+  $("#scrimC").onclick=ev=>{if(ev.target.id==="scrimC")$("#layer").innerHTML=""};
+}
+
+/* ── 綁定 ───────────────────────────── */
+function bind(){
+  const v=$("#view");
+  $$("[data-fill]",v).forEach(b=>b.onclick=()=>{
+    $("#poIn").value=b.dataset.fill;
+    if(!$("#carIn").value)$("#carIn").value="T01";
+    if(!$("#plateIn").value)$("#plateIn").value="ABC-1234";
+    lookup();
+  });
+  const lk=$("#lookup",v); if(lk)lk.onclick=lookup;
+  ["#poIn","#carIn","#plateIn"].forEach(s=>{const el=$(s,v);if(el)el.onkeydown=e=>{if(e.key==="Enter")lookup()}});
+  const cl=$("#clear",v); if(cl)cl.onclick=()=>{S.ui={};save();render()};
+  $$("[data-g]",v).forEach(b=>b.onclick=()=>{S.ui.group=b.dataset.g;S.ui.slot=null;save();render()});
+  $$(".slot[data-slot]",v).forEach(b=>b.onclick=()=>{S.ui.slot=+b.dataset.slot;save();render()});
+  const ae=$("#addExtra",v); if(ae)ae.onclick=addExtra;
+  const ei=$("#extraIn",v); if(ei)ei.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();addExtra()}};
+  $$("[data-rmextra]",v).forEach(b=>b.onclick=()=>{
+    S.ui.extras=S.ui.extras.filter(x=>x!==b.dataset.rmextra);S.ui.exErr="";save();render()});
+  const cf=$("#confirm",v); if(cf)cf.onclick=confirmBooking;
+
+  const qg=$("#qGo",v); if(qg)qg.onclick=()=>doQuery(false);
+  const qi=$("#qGoId",v); if(qi)qi.onclick=()=>doQuery(true);
+  const qp=$("#qPlate",v); if(qp)qp.onkeydown=e=>{if(e.key==="Enter")doQuery(false)};
+  const qd=$("#qId",v); if(qd)qd.onkeydown=e=>{if(e.key==="Enter")doQuery(true)};
+  $$("[data-ticket]",v).forEach(b=>b.onclick=()=>showTicket(b.dataset.ticket));
+
+  const gd=$("#gateDc",v); if(gd)gd.onchange=e=>{S.ui.gateDc=e.target.value;S.ui.gateHit=null;S.ui.gateMsg="";save();render()};
+  const sg=$("#scanGo",v); if(sg)sg.onclick=doScan;
+  const sc=$("#scan",v); if(sc){sc.onkeydown=e=>{if(e.key==="Enter")doScan()};sc.focus({preventScroll:true})}
+
+  const rm=$("#rMode",v); if(rm)rm.onchange=e=>{
+    S.ui.rMode=e.target.value;
+    S.ui.rPeriod=e.target.value==="month"?"2026-08":"2026-Q3";save();render()};
+  const rp=$("#rPeriod",v); if(rp)rp.onchange=e=>{S.ui.rPeriod=e.target.value;save();render()};
+  const ex=$("#exportCsv",v); if(ex)ex.onclick=exportCsv;
+
+  const pg=$("#p-grace",v); if(pg)pg.onchange=e=>{S.cfg.graceMin=Math.max(0,+e.target.value||0);save();render()};
+  const pn=$("#p-noshow",v); if(pn)pn.onchange=e=>{S.cfg.noShowAfterMin=Math.max(0,+e.target.value||0);save();render()};
+  $$("[data-cfg]",v).forEach(el=>el.onchange=e=>{
+    const[dc,wh,g,f]=el.dataset.cfg.split("|");
+    const p=poolOf(dc,wh,g);
+    p[f]=(f==="split"||f==="capacity")?+e.target.value:e.target.value;
+    save();render();
+  });
+}
+
+/* ── 啟動 ───────────────────────────── */
+function applyDeepLink(){
+  let q; try{q=new URLSearchParams(location.search)}catch(e){return}
+  const id=(q.get("id")||"").trim().toUpperCase(); if(!id)return;
+  const b=bookingById(id); if(!b)return;
+  S.ui={qId:id,qResult:[b],qErr:""};S.view="query";save();
+  try{history.replaceState(null,"",location.origin+location.pathname)}catch(e){}
+}
+$$(".navbtn").forEach(b=>b.onclick=()=>{S.ui={};go(b.dataset.view)});
+$$("[data-adv]").forEach(b=>b.onclick=()=>{
+  S.simMin+=+b.dataset.adv;
+  if(S.simMin>=24*60){S.simMin-=24*60;S.simDate=addDays(S.simDate,1)}
+  save();render();
+});
+$("#resetBtn").onclick=()=>{fresh();render();toast("已重設為初始 Demo 資料")};
+load();applyDeepLink();render();
+</script>
+</body>
+</html>
