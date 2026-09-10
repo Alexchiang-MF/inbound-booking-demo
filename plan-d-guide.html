@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="進貨預約 D 案的系統架構、六個畫面的操作步驟、判定與名額邏輯，以及七組測試劇本。">
+<meta name="robots" content="noindex">
+<title>進貨預約 D 案手冊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<style>
+:root{
+  --ground:#EDEFEC; --surface:#FFFFFF; --surface-2:#F6F7F5; --surface-3:#E4E8E3;
+  --ink:#161B19; --ink-2:#5C6663; --ink-3:#89918D;
+  --line:#D6DAD5; --line-2:#C2C8C1;
+  --primary:#0B4F4A; --primary-ink:#FFFFFF; --primary-soft:#DCEAE7;
+  --accent:#D98A14; --accent-soft:#FBEDD4;
+  --ok:#2E7D5B; --ok-soft:#DDEEE5;
+  --crit:#B03A2E; --crit-soft:#F6DEDA;
+  --shadow:0 1px 2px rgba(22,27,25,.06),0 6px 18px rgba(22,27,25,.05);
+  --r:6px;
+  --f-display:"Noto Serif TC",Georgia,"Times New Roman",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
+    --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
+    --line:#2A3331; --line-2:#3A4643;
+    --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
+    --accent:#E8A33C; --accent-soft:#3A2C13;
+    --ok:#4FA57D; --ok-soft:#173029;
+    --crit:#D2685A; --crit-soft:#3A211D;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
+  --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
+  --line:#2A3331; --line-2:#3A4643;
+  --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
+  --accent:#E8A33C; --accent-soft:#3A2C13;
+  --ok:#4FA57D; --ok-soft:#173029;
+  --crit:#D2685A; --crit-soft:#3A211D;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.page{max-width:880px;margin:0 auto;padding:0 22px 90px}
+h1,h2,h3,h4{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0;line-height:1.35}
+p{margin:0 0 14px}
+a{color:var(--primary);text-underline-offset:3px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+
+header.hero{border-bottom:2px solid var(--ink);padding:52px 0 26px;margin-bottom:34px}
+header.hero h1{font-size:40px;letter-spacing:-.01em;margin:8px 0 12px}
+header.hero .lede{font-size:17px;color:var(--ink-2);max-width:60ch;margin:0}
+.linkbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.linkbar a{display:inline-flex;align-items:center;gap:7px;background:var(--primary);color:var(--primary-ink);
+  text-decoration:none;font-weight:700;padding:9px 16px;border-radius:var(--r);font-size:14px}
+.linkbar a.ghost{background:none;color:var(--primary);border:1px solid var(--line-2);font-weight:500}
+.linkbar a:hover{filter:brightness(1.08)}
+
+section{margin-bottom:46px;scroll-margin-top:20px}
+h2{font-size:25px;margin-bottom:6px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+h2 .num{font-family:var(--f-mono);font-size:15px;color:var(--ink-3);margin-right:12px;font-weight:400}
+h3{font-size:17px;margin:30px 0 10px}
+h4{font-size:15px;margin:0 0 6px;font-family:var(--f-body)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 22px;margin-bottom:16px}
+.note{background:var(--surface-2);border-left:3px solid var(--line-2);padding:13px 17px;border-radius:0 var(--r) var(--r) 0;margin:0 0 16px;font-size:14px;color:var(--ink-2)}
+.note.warn{border-left-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.note.key{border-left-color:var(--primary);background:var(--primary-soft);color:var(--ink)}
+.note.bad{border-left-color:var(--crit);background:var(--crit-soft);color:var(--ink)}
+.note b{color:var(--ink)}
+.note p:last-child{margin:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:700;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+figure{margin:0 0 20px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 20px 14px;box-shadow:var(--shadow)}
+figure svg{display:block;width:100%;max-width:100%;height:auto;color:var(--ink)}
+figcaption{font-size:13px;color:var(--ink-2);margin-top:12px;padding-top:11px;border-top:1px solid var(--line);text-wrap:pretty}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.pill.n{background:var(--surface-3);color:var(--ink-2)}
+.pill.p{background:var(--primary-soft);color:var(--primary)}
+.pill.a{background:var(--accent-soft);color:var(--accent)}
+.pill.o{background:var(--ok-soft);color:var(--ok)}
+.pill.c{background:var(--crit-soft);color:var(--crit)}
+
+.scen{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+.scen-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:15px 21px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.scen-h .sn{font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--primary);
+  background:var(--primary-soft);padding:3px 9px;border-radius:var(--r)}
+.scen-h h3{margin:0;font-size:17px}
+.scen-b{padding:18px 21px}
+.scen-b .goal{color:var(--ink-2);font-size:14px;margin-bottom:14px}
+.scen-b ol{margin:0 0 14px;padding-left:20px;display:grid;gap:6px;font-size:14px}
+.scen-b ol li::marker{color:var(--ink-3);font-family:var(--f-mono);font-size:12px}
+.expect{background:var(--ok-soft);border-left:3px solid var(--ok);padding:11px 15px;border-radius:0 var(--r) var(--r) 0;font-size:14px;margin-bottom:12px}
+.expect b{color:var(--ok)}
+.ask{background:var(--accent-soft);border-left:3px solid var(--accent);padding:11px 15px;border-radius:0 var(--r) var(--r) 0;font-size:14px}
+.ask b{display:block;margin-bottom:3px}
+.ask ul{margin:0;padding-left:18px}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--surface-3);padding:1px 6px;border-radius:3px;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.q{border-left:3px solid var(--accent);padding:2px 0 2px 15px;margin-bottom:16px}
+.q b{display:block;font-size:15px}
+.q p{margin:3px 0 0;color:var(--ink-2);font-size:14px}
+.q.hot{border-left-color:var(--crit)}
+ul.plain{margin:0 0 16px;padding-left:20px}
+ul.plain li{margin-bottom:6px}
+.paths{display:grid;gap:14px;margin-bottom:18px}
+.path{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line-2);
+  border-radius:0 var(--r) var(--r) 0;padding:16px 20px;box-shadow:var(--shadow)}
+.path.ok{border-left-color:var(--ok)}
+.path.late{border-left-color:var(--accent)}
+.path.walk{border-left-color:var(--primary)}
+.path h4{font-size:16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:8px}
+.path dl{display:grid;grid-template-columns:auto 1fr;gap:5px 16px;margin:0;font-size:14px}
+.path dt{color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.04em;padding-top:2px;white-space:nowrap}
+.path dd{margin:0}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:14px;margin-bottom:18px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:17px 19px;box-shadow:var(--shadow)}
+.step h4{display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:9px}
+.step ol{margin:0;padding-left:19px;font-size:14px;display:grid;gap:5px}
+.step ol li::marker{color:var(--ink-3);font-family:var(--f-mono);font-size:12px}
+footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-3);font-size:13px}
+@media (max-width:640px){
+  header.hero{padding-top:34px}
+  header.hero h1{font-size:30px}
+  .page{padding:0 16px 60px}
+  .path dl{grid-template-columns:1fr;gap:2px}
+  .path dt{padding-top:8px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="hero">
+  <div class="eyebrow">進貨預約 D 案 · 2026.09.10 版</div>
+  <h1>進貨預約 D 案手冊</h1>
+  <p class="lede">D 案的系統架構、六個畫面怎麼操作，以及背後那幾條容易被誤解的判定邏輯。重點在<b>現場的三條路徑</b>——正常、遲到、未預約——它們最後都收斂到同一套「當下給時段」的機制。</p>
+  <div class="linkbar">
+    <a href="https://alexchiang-mf.github.io/inbound-booking-demo/plan-d-demo.html">開啟 D 案 Demo</a>
+    <a class="ghost" href="#arch">系統架構</a>
+    <a class="ghost" href="#paths">三條路徑</a>
+    <a class="ghost" href="#logic">名額與判定</a>
+    <a class="ghost" href="#ops">操作步驟</a>
+    <a class="ghost" href="#test">測試劇本</a>
+    <a class="ghost" href="#open">待確認</a>
+  </div>
+</header>
+
+<div class="note warn">
+  <p><b>Demo 內所有資料皆為虛構。</b>貨運業者、供應商、採購單號、車牌與統計數據都是編出來的，公司抬頭為「範例物流股份有限公司」，與任何實際公司或營運數據無關。碼頭數量與時段設定僅為說明用的預設值。</p>
+</div>
+
+<div class="note key">
+  <p><b>三十秒版本。</b>採購下單後，供應商把採購單號轉給貨運業者，<b>由貨運業者上線預約</b>——一台車只要一個時段，帶多張單也只需拿其中任一張單號來約。司機到廠門口過刷一次，畫面當場顯示準時或延遲並發震動器。<b>遲到的人當場改給當天最快的時段，未預約的人走「現場候位」也當場給時段</b>，兩者都不必再輸採購單號，因為人車貨都已經在門口。進場順序完全由現場人員判斷，系統不叫號、不指派碼頭。</p>
+</div>
+
+<section id="arch">
+  <h2><span class="num">01</span>系統架構</h2>
+
+  <h3>一次進貨怎麼走</h3>
+  <figure>
+    <svg viewBox="0 0 880 396" role="img" aria-label="進貨流程圖：預約階段依序為採購下單、供應商接獲並通知貨運業者、貨運業者憑採購單號線上預約、取得預約單與 QRcode。到廠當天車輛在廠門口過刷一次，依過刷結果分成三條路徑：準時抵達依原時段等候、延遲抵達當場改給最快可進場時段、查無預約改走現場候位當場挑一個剩餘時段；三條路徑最後都領震動器在場等候，由現場人員判斷放行順序。">
+      <defs>
+        <marker id="ga" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+        </marker>
+      </defs>
+
+      <text x="2" y="14" font-size="11" font-weight="700" letter-spacing="1.6" fill="currentColor" opacity=".55">預約階段</text>
+
+      <rect x="2" y="30" width="174" height="52" rx="5" fill="none" stroke="currentColor" stroke-opacity=".45"></rect>
+      <text x="89" y="53" font-size="13" text-anchor="middle" fill="currentColor">採購下單</text>
+      <text x="89" y="70" font-size="11" text-anchor="middle" fill="currentColor" opacity=".6">決定進貨日與收貨 DC</text>
+
+      <line x1="180" y1="56" x2="221" y2="56" stroke="currentColor" stroke-width="1.4" marker-end="url(#ga)"></line>
+
+      <rect x="226" y="30" width="174" height="52" rx="5" fill="none" stroke="currentColor" stroke-opacity=".45"></rect>
+      <text x="313" y="53" font-size="13" text-anchor="middle" fill="currentColor">供應商接獲</text>
+      <text x="313" y="70" font-size="11" text-anchor="middle" fill="currentColor" opacity=".6">通知貨運來收貨</text>
+
+      <line x1="404" y1="56" x2="445" y2="56" stroke="currentColor" stroke-width="1.4" marker-end="url(#ga)"></line>
+      <text x="424" y="46" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".75">給採購單號</text>
+
+      <rect x="450" y="30" width="174" height="52" rx="5" fill="#D98A14" fill-opacity=".14" stroke="#D98A14" stroke-width="1.5"></rect>
+      <text x="537" y="53" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">貨運業者預約</text>
+      <text x="537" y="70" font-size="11" text-anchor="middle" fill="currentColor" opacity=".75">單號＋業者代號＋車牌</text>
+
+      <line x1="628" y1="56" x2="669" y2="56" stroke="currentColor" stroke-width="1.4" marker-end="url(#ga)"></line>
+
+      <rect x="674" y="30" width="174" height="52" rx="5" fill="none" stroke="currentColor" stroke-opacity=".45"></rect>
+      <text x="761" y="53" font-size="13" text-anchor="middle" fill="currentColor">取得預約單</text>
+      <text x="761" y="70" font-size="11" text-anchor="middle" fill="currentColor" opacity=".6">含 QRcode</text>
+
+      <line x1="2" y1="112" x2="878" y2="112" stroke="currentColor" stroke-opacity=".18" stroke-dasharray="4 4"></line>
+      <text x="2" y="140" font-size="11" font-weight="700" letter-spacing="1.6" fill="currentColor" opacity=".55">到廠當天</text>
+
+      <rect x="2" y="212" width="166" height="60" rx="5" fill="none" stroke="currentColor" stroke-opacity=".45"></rect>
+      <text x="85" y="236" font-size="13" text-anchor="middle" fill="currentColor">廠門口過刷</text>
+      <text x="85" y="254" font-size="11" text-anchor="middle" fill="currentColor" opacity=".6">整趟只刷這一次</text>
+
+      <path d="M 172 242 L 198 242 L 198 198 L 242 198" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#ga)"></path>
+      <path d="M 172 242 L 242 242" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#ga)"></path>
+      <path d="M 172 242 L 198 242 L 198 334 L 242 334" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#ga)"></path>
+
+      <text x="248" y="172" font-size="10" fill="currentColor" opacity=".7">刷到，≤ 時段起 +10 分</text>
+      <rect x="246" y="176" width="296" height="44" rx="5" fill="#2E7D5B" fill-opacity=".13" stroke="#2E7D5B" stroke-width="1.4"></rect>
+      <text x="262" y="203" font-size="13" font-weight="700" fill="currentColor">準時抵達</text>
+      <text x="346" y="203" font-size="11.5" fill="currentColor" opacity=".78">依原預約時段等候</text>
+
+      <text x="248" y="230" font-size="10" fill="currentColor" opacity=".7">刷到，&gt; 時段起 +10 分</text>
+      <rect x="246" y="234" width="296" height="44" rx="5" fill="#D98A14" fill-opacity=".16" stroke="#D98A14" stroke-width="1.4"></rect>
+      <text x="262" y="261" font-size="13" font-weight="700" fill="currentColor">延遲抵達</text>
+      <text x="346" y="261" font-size="11.5" fill="currentColor" opacity=".78">當場改給最快時段</text>
+
+      <text x="248" y="308" font-size="10" fill="currentColor" opacity=".7">查無此單</text>
+      <rect x="246" y="312" width="296" height="44" rx="5" fill="#0B4F4A" fill-opacity=".13" stroke="#0B4F4A" stroke-width="1.4"></rect>
+      <text x="262" y="339" font-size="13" font-weight="700" fill="currentColor">現場候位</text>
+      <text x="346" y="339" font-size="11.5" fill="currentColor" opacity=".78">當場挑一個剩餘時段</text>
+
+      <path d="M 546 198 L 588 198 L 588 240 L 630 240" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#ga)"></path>
+      <path d="M 546 256 L 630 256" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#ga)"></path>
+      <path d="M 546 334 L 588 334 L 588 272 L 630 272" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#ga)"></path>
+
+      <rect x="634" y="212" width="244" height="88" rx="5" fill="none" stroke="currentColor" stroke-opacity=".45"></rect>
+      <text x="756" y="240" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">領震動器，在場等候</text>
+      <text x="756" y="262" font-size="11" text-anchor="middle" fill="currentColor" opacity=".65">進場順序由現場人員判斷</text>
+      <text x="756" y="280" font-size="11" text-anchor="middle" fill="currentColor" opacity=".65">系統不叫號、不指派碼頭</text>
+    </svg>
+    <figcaption>三條路徑的差別只在<b>怎麼取得時段</b>，取得之後的現場動作完全一樣：領震動器、在場等、由人放行。這是 D 案刻意的設計——把「現場誰先進」轉成「你的時段是幾點」，系統就不必推估下貨工時，也不必叫號。<b>整趟只過刷一次</b>，改到新時段的人不需要再刷第二次。</figcaption>
+  </figure>
+
+  <h3>誰用哪個畫面</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>畫面</th><th>使用者</th><th>做什麼</th></tr></thead>
+      <tbody>
+        <tr><td><b>預約申請</b></td><td>貨運業者</td><td>輸入採購單號＋業者代號＋車牌，選車型後挑時段。可選填同車其他採購單供核對。</td></tr>
+        <tr><td><b>預約查詢</b></td><td>貨運業者</td><td>用車牌＋進貨日，或直接用預約單號查。掃 QRcode 也會直接開到這一頁。</td></tr>
+        <tr><td><b>廠門口過刷</b></td><td>警衛／現場人員</td><td>掃碼報到並當場判定；延遲者自動排新時段；未預約者走「現場候位」。另有今日三份清單。</td></tr>
+        <tr><td><b>貨運準點報表</b></td><td>採購／物流管理</td><td>依貨運業者統計月報季報，含現場候位次數，可匯出 CSV。</td></tr>
+        <tr><td><b>參數設定</b></td><td>物流管理</td><td>準點寬限、未到判定、現場給時段的起算緩衝、各倉各池的時段與名額、哪些倉別開放預約。</td></tr>
+        <tr><td><b>規格與待確認</b></td><td>全體</td><td>Demo 內建的規則說明與待拍板清單。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>資料怎麼組</h3>
+  <p>D 案最關鍵的一件事：<b>預約的主鍵是「車牌＋進貨日＋物流中心」，不是採購單。</b>一台車常常帶多張採購單，貨運業者要的只是一個下貨時段，所以取其中任一張單號來約就夠了。</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>欄位</th><th>意義</th><th>備註</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">車牌 + 進貨日 + DC</td><td>預約主鍵</td><td>同車同日同 DC 再次預約，會被導到查詢頁而不是新增一筆。</td></tr>
+        <tr><td class="mono">採購單號</td><td>入場資格憑證</td><td><b>不是鎖。</b>其餘同車採購單可選填帶上供核對，不佔名額、不會被判未到。</td></tr>
+        <tr><td class="mono">slot</td><td>預約時段</td><td>由貨運業者在剩餘時段中挑選。</td></tr>
+        <tr><td class="mono">lateSlot</td><td>延遲後改進場的時段</td><td>掛在<b>原預約單</b>上，不是新的一筆。沒遲到就是空的。</td></tr>
+        <tr><td class="mono">source</td><td>線上預約／現場候位</td><td>決定這筆要不要進準點率分母。</td></tr>
+        <tr><td class="mono">status</td><td>待報到／已報到／未到／現場候位</td><td>只有「未到」是系統依時間自動判定的。</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="paths">
+  <h2><span class="num">02</span>現場的三條路徑</h2>
+  <p>這一節是 2026-09-10 討論後新增的核心規則。三條路徑的共同原則是：<b>採購單號的用途是「遠端佔位的防濫用憑證」，不是入場資格。</b>事先預約時人不在現場，需要單號防止有人隨手佔掉名額；遲到者與現場候位者人車貨都已經在門口，實體存在本身就是最強的驗證，這一關就不必再把控。</p>
+
+  <div class="paths">
+    <div class="path ok">
+      <h4>路徑一　準時抵達 <span class="pill o">計入準點率</span></h4>
+      <dl>
+        <dt>條件</dt><dd>過刷時間不晚於預約時段起始 <code>10</code> 分鐘（寬限值可在參數設定調整）。</dd>
+        <dt>系統做什麼</dt><dd>寫入報到時間、發震動器號、判定「準點」。</dd>
+        <dt>司機看到</dt><dd>大字「準時抵達」＋震動器號碼。</dd>
+        <dt>報表</dt><dd>計入該貨運業者的準點次數。</dd>
+      </dl>
+    </div>
+
+    <div class="path late">
+      <h4>路徑二　延遲抵達 <span class="pill a">計入延遲，遲到即結案</span></h4>
+      <dl>
+        <dt>條件</dt><dd>過刷時間晚於預約時段起始 10 分鐘以上，且尚未被判未到。</dd>
+        <dt>系統做什麼</dt><dd>判定「延遲」，並<b>當場找出當天最快的可進場時段</b>寫入 <code>lateSlot</code>。不再要求輸入採購單號，也<b>不產生第二筆預約</b>。</dd>
+        <dt>司機看到</dt><dd>大字「延遲抵達」＋延遲分鐘數＋「已排定改於 hh:mm 進場，此單到此結案，不需再過刷」。</dd>
+        <dt>報表</dt><dd>計入延遲一次。第二時段<b>不另計一次到場</b>，只在延遲欄下標「N 次改時段」。</dd>
+        <dt>沒時段時</dt><dd>畫面明說「今日已無可用時段，請於現場等候空檔」。系統不做任何時間承諾。</dd>
+      </dl>
+    </div>
+
+    <div class="path walk">
+      <h4>路徑三　現場候位 <span class="pill p">不計準點率，只計次</span></h4>
+      <dl>
+        <dt>條件</dt><dd>過刷查無此單，或車輛根本沒預約就直接到廠。</dd>
+        <dt>怎麼操作</dt><dd>警衛在過刷頁按「現場候位」→ <b>只輸車號數字</b>（不輸英文）→ 選車型 → 由近到遠挑一個剩餘時段 → 出憑證。<b>不需輸入採購單號。</b></dd>
+        <dt>業者怎麼認</dt><dd>靠車號數字比對過往到場紀錄。唯一命中才自動帶出業者與完整車牌；多筆紀錄指向不同業者時<b>一律不猜</b>，歸「未知業者」。</dd>
+        <dt>報表</dt><dd>獨立的「現場候位」次數欄，<b>不進準點率分母</b>，理由見下一節。</dd>
+        <dt>沒時段時</dt><dd>畫面明說今日已無可用時段，請於現場等候空檔。</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="note key">
+    <p><b>為什麼這樣設計就不用叫號。</b>「誰先進場」是個排序問題，一旦系統要回答它，就得知道每台車要下多久貨——而現場板數每天 200 到 400 板浮動，這個參數不可靠，估錯了叫號就失去信任。改成「重新給你一個時段」之後，系統只需要回答「哪個時段還有名額」，這是它算得準的事。排序仍然回到現場人員手上。</p>
+  </div>
+</section>
+
+<section id="logic">
+  <h2><span class="num">03</span>名額與判定邏輯</h2>
+
+  <h3>三種來源吃同一份名額</h3>
+  <figure>
+    <svg viewBox="0 0 840 300" role="img" aria-label="名額佔用示意圖：北區常溫倉非鷗翼車每段三個名額。09:00 那一段被一筆線上預約、一筆延遲者改入的時段、一筆現場候位共三筆佔滿；09:20 只有一筆線上預約，尚餘兩位；09:40 有一筆線上預約與一筆現場候位，尚餘一位；10:00 三位全空。">
+      <text x="2" y="14" font-size="11" font-weight="700" letter-spacing="1.4" fill="currentColor" opacity=".55">北區・常溫倉・非鷗翼車　每段名額 3</text>
+
+      <line x1="60" y1="210" x2="826" y2="210" stroke="currentColor" stroke-opacity=".35"></line>
+      <text x="52" y="66" font-size="11" text-anchor="end" fill="currentColor" opacity=".6">位 3</text>
+      <text x="52" y="114" font-size="11" text-anchor="end" fill="currentColor" opacity=".6">位 2</text>
+      <text x="52" y="162" font-size="11" text-anchor="end" fill="currentColor" opacity=".6">位 1</text>
+
+      <rect x="70" y="40" width="176" height="38" rx="4" fill="#0B4F4A" fill-opacity=".16" stroke="#0B4F4A" stroke-width="1.3"></rect>
+      <text x="158" y="64" font-size="12" text-anchor="middle" fill="currentColor">現場候位　5566</text>
+      <rect x="70" y="88" width="176" height="38" rx="4" fill="#D98A14" fill-opacity=".18" stroke="#D98A14" stroke-width="1.3"></rect>
+      <text x="158" y="112" font-size="12" text-anchor="middle" fill="currentColor">延遲改入　HAA-6305</text>
+      <rect x="70" y="136" width="176" height="38" rx="4" fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-opacity=".5"></rect>
+      <text x="158" y="160" font-size="12" text-anchor="middle" fill="currentColor">線上預約　KBC-7712</text>
+      <text x="158" y="232" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">09:00</text>
+      <text x="158" y="252" font-size="11.5" font-weight="700" text-anchor="middle" fill="#B03A2E">已額滿</text>
+
+      <rect x="262" y="136" width="176" height="38" rx="4" fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-opacity=".5"></rect>
+      <text x="350" y="160" font-size="12" text-anchor="middle" fill="currentColor">線上預約　ABC-1234</text>
+      <rect x="262" y="40" width="176" height="86" rx="4" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-dasharray="4 4"></rect>
+      <text x="350" y="232" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">09:20</text>
+      <text x="350" y="252" font-size="11.5" text-anchor="middle" fill="currentColor" opacity=".7">餘 2 位</text>
+
+      <rect x="454" y="88" width="176" height="38" rx="4" fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-opacity=".5"></rect>
+      <text x="542" y="112" font-size="12" text-anchor="middle" fill="currentColor">線上預約　TPL-9042</text>
+      <rect x="454" y="136" width="176" height="38" rx="4" fill="#0B4F4A" fill-opacity=".16" stroke="#0B4F4A" stroke-width="1.3"></rect>
+      <text x="542" y="160" font-size="12" text-anchor="middle" fill="currentColor">現場候位　7712</text>
+      <rect x="454" y="40" width="176" height="38" rx="4" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-dasharray="4 4"></rect>
+      <text x="542" y="232" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">09:40</text>
+      <text x="542" y="252" font-size="11.5" text-anchor="middle" fill="currentColor" opacity=".7">餘 1 位</text>
+
+      <rect x="646" y="40" width="176" height="134" rx="4" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-dasharray="4 4"></rect>
+      <text x="734" y="232" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">10:00</text>
+      <text x="734" y="252" font-size="11.5" text-anchor="middle" fill="currentColor" opacity=".7">餘 3 位</text>
+
+      <text x="60" y="288" font-size="11.5" fill="currentColor" opacity=".7">餘位 ＝ 每段名額 − （線上預約 ＋ 延遲改入 ＋ 現場候位）</text>
+    </svg>
+    <figcaption>名額計算同時比對預約時段與延遲改入的時段。<b>漏掉任何一種來源就會超賣</b>——例如把延遲者的新時段當成不佔位，09:00 這一段就會被系統認為還有一位，實際上碼頭已經滿了。鷗翼車在廣場下貨，是另一個完全獨立的名額池，碼頭額滿不影響廣場。</figcaption>
+  </figure>
+
+  <h3>判定規則</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>判定</th><th>條件</th><th>誰觸發</th><th>進準點率分母</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill o">準點</span></td><td>過刷時間 ≤ 預約時段起始 ＋ 寬限（預設 10 分）</td><td>過刷</td><td>是</td></tr>
+        <tr><td><span class="pill a">延遲</span></td><td>過刷時間 &gt; 預約時段起始 ＋ 寬限</td><td>過刷</td><td>是</td></tr>
+        <tr><td><span class="pill c">未到</span></td><td>時段結束後超過設定分鐘數（預設 30 分）仍未過刷</td><td><b>系統自動</b></td><td>是</td></tr>
+        <tr><td><span class="pill p">現場候位</span></td><td>未預約，由現場當場給時段</td><td>警衛操作</td><td><b>否，只計次</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <p>四種判定裡<b>只有「未到」是系統自己認定的</b>，其餘都要有人在現場按下去。這代表現場永遠有介入空間，但也代表沒人操作時狀態不會自己往前走。重複過刷同一張單不會覆寫原本的時間與判定——保留第一次的結果。</p>
+  </div>
+
+  <h3>為什麼現場候位不能算進準點率</h3>
+  <figure>
+    <svg viewBox="0 0 800 268" role="img" aria-label="兩種算法的對照長條圖：只算線上預約時，宏昌貨運準點率為百分之四十四，未知業者因沒有預約紀錄而不計算準點率、僅記錄現場候位三次。若把現場候位也算進分母，宏昌貨運被拉高到百分之五十五，未知業者變成百分之百，反而成為表現最好的一列。">
+      <text x="2" y="14" font-size="11" font-weight="700" letter-spacing="1.4" fill="currentColor" opacity=".55">2026-08 月報　準點率</text>
+
+      <text x="2" y="52" font-size="12.5" font-weight="700" fill="currentColor">只算線上預約</text>
+      <text x="2" y="69" font-size="10.5" fill="currentColor" opacity=".6">目前的做法</text>
+
+      <text x="150" y="52" font-size="12" fill="currentColor">宏昌貨運</text>
+      <rect x="240" y="40" width="420" height="16" rx="3" fill="currentColor" fill-opacity=".1"></rect>
+      <rect x="240" y="40" width="185" height="16" rx="3" fill="#B03A2E"></rect>
+      <text x="670" y="53" font-size="12.5" font-weight="700" fill="currentColor">44%</text>
+
+      <text x="150" y="83" font-size="12" fill="currentColor">未知業者</text>
+      <rect x="240" y="71" width="420" height="16" rx="3" fill="currentColor" fill-opacity=".07"></rect>
+      <text x="248" y="84" font-size="10.5" fill="currentColor" opacity=".65">無預約紀錄，不計準點率　·　現場候位 3 次</text>
+
+      <line x1="2" y1="112" x2="798" y2="112" stroke="currentColor" stroke-opacity=".18" stroke-dasharray="4 4"></line>
+
+      <text x="2" y="150" font-size="12.5" font-weight="700" fill="#B03A2E">把現場候位也算進去</text>
+      <text x="2" y="167" font-size="10.5" fill="currentColor" opacity=".6">失真的做法</text>
+
+      <text x="150" y="150" font-size="12" fill="currentColor">宏昌貨運</text>
+      <rect x="240" y="138" width="420" height="16" rx="3" fill="currentColor" fill-opacity=".1"></rect>
+      <rect x="240" y="138" width="231" height="16" rx="3" fill="#D98A14"></rect>
+      <text x="670" y="151" font-size="12.5" font-weight="700" fill="currentColor">55%</text>
+      <text x="712" y="151" font-size="11" font-weight="700" fill="#B03A2E">＋11</text>
+
+      <text x="150" y="181" font-size="12" fill="currentColor">未知業者</text>
+      <rect x="240" y="169" width="420" height="16" rx="3" fill="currentColor" fill-opacity=".1"></rect>
+      <rect x="240" y="169" width="420" height="16" rx="3" fill="#D98A14"></rect>
+      <text x="670" y="182" font-size="12.5" font-weight="700" fill="currentColor">100%</text>
+
+      <rect x="2" y="208" width="796" height="52" rx="5" fill="#B03A2E" fill-opacity=".1" stroke="#B03A2E" stroke-opacity=".5"></rect>
+      <text x="18" y="231" font-size="12.5" font-weight="700" fill="currentColor">從不預約、每次直接到現場的車，反而會是準點率最高的一列。</text>
+      <text x="18" y="250" font-size="11.5" fill="currentColor" opacity=".8">現場候位當場報到必然「準時」，混進分母就會獎勵不預約的人、懲罰乖乖預約的人。</text>
+    </svg>
+    <figcaption>所以現場候位獨立成一欄，<b>次數本身就是要管理的指標</b>——「這家業者這個月有幾次沒預約就直接來」比準點率更能反映問題。同理，延遲者改到的第二時段不另計一次到場，否則遲到的人會多賺一筆準時。原則只有一句：<b>一次進場只算一筆紀錄。</b></figcaption>
+  </figure>
+</section>
+
+<section id="ops">
+  <h2><span class="num">04</span>操作步驟</h2>
+
+  <div class="steps">
+    <div class="step">
+      <h4><span class="pill p">貨運業者</span>預約一台車</h4>
+      <ol>
+        <li>進「預約申請」，填<b>採購單號</b>（供應商轉來的任一張）、<b>貨運業者代號</b>、<b>車牌</b>。</li>
+        <li>系統帶出供應商、收貨物流中心、指定進貨日與參考板數。低溫倉的單會在這一步被擋下，提示「不需預約，直接到廠」。</li>
+        <li>選填<b>同車其他採購單</b>。這些只供警衛核對，不佔名額、不會被判未到。</li>
+        <li>選車型：鷗翼車走廣場、非鷗翼車靠碼頭，兩邊名額獨立。</li>
+        <li>在剩餘時段中挑一格，確認預約，取得預約單與 QRcode。</li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <h4><span class="pill p">貨運業者</span>查詢與憑證</h4>
+      <ol>
+        <li>「預約查詢」用<b>車牌＋進貨日</b>查，或直接輸入預約單號。</li>
+        <li>同一台車同一天跑兩個物流中心，會列出兩筆。</li>
+        <li>QRcode 是深層連結，手機掃了會直接開到該單的查詢頁。</li>
+        <li>報到後這一頁會顯示判定結果；若被判延遲並改了時段，這裡也看得到新的進場時間。</li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <h4><span class="pill n">警衛</span>一般報到</h4>
+      <ol>
+        <li>「廠門口過刷」先確認上方的<b>物流中心</b>選對。</li>
+        <li>掃 QRcode，或手key預約單號、車牌。欄位同時吃整串 QR 網址。</li>
+        <li>畫面立即顯示準時或延遲，並給震動器號碼。</li>
+        <li>若判延遲，畫面會直接寫出改進場的時段——<b>告訴司機新時間即可，不用再刷一次</b>。</li>
+        <li>右側三份清單：今日尚未報到、今日已報到、今日現場候位。</li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <h4><span class="pill n">警衛</span>未預約的車</h4>
+      <ol>
+        <li>過刷查無此單時，按<b>「現場候位」</b>。</li>
+        <li>照車尾<b>只輸數字</b>。系統會顯示反查到的業者，或提示將歸入「未知業者」。</li>
+        <li>選車型，從由近到遠的清單中挑一格。</li>
+        <li>確認後發震動器並出憑證。<b>不需要採購單號。</b></li>
+        <li>若今日已無時段，畫面會說明請在現場等候空檔，此時不建立預約。</li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <h4><span class="pill n">管理</span>看報表</h4>
+      <ol>
+        <li>「貨運準點報表」切換月報／季報與期間。</li>
+        <li>依準點率由低到高排序，最需要檢討的排最前面。</li>
+        <li>延遲欄下方的「N 次改時段」是其中因遲到而改時段的次數。</li>
+        <li>最右的<b>現場候位</b>欄不進準點率，是獨立指標。</li>
+        <li>「匯出 CSV」會把線上預約與現場候位一起帶出，含來源與延遲後進場欄。</li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <h4><span class="pill n">管理</span>調參數</h4>
+      <ol>
+        <li>準點寬限：預設 10 分。改大改小會立刻反映在報表的準點率上。</li>
+        <li>未到判定：時段結束後多久沒刷算未到，預設 30 分。</li>
+        <li><b>現場給時段的起算緩衝</b>：預設 0，代表可以給「現在之後」的任一時段。覺得太趕就調大。</li>
+        <li>各倉各池的開放時間、每小時切分、每段名額。</li>
+        <li>哪些倉別開放預約——關掉之後，該倉別的採購單在預約頁會被擋下。</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section id="test">
+  <h2><span class="num">05</span>測試劇本</h2>
+  <p>Demo 的演練日固定為 <code>2026-09-08</code>，起始時間 <code>09:10</code>，右上角可以推進時間。資料存在瀏覽器本機，重新整理不會消失；要回到初始狀態按右上「重設 Demo 資料」。以下七組建議照順序跑。</p>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 1</span><h3>正常預約一台車</h3><span class="pill n mono">PO-260908-014</span></div>
+    <div class="scen-b">
+      <p class="goal">確認入口三欄的意義，以及鷗翼與非鷗翼的名額是分開的。</p>
+      <ol>
+        <li>「預約申請」輸入 <code>PO-260908-014</code>、業者代號 <code>T01</code>、車牌自訂（例如 <code>NEW-0001</code>）。</li>
+        <li>看系統帶出的收貨中心與進貨日——這兩項<b>不是你選的</b>，是採購單決定的。</li>
+        <li>車型先點<b>非鷗翼車</b>看時段，再點<b>鷗翼車</b>，比較兩邊的餘位數字。</li>
+        <li>挑一格確認預約，看預約單與 QRcode。</li>
+      </ol>
+      <div class="expect"><b>應該看到：</b>兩種車型的餘位完全不同（碼頭每段 3 位、廣場每段 1 位），切換車型時已選的時段會被清掉。</div>
+      <div class="ask"><b>請回饋：</b><ul><li>三個欄位裡，貨運業者實際上填得出哪些？</li><li>車型只分鷗翼／非鷗翼夠不夠？現場還會用別的方式分嗎？</li></ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 2</span><h3>低溫倉不需預約</h3><span class="pill n mono">PO-260908-018</span></div>
+    <div class="scen-b">
+      <p class="goal">確認第一階段只做常溫，低溫的單會被擋下並說明原因。</p>
+      <ol>
+        <li>輸入 <code>PO-260908-018</code>，業者代號與車牌隨意。</li>
+        <li>看被擋下時的提示文字。</li>
+        <li>到「參數設定」把北區低溫倉的「不開放預約」勾成開放，再回來試一次。</li>
+      </ol>
+      <div class="expect"><b>應該看到：</b>擋下時說明「不需預約，請依原有方式直接到廠」；把參數打開後同一張單就能預約了——<b>倉別開不開放是參數，不是寫死的</b>。</div>
+      <div class="ask"><b>請回饋：</b><ul><li>低溫真的完全不需要預約嗎？夜間時段確定沒有排隊問題？</li><li>那段提示文字，貨運業者看得懂嗎？</li></ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 3</span><h3>一車多單</h3><span class="pill n mono">TPL-9042</span></div>
+    <div class="scen-b">
+      <p class="goal">確認「一台車只需要一個時段」，其餘採購單不會被判未到。</p>
+      <ol>
+        <li>「預約查詢」輸入車牌 <code>TPL-9042</code>、進貨日 <code>2026-09-08</code>。</li>
+        <li>看這一筆帶了幾張採購單。</li>
+        <li>開「預約單 / QRcode」，確認三張單號都印在憑證上。</li>
+        <li>回劇本 1 的流程，在第 2 步試著加入一張<b>不同進貨日或不同 DC</b> 的採購單，看它被擋下。</li>
+      </ol>
+      <div class="expect"><b>應該看到：</b>一筆預約帶三張採購單，只佔一個時段；跨日或跨 DC 的單無法併在同一車。</div>
+      <div class="ask"><b>請回饋：</b><ul><li>其他採購單要不要強制填？現在是選填。</li><li>同一張採購單被兩台車分批送，要不要擋？現在不擋。</li></ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 4</span><h3>準時報到</h3><span class="pill n mono">ABC-1234</span></div>
+    <div class="scen-b">
+      <p class="goal">看最單純的那條路徑。</p>
+      <ol>
+        <li>「廠門口過刷」確認物流中心是<b>北區</b>。</li>
+        <li>輸入車牌 <code>ABC-1234</code>（預約時段 09:20，現在 09:10）。</li>
+        <li>看判定畫面與震動器號碼，再看右側「今日已報到」多了一列。</li>
+      </ol>
+      <div class="expect"><b>應該看到：</b>大字「準時抵達」，核對資料列出貨運業者、車牌、採購單與供應商，供警衛比對車上的貨。</div>
+      <div class="ask"><b>請回饋：</b><ul><li>核對資料的欄位夠不夠？現場還需要看到什麼？</li><li>震動器號碼由系統發，還是現場人工遞出就好？</li></ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 5</span><h3>遲到者當場改時段</h3><span class="pill a mono">MJC-7788</span></div>
+    <div class="scen-b">
+      <p class="goal"><b>本次新增規則的重點。</b>確認遲到即結案、系統當場給新時段、不必再刷第二次。</p>
+      <ol>
+        <li>「廠門口過刷」輸入車牌 <code>MJC-7788</code>（預約 08:40，現在 09:10，已遲到 30 分）。</li>
+        <li>看判定卡：延遲分鐘數，以及<b>「已排定改於 hh:mm 進場」</b>那一行。</li>
+        <li>到「預約查詢」用同一車牌查，確認查詢頁也看得到新的進場時間。</li>
+        <li>回過刷頁，<b>再刷一次同一台車</b>，確認判定與時間都沒有被覆寫。</li>
+        <li>把時間推進到接近收工（右上「＋1 小時」按幾次），再找一台未報到的車過刷，看「今日已無可用時段」的處理。</li>
+      </ol>
+      <div class="expect"><b>應該看到：</b>這台車在報表上是<b>一次延遲</b>，不是「一次延遲＋一次準時」。新時段會吃掉當天的一個名額，回預約頁看該時段的餘位確實少一位。</div>
+      <div class="ask"><b>請回饋：</b><ul><li>直接指定最快的時段可以嗎？還是要讓司機自己挑？</li><li>遲到者插進後面的空格，會吃掉還沒預約者的名額。要不要限制？</li><li>「今日已無時段」時只請他現場等候，這樣夠嗎？</li></ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 6</span><h3>現場候位與車號反查</h3><span class="pill p">免採購單號</span></div>
+    <div class="scen-b">
+      <p class="goal">確認未預約的車怎麼處理，以及只輸數字時業者反查的三種結果。</p>
+      <ol>
+        <li>「廠門口過刷」按<b>「現場候位（未預約直接到廠）」</b>。</li>
+        <li>車號輸 <code>7712</code>——只有一台車是這個數字，應該反查到<b>大順通運</b>並補回完整車牌。</li>
+        <li>清掉改輸 <code>7788</code>——<b>兩家業者</b>都有這個數字的車，系統應該<b>不猜</b>，提示歸入未知業者。</li>
+        <li>再改輸 <code>9988</code>——完全查無紀錄，一樣歸未知業者。</li>
+        <li>挑一格時段確認，看憑證上寫的是「已在現場完成報到，不需再過刷」。</li>
+        <li>到報表看 2026-09 月報，確認這筆進了「現場候位」欄而<b>不在準點率分母裡</b>。</li>
+      </ol>
+      <div class="expect"><b>應該看到：</b>三種輸入分別給出「反查到」「不猜」「查無」三種提示。反查不到的都收在報表最下方「未知業者」那一列。</div>
+      <div class="ask"><b>請回饋：</b><ul><li><b>只輸數字夠嗎？</b>反查不到就只能算總次數、無法點名業者。要能點名可能得補英文碼或建車輛主檔。</li><li>現場候位若常有空檔，「乾脆別預約直接來」會不會變成常態？</li></ul></div>
+    </div>
+  </div>
+
+  <div class="scen">
+    <div class="scen-h"><span class="sn">劇本 7</span><h3>報表與參數連動</h3><span class="pill n">2026-08</span></div>
+    <div class="scen-b">
+      <p class="goal">確認報表抓得出該檢討的對象，以及參數改動如何影響數字。</p>
+      <ol>
+        <li>「貨運準點報表」看 2026-08 月報，注意<b>宏昌貨運（T02）</b>準點率 44% 墊底，且現場候位 4 次最多。</li>
+        <li>看最下方的<b>未知業者</b>那一列：沒有預約紀錄，但現場候位 3 次。</li>
+        <li>「匯出 CSV」看欄位，確認有<b>來源</b>與<b>延遲後進場</b>兩欄。</li>
+        <li>到「參數設定」把準點寬限從 10 分改成 20 分，回報表看準點率怎麼變。</li>
+      </ol>
+      <div class="expect"><b>應該看到：</b>寬限放寬後整體準點率上升，因為原本「延遲」的部分變成「準點」。<b>現場候位的次數完全不受影響</b>——它本來就不看時間。</div>
+      <div class="ask"><b>請回饋：</b><ul><li>寬限實務上該訂幾分？</li><li>這份報表要送給誰？多久看一次？</li><li>準點率低、或現場候位次數高，要不要有後果？</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="open">
+  <h2><span class="num">06</span>待確認事項</h2>
+  <p>以下項目會改變資料模型或作業規則，<b>需要在會議上拍板</b>，不宜由開發自行決定。前兩項是新增的。</p>
+
+  <div class="q hot">
+    <b>貨運業者代號從哪裡來</b>
+    <p>目前假設已有代號可填。實務上要不要建貨運業者主檔、由誰維護、供應商轉單時要不要一併指定貨運業者？<b>沒有穩定的識別就做不出月報與季報</b>——這一項會擋住後面所有統計功能。</p>
+  </div>
+  <div class="q">
+    <b>現場候位要不要輸英文車號</b>
+    <p>目前只輸數字，靠過往紀錄反查業者。反查不到就只能算總次數、無法點名。要每一筆都追得到業者，可能得補英文碼或建車輛主檔。另外，現場候位若常有空檔，「乾脆別預約直接來」會不會慢慢架空預約制度？<b>報表能點名是唯一的制衡。</b></p>
+  </div>
+  <div class="q">
+    <b>遲到者改到的時段會排擠後面的人</b>
+    <p>他插進後面的空格，會吃掉還沒預約者的名額。目前依先到先得不特別限制。若現場出現「準時的人反而約不到」的抱怨，就要另訂保留規則。</p>
+  </div>
+  <div class="q">
+    <b>同一張採購單被多台車預約</b>
+    <p>量大分批送時會發生。目前不擋，因為主鍵是車牌。要不要設上限，或要求註記分批？</p>
+  </div>
+  <div class="q">
+    <b>震動器號碼由誰發</b>
+    <p>Demo 由系統依當日該 DC 序號發放。實務上是現場人工遞出、還是系統指定？要不要把震動器編號與預約綁定？</p>
+  </div>
+  <div class="q">
+    <b>改約與取消</b>
+    <p>目前不提供。貨運業者臨時換車、換時段的頻率有多高？若要開放，截止時間怎麼訂？</p>
+  </div>
+  <div class="q">
+    <b>延遲與未到要不要有後果</b>
+    <p>目前純統計。是否要對長期延遲者限制可預約時段，或列入年度評鑑？這關係到報表要送給誰。</p>
+  </div>
+  <div class="q">
+    <b>準點的 0～10 分鐘</b>
+    <p>已確認晚 10 分鐘內算準點。若要三級（準時／寬限／延遲）分開統計，報表要多一欄。</p>
+  </div>
+  <div class="q">
+    <b>收費可行性</b>
+    <p>以節省的司機等待工時為基礎收取系統手續費，正在評估中。牽涉成本是否轉嫁回自身、收費後的服務承諾，以及法規面。<b>使用者已表示暫緩。</b></p>
+  </div>
+
+  <h3>已知限制</h3>
+  <ul class="plain">
+    <li><b>沒有後端，無法多人同步演練。</b>資料存在各自的瀏覽器裡，一人當貨運業者、一人當警衛是看不到彼此的。要合演請同一台機器輪流操作。</li>
+    <li><b>沒有通知機制。</b>預約成立、改時段都不會發簡訊或推播，司機得自己看畫面或聽現場人員說。</li>
+    <li><b>報表的歷史資料是預先編造的固定配額</b>，不是隨機產生，所以每次重設看到的數字都一樣，測試劇本才能指名。</li>
+    <li><b>沒有登入與權限。</b>Demo 裡六個畫面誰都能點；正式系統要分角色，見上線規格。</li>
+    <li><b>唯一的外部連線是 Google Fonts</b>，載入失敗會自動退回系統字型，不影響功能。QRcode 產生器已內嵌，離線可用。</li>
+  </ul>
+</section>
+
+<footer>
+  <p>進貨預約 D 案手冊　·　2026.09.10　·　配合 <a href="https://alexchiang-mf.github.io/inbound-booking-demo/plan-d-demo.html">D 案 Demo</a> 與<a href="https://alexchiang-mf.github.io/inbound-booking-demo/plan-d-deploy.html">上線規格</a>閱讀。示範資料皆為虛構。</p>
+</footer>
+
+</div>
+</body>
+</html>
