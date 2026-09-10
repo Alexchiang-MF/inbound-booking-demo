@@ -246,7 +246,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 <script>
 "use strict";
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
-const KEY="tdc-plan-d-v1";
+const KEY="tdc-plan-d-v2";   // v2：加入延遲改時段與現場候位，舊資料沒有這些欄位，換 key 讓大家拿到新種子
 
 /* ── 工具 ───────────────────────────── */
 const pad=n=>String(n).padStart(2,"0");
@@ -282,6 +282,7 @@ function defaultConfig(){
   return{
     graceMin:10,          // 報到晚於預約時段起始這麼多分鐘內，仍算準點
     noShowAfterMin:30,    // 時段結束再過這麼久仍未報到，判定未到
+    walkinLeadMin:0,      // 現場給時段時，從「現在＋這麼多分鐘」之後才起算
     /* booking:false 的倉別不開放預約，車輛依原有方式直接到廠。 */
     noBookingNote:"低溫進貨集中在夜間時段，現場沒有排隊問題，因此第一階段不納入預約。",
     dcs:[
@@ -312,10 +313,12 @@ function slotsOf(dc,wh,g){
   for(let t=st;t+step<=en;t+=step)out.push({start:t,end:t+step});
   return out;
 }
-/* 名額：同 DC＋同倉＋同池＋同日＋同時段的有效預約數 */
+/* 名額：同 DC＋同倉＋同池＋同日＋同時段的有效預約數。
+   遲到者改到的第二時段（lateSlot）與現場候位同樣佔一格——那台車實際會用掉碼頭。 */
 function usedAt(dc,wh,g,date,start,excludeId){
   return S.bookings.filter(b=>b.dc===dc&&b.wh===wh&&b.group===g&&b.date===date
-    &&b.slot===start&&b.status!=="cancelled"&&b.id!==excludeId).length;
+    &&b.status!=="cancelled"&&b.id!==excludeId
+    &&(b.slot===start||b.lateSlot===start)).length;
 }
 function remainAt(dc,wh,g,date,start,excludeId){
   return (poolOf(dc,wh,g)?.capacity||0)-usedAt(dc,wh,g,date,start,excludeId);
@@ -340,6 +343,7 @@ function seed(){
       id:dc+"-"+date.slice(5).replace("-","")+"-"+pad(seq[k]),
       carrier,dc,wh,group:g,date,slot,end:slot+step,plate,poRefs:pos,
       status:ev.st||"booked",checkinAt:ev.ci??null,pager:ev.pg||null,
+      source:ev.src||"online",lateSlot:ev.ls??null,lateEnd:ev.le??null,
       createdAt:Date.now()-Math.random()*1e7
     });
   };
@@ -351,7 +355,9 @@ function seed(){
         E=mkPO("V102","N","N1",TODAY,9);
   mk("T01","N","N1","dock",TODAY,toMin("08:00"),"KBC-7712",[A],{st:"arrived",ci:toMin("07:58"),pg:"P-01"});
   mk("T03","N","N1","dock",TODAY,toMin("08:00"),"RDA-2081",[B],{st:"arrived",ci:toMin("08:07"),pg:"P-02"});
-  mk("T02","N","N1","dock",TODAY,toMin("08:20"),"HAA-6305",[C],{st:"arrived",ci:toMin("08:38"),pg:"P-03"});
+  // 08:20 這台延遲 18 分，過刷當下已排定改 09:00 進場（遲到結案，不另外產生預約）
+  mk("T02","N","N1","dock",TODAY,toMin("08:20"),"HAA-6305",[C],
+     {st:"arrived",ci:toMin("08:38"),pg:"P-03",ls:toMin("09:00"),le:toMin("09:20")});
   mk("T04","N","N1","dock",TODAY,toMin("08:40"),"DYA-4408",[D],{st:"arrived",ci:toMin("08:36"),pg:"P-04"});
   mk("T02","N","N1","dock",TODAY,toMin("08:40"),"MJC-7788",[E],{});   // 已逾準點時限、尚未判未到
 
@@ -361,6 +367,10 @@ function seed(){
   mk("T01","N","N1","dock",TODAY,toMin("09:20"),"ABC-1234",[F],{});
   mk("T03","N","N1","dock",TODAY,toMin("09:20"),"TPL-9042",[G,H,I],{});  // 一車三單
   mk("T05","N","N1","wing",TODAY,toMin("08:00"),"WNG-7788",[J],{st:"arrived",ci:toMin("08:02"),pg:"P-05"});
+
+  // 未預約直接到廠，警衛以現場候位給了 09:40：不佔準點率，只計次
+  mk(null,"N","N1","dock",TODAY,toMin("09:40"),"5566",[],
+     {st:"walkin",src:"walkin",ci:toMin("09:05"),pg:"P-06"});
 
   const K=mkPO("V518","M","N1",TODAY,7), L=mkPO("V102","M","N1",TODAY,10),
         M=mkPO("V231","M","N1",TODAY,6);
@@ -407,8 +417,33 @@ function seed(){
         const ev=kind==="noshow"?{st:"noshow"}
           :kind==="late"?{st:"arrived",ci:s+13+(i%22)}      // 超過 10 分寬限
           :{st:"arrived",ci:s-5+(i%14)};                    // 早到或晚 10 分內
+        // 依現行規則，延遲者當下會被改到當天較晚的時段；接近收工而排不下的就沒有
+        if(kind==="late"){
+          const si=sl.findIndex(x=>x.start===s), ni=si+2+(i%4);
+          if(ni<sl.length){ev.ls=sl[ni].start;ev.le=sl[ni].end}
+        }
         mk(c.code,dc,wh,g,date,s,FLEET[c.code][i%3],[po],ev);
       });
+    });
+  });
+  /* 現場候位歷史：不進準點率，只計次。刻意留幾筆「未知業者」，
+     呈現只輸車號、系統又反查不到時，報表會長成什麼樣子。
+     宏昌貨運（T02）除了準點率墊底，也是最常不預約就直接來的那家。 */
+  const WALKIN={"2026-07":{T02:3,T04:1,"?":2},"2026-08":{T02:4,T03:1,T05:1,"?":3}};
+  const ANON=["5566","8123","4790","6208","3355"];
+  let wi=0;
+  Object.entries(WALKIN).forEach(([month,byCarrier])=>{
+    Object.entries(byCarrier).forEach(([code,cnt])=>{
+      for(let k=0;k<cnt;k++,wi++){
+        const date=month+"-"+pad(3+((wi*3)%25));
+        const dc=(wi%3===0)?"M":"N", wh="N1", g="dock";
+        const sl=slotsOf(dc,wh,g); if(!sl.length)continue;
+        const start=sl[(wi*5+k)%sl.length].start;
+        const known=code!=="?";
+        mk(known?code:null,dc,wh,g,date,start,
+           known?digitsOf(FLEET[code][k%3]):ANON[wi%ANON.length],[],
+           {st:"walkin",src:"walkin",ci:start-8-(wi%9),pg:"P-"+pad(1+(wi%9))});
+      }
     });
   });
   return{orders,bookings};
@@ -436,14 +471,43 @@ const bookingOfTruck=(plate,date,dc)=>S.bookings.find(b=>
   b.plate===plate&&b.date===date&&b.dc===dc&&b.status!=="cancelled");
 const bookingById=id=>S.bookings.find(b=>b.id===String(id||"").trim().toUpperCase());
 
-/* ── 準點判定 ───────────────────────────── */
+/* ── 準點判定 ─────────────────────────────
+   現場候位不進準點率：他本來就沒預約，當場報到必然「準時」，
+   混進分母會讓沒預約的人準點率 100%，乖乖預約的人反而被扣分。 */
 function punctuality(b){
+  if(b.source==="walkin")return null;
   if(b.status==="noshow")return"noshow";
   if(b.status!=="arrived"||b.checkinAt==null)return null;
   return b.checkinAt<=b.slot+S.cfg.graceMin?"ontime":"late";
 }
 const PLABEL={ontime:"準點",late:"延遲",noshow:"未到"};
 const lateBy=b=>Math.max(0,(b.checkinAt??0)-b.slot);
+const isWalkin=b=>b.source==="walkin";
+const carrierName=c=>carrierOf(c)?.name||"未知業者";
+
+/* ── 現場給時段 ─────────────────────────────
+   遲到者與現場候位共用同一套邏輯：人車貨都已在門口，差別只在入口。
+   採購單號的用途是「遠端佔位的防濫用憑證」，人到現場了就不需要這一關。 */
+const digitsOf=p=>String(p||"").replace(/\D/g,"");
+/* 現場候位只輸車號數字，貨運業者靠過往紀錄反查。
+   查無、或多筆紀錄指向不同業者時一律不猜，報表歸「未知業者」，避免誤植到別家頭上。 */
+function carrierByDigits(d){
+  if(!d)return null;
+  const set=[...new Set(S.bookings.filter(b=>b.carrier&&digitsOf(b.plate)===d).map(b=>b.carrier))];
+  return set.length===1?set[0]:null;
+}
+function plateByDigits(d){
+  if(!d)return null;
+  const set=[...new Set(S.bookings.filter(b=>digitsOf(b.plate)===d).map(b=>b.plate))];
+  return set.length===1?set[0]:null;
+}
+/* 當日該倉該車型，從現在（＋緩衝）之後仍有名額的時段，由近到遠。 */
+function openSlotsNow(dc,wh,g){
+  const from=S.simMin+(S.cfg.walkinLeadMin||0);
+  return slotsOf(dc,wh,g).filter(x=>x.start>=from&&remainAt(dc,wh,g,S.simDate,x.start)>0);
+}
+/* 該物流中心第一個開放預約的倉別（第一階段＝常溫）。 */
+const bookableWh=dc=>dcOf(dc)?.warehouses.find(w=>w.booking)||dcOf(dc)?.warehouses[0];
 
 function autoNoShow(){
   let ch=false;
@@ -601,8 +665,10 @@ V.query=()=>{
   return H+form+`<div class="grid" style="margin-top:16px">${list.map(b=>{
     const dc=dcOf(b.dc), w=whOf(b.dc,b.wh), pu=punctuality(b);
     let progress="";
-    if(b.status==="arrived"){
-      progress=`<div class="note ${pu==="ontime"?"key":"warn"}">已於 <b class="mono">${hhmm(b.checkinAt)}</b> 完成過刷報到，判定為 <b>${PLABEL[pu]}</b>${pu==="late"?`（延遲 ${lateBy(b)} 分）`:""}。${b.pager?`震動器號碼 <b class="mono">${b.pager}</b>，`:""}請依現場人員指示進場。</div>`;
+    if(isWalkin(b)){
+      progress=`<div class="note key">未預約直接到廠，於 <b class="mono">${hhmm(b.checkinAt)}</b> 由現場給定 <b class="mono">${hhmm(b.slot)}–${hhmm(b.end)}</b> 進場。${b.pager?`震動器號碼 <b class="mono">${b.pager}</b>，`:""}本次列為<b>現場候位</b>，不計入準點率，但會計入未預約次數。</div>`;
+    }else if(b.status==="arrived"){
+      progress=`<div class="note ${pu==="ontime"?"key":"warn"}">已於 <b class="mono">${hhmm(b.checkinAt)}</b> 完成過刷報到，判定為 <b>${PLABEL[pu]}</b>${pu==="late"?`（延遲 ${lateBy(b)} 分）`:""}。${b.pager?`震動器號碼 <b class="mono">${b.pager}</b>，`:""}${b.lateSlot!=null?`因延遲抵達，已改排 <b class="mono">${hhmm(b.lateSlot)}–${hhmm(b.lateEnd)}</b> 進場，<b>不需再過刷</b>。`:"請依現場人員指示進場。"}</div>`;
     }else if(b.status==="noshow"){
       progress=`<div class="note bad">預約時段已過且未過刷報到，本次列為<b>未到</b>並計入貨運業者到場紀錄。</div>`;
     }else if(b.date===S.simDate&&S.simMin>b.slot+S.cfg.graceMin){
@@ -615,12 +681,13 @@ V.query=()=>{
       <div class="card-pad grid" style="grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start">
         <div class="grid" style="gap:11px">
           <dl class="kv">
-            <dt>貨運業者</dt><dd>${esc(carrierOf(b.carrier).name)} <span class="mono" style="color:var(--ink-3)">${b.carrier}</span></dd>
+            <dt>貨運業者</dt><dd>${esc(carrierName(b.carrier))} <span class="mono" style="color:var(--ink-3)">${b.carrier||""}</span></dd>
             <dt>車牌</dt><dd class="mono" style="font-weight:600">${esc(b.plate)}</dd>
             <dt>收貨</dt><dd>${esc(dc.name)}　${tempTag(w)}</dd>
             <dt>車型</dt><dd>${grp(b.group).name}（${grp(b.group).stand}下貨）</dd>
-            <dt>預約時段</dt><dd class="mono" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
-            <dt>採購單</dt><dd class="mono">${b.poRefs.join("、")}</dd>
+            <dt>${isWalkin(b)?"現場給定時段":"預約時段"}</dt><dd class="mono" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
+            ${b.lateSlot!=null?`<dt>延遲後進場</dt><dd class="mono" style="font-weight:600;color:var(--accent)">${hhmm(b.lateSlot)}–${hhmm(b.lateEnd)}</dd>`:""}
+            <dt>採購單</dt><dd class="mono">${b.poRefs.length?b.poRefs.join("、"):"—（現場候位不需採購單號）"}</dd>
           </dl>
           ${progress}
         </div>
@@ -632,6 +699,7 @@ V.query=()=>{
 };
 function statusPill(b){
   const pu=punctuality(b);
+  if(b.status==="walkin")return `<span class="pill p">現場候位</span>`;
   if(b.status==="arrived")return `<span class="pill ${pu==="ontime"?"o":"a"}">${PLABEL[pu]}報到</span>`;
   if(b.status==="noshow")return `<span class="pill c">未到</span>`;
   return `<span class="pill n">待報到</span>`;
@@ -644,6 +712,7 @@ V.gate=()=>{
   const waiting=today.filter(b=>b.status==="booked");
   const arrived=today.filter(b=>b.status==="arrived").sort((a,b)=>b.checkinAt-a.checkinAt);
   const missed=today.filter(b=>b.status==="noshow");
+  const walkins=today.filter(b=>b.status==="walkin").sort((a,b)=>a.slot-b.slot);
   const hit=S.ui.gateHit?bookingById(S.ui.gateHit):null;
   let verdict="";
   if(hit){
@@ -656,23 +725,56 @@ V.gate=()=>{
       <div class="sub">預約 <b class="mono">${hhmm(hit.slot)}</b>　實際過刷 <b class="mono">${hit.checkinAt!=null?hhmm(hit.checkinAt):"—"}</b>
         ${pu==="late"?`　<b style="color:var(--accent)">延遲 ${lateBy(hit)} 分鐘</b>`:(pu==="ontime"&&hit.checkinAt>hit.slot?`　（晚 ${lateBy(hit)} 分，在 ${S.cfg.graceMin} 分寬限內）`:"")}</div>
       ${hit.pager?`<div class="pager">請領取震動器 <b>${hit.pager}</b></div>`:""}
+      ${pu==="late"?`<div class="note key" style="margin-top:12px">${hit.lateSlot!=null
+        ?`已排定改於 <b class="mono">${hhmm(hit.lateSlot)}–${hhmm(hit.lateEnd)}</b> 進場，請在現場等候。此單到此結案，不需再過刷。`
+        :`今日已無可用時段，請於現場等候空檔，由現場人員視狀況安排進場。`}</div>`:""}
       ${S.ui.gateDup?`<div class="note" style="margin-top:12px;background:var(--surface)">此單稍早已完成報到，重複過刷不會更改原判定與時間。</div>`:""}
     </div>
     <div class="card"><div class="card-head"><h3>核對資料</h3><div class="spacer"></div>
       <span class="pill p">${grp(hit.group).stand}下貨</span></div>
       <div class="card-pad"><dl class="kv">
-        <dt>貨運業者</dt><dd>${esc(carrierOf(hit.carrier).name)} <span class="mono" style="color:var(--ink-3)">${hit.carrier}</span></dd>
+        <dt>貨運業者</dt><dd>${esc(carrierName(hit.carrier))} <span class="mono" style="color:var(--ink-3)">${hit.carrier||""}</span></dd>
         <dt>車牌</dt><dd class="mono" style="font-weight:600;font-size:16px">${esc(hit.plate)}</dd>
         <dt>收貨</dt><dd>${esc(dc.name)}　${tempTag(w)}</dd>
         <dt>車型</dt><dd>${grp(hit.group).name}</dd>
         <dt>預約時段</dt><dd class="mono">${hhmm(hit.slot)}–${hhmm(hit.end)}</dd>
+        ${hit.lateSlot!=null?`<dt>延遲後進場</dt><dd class="mono" style="font-weight:600;color:var(--accent)">${hhmm(hit.lateSlot)}–${hhmm(hit.lateEnd)}</dd>`:""}
         <dt>採購單</dt><dd class="mono">${hit.poRefs.join("、")}</dd>
         <dt>供應商</dt><dd>${[...new Set(hit.poRefs.map(p=>orderOf(p)?.supplier).filter(Boolean))].map(c=>esc(supplierOf(c).name)).join("、")||"—"}</dd>
       </dl>
-      <div class="note" style="margin-top:12px">進場順序由現場人員判斷，系統不指派碼頭。延遲者可視現場狀況延後或直接放行。</div>
+      <div class="note" style="margin-top:12px">進場順序由現場人員判斷，系統不指派碼頭。延遲者改到新時段後，仍由現場視狀況放行。</div>
       </div></div>`;
   }
-  return head("廠門口過刷","司機到廠門口過刷預約單，畫面立即顯示準時或延遲，並發放震動器。進場順序由現場人工控管。")+
+  /* 現場候位面板：與遲到者共用「當下給時段」的邏輯，差別只在入口。 */
+  const wWh=bookableWh(dcCode), wG=S.ui.walkGroup||"dock";
+  const wSlots=wWh?openSlotsNow(dcCode,wWh.id,wG):[];
+  const wd=digitsOf(S.ui.walkDigits||""), wc=carrierByDigits(wd), wp=plateByDigits(wd);
+  const wSel=S.ui.walkSlot!=null&&wSlots.some(x=>x.start===S.ui.walkSlot);
+  const walkPanel=S.ui.walkOpen?`
+    <div class="card"><div class="card-head"><h3>現場候位</h3><div class="spacer"></div>
+      <button class="btn sm" id="walkClose">收合</button></div>
+      <div class="card-pad grid" style="gap:11px">
+        <div class="note">未預約的車直接到廠時，由現場當場給時段。<b>不需輸入採購單號</b>——人車貨都在門口，沒有惡意佔用名額的空間。這筆會標記為現場候位，<b>不列入準點率，只計次</b>。</div>
+        <label class="fld">車號（只輸數字）
+          <input class="mono" id="walkPlate" value="${esc(S.ui.walkDigits||"")}" inputmode="numeric" placeholder="7712" style="font-size:19px;max-width:180px"></label>
+        ${wd?`<div class="note ${wc?"key":""}" style="font-size:12px">${wc
+          ?`已比對到 <b>${esc(carrierName(wc))}</b>（車牌 ${esc(wp||"")}），依過往到場紀錄。`
+          :`車號 ${esc(wd)} 查無可辨識的過往紀錄，報表將歸入<b>未知業者</b>。`}</div>`:""}
+        <div class="vpick">${GROUPS.map(x=>`<button class="vopt" data-wg="${x.id}" aria-pressed="${x.id===wG}">
+          <b>${x.name}</b><small>${x.hint}</small></button>`).join("")}</div>
+        ${!wWh?`<div class="note bad">此物流中心目前沒有開放預約的倉別。</div>`
+          :wSlots.length?`<div class="slotgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px">
+            ${wSlots.map(x=>`<button class="slot" data-wslot="${x.start}" aria-pressed="${S.ui.walkSlot===x.start}">
+              <span class="st">${hhmm(x.start)}</span>
+              <span class="sc">餘 ${remainAt(dcCode,wWh.id,wG,S.simDate,x.start)} 位</span></button>`).join("")}</div>
+            <div class="note" style="font-size:11.5px">由近到遠列出今日剩餘時段。遲到者改時段與線上預約也吃同一份名額。</div>`
+          :`<div class="note bad">今日已無可用時段。請於現場等候空檔，由現場人員視狀況安排進場。</div>`}
+        ${S.ui.walkErr?`<div class="note warn">${esc(S.ui.walkErr)}</div>`:""}
+        <button class="btn pri" id="walkGo" ${wSel?"":"disabled"}>確認候位並發放震動器</button>
+      </div></div>`
+    :`<button class="btn" id="walkOpen" style="width:100%">現場候位（未預約直接到廠）</button>`;
+
+  return head("廠門口過刷","司機到廠門口過刷預約單，畫面立即顯示準時或延遲，並發放震動器。延遲者當下改給最快的可進場時段；未預約者走現場候位。")+
   `<div class="row" style="margin-bottom:16px">
      <label class="fld">物流中心<select id="gateDc">${S.cfg.dcs.map(d=>`<option value="${d.code}" ${d.code===dcCode?"selected":""}>${d.name}</option>`).join("")}</select></label>
    </div>
@@ -685,6 +787,7 @@ V.gate=()=>{
            <button class="btn pri" id="scanGo">過刷</button>
            ${S.ui.gateMsg?`<div class="note ${S.ui.gateMsgKind||"warn"}">${S.ui.gateMsg}</div>`:""}
          </div></div>
+       ${walkPanel}
        ${verdict}
      </div>
      <div class="grid">
@@ -694,7 +797,7 @@ V.gate=()=>{
            const over=S.simMin>b.slot+S.cfg.graceMin;
            return `<tr><td class="num" style="font-weight:600">${hhmm(b.slot)}</td>
            <td class="num" style="font-size:12px">${b.id}</td>
-           <td>${esc(carrierOf(b.carrier).name)}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(b.plate)}</span></td>
+           <td>${esc(carrierName(b.carrier))}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(b.plate)}</span></td>
            <td>${tempTag(whOf(b.dc,b.wh))}</td>
            <td>${over?`<span class="pill a">已逾準點</span>`:""}</td></tr>`}).join("")
            ||`<tr><td colspan="5" class="empty">今日預約皆已報到。</td></tr>`}</tbody></table></div></div>
@@ -706,11 +809,24 @@ V.gate=()=>{
          <tbody>${arrived.map(b=>{const pu=punctuality(b);return `<tr>
            <td class="num" style="font-weight:600">${hhmm(b.checkinAt)}</td>
            <td class="num" style="font-size:12px">${b.id}</td>
-           <td>${esc(carrierOf(b.carrier).name)}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(b.plate)}</span></td>
+           <td>${esc(carrierName(b.carrier))}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(b.plate)}</span></td>
            <td class="num">${hhmm(b.slot)}</td>
-           <td><span class="pill ${pu==="ontime"?"o":"a"}">${PLABEL[pu]}</span>${pu==="late"?` <span class="num" style="font-size:12px;color:var(--accent)">+${lateBy(b)}分</span>`:""}</td>
+           <td><span class="pill ${pu==="ontime"?"o":"a"}">${PLABEL[pu]}</span>${pu==="late"?` <span class="num" style="font-size:12px;color:var(--accent)">+${lateBy(b)}分</span>`:""}
+             ${b.lateSlot!=null?`<br><span class="num" style="font-size:11.5px;color:var(--ink-2)">改 ${hhmm(b.lateSlot)} 進場</span>`:""}</td>
            <td class="num">${b.pager||"—"}</td></tr>`}).join("")
            ||`<tr><td colspan="6" class="empty">尚無報到紀錄。</td></tr>`}</tbody></table></div></div>
+       <div class="card"><div class="card-head"><h3>今日現場候位</h3><div class="spacer"></div>
+         <span class="pill n">${walkins.length}</span></div>
+         <div class="tbl-wrap"><table><thead><tr><th>到場</th><th>單號</th><th>車號 / 業者</th><th>進場時段</th><th>震動器</th></tr></thead>
+         <tbody>${walkins.map(b=>`<tr>
+           <td class="num" style="font-weight:600">${hhmm(b.checkinAt)}</td>
+           <td class="num" style="font-size:12px">${b.id}</td>
+           <td><span class="num" style="font-weight:600">${esc(b.plate)}</span><br>
+             <span style="font-size:12px;color:var(--ink-2)">${esc(carrierName(b.carrier))}</span></td>
+           <td class="num" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</td>
+           <td class="num">${b.pager||"—"}</td></tr>`).join("")
+           ||`<tr><td colspan="5" class="empty">今日尚無現場候位。</td></tr>`}</tbody></table></div>
+         <div class="card-pad" style="padding-top:0"><div class="note" style="font-size:11.5px">現場候位不列入準點率，只在報表計次——這才是要管理的指標。</div></div></div>
      </div>
    </div>`;
 };
@@ -724,14 +840,23 @@ V.report=()=>{
     return b.date.slice(0,4)===y&&Math.ceil(m/3)===+q;
   };
   const rows=S.bookings.filter(b=>inRange(b)&&b.status!=="cancelled"&&punctuality(b));
+  const wrows=S.bookings.filter(b=>inRange(b)&&isWalkin(b));
+  const Z=()=>({ontime:0,late:0,noshow:0,total:0,walkin:0,relate:0});
   const agg={};
-  CARRIERS.forEach(c=>agg[c.code]={code:c.code,name:c.name,ontime:0,late:0,noshow:0,total:0});
-  rows.forEach(b=>{const p=punctuality(b);if(!agg[b.carrier])return;agg[b.carrier][p]++;agg[b.carrier].total++});
-  const list=Object.values(agg).filter(x=>x.total).sort((a,b)=>a.ontime/a.total-b.ontime/b.total);
-  const sum=list.reduce((a,x)=>({ontime:a.ontime+x.ontime,late:a.late+x.late,noshow:a.noshow+x.noshow,total:a.total+x.total}),{ontime:0,late:0,noshow:0,total:0});
+  CARRIERS.forEach(c=>agg[c.code]=Object.assign({code:c.code,name:c.name},Z()));
+  rows.forEach(b=>{const p=punctuality(b);if(!agg[b.carrier])return;
+    agg[b.carrier][p]++;agg[b.carrier].total++;if(b.lateSlot!=null)agg[b.carrier].relate++});
+  /* 反查不到業者的現場候位獨立一列——這是「只輸車號」的代價，要讓它看得見。 */
+  const unk=Object.assign({code:"—",name:"未知業者（車號反查不到）"},Z());
+  wrows.forEach(b=>{const t=(b.carrier&&agg[b.carrier])?agg[b.carrier]:unk;t.walkin++});
+  const list=Object.values(agg).filter(x=>x.total||x.walkin)
+    .sort((a,b)=>(a.total?a.ontime/a.total:2)-(b.total?b.ontime/b.total:2));
+  if(unk.walkin)list.push(unk);
+  const sum=list.reduce((a,x)=>({ontime:a.ontime+x.ontime,late:a.late+x.late,noshow:a.noshow+x.noshow,
+    total:a.total+x.total,walkin:a.walkin+x.walkin,relate:a.relate+x.relate}),Z());
   const months=[...new Set(S.bookings.map(b=>b.date.slice(0,7)))].sort();
   const quarters=[...new Set(S.bookings.map(b=>b.date.slice(0,4)+"-Q"+Math.ceil(+b.date.slice(5,7)/3)))].sort();
-  return head("貨運業者到場準點報表","依貨運業者統計到場紀錄，供採購與物流檢討使用。準點定義：過刷時間不晚於預約時段起始 "+S.cfg.graceMin+" 分鐘。")+
+  return head("貨運業者到場準點報表","依貨運業者統計到場紀錄，供採購與物流檢討使用。準點定義：過刷時間不晚於預約時段起始 "+S.cfg.graceMin+" 分鐘。現場候位不列入準點率，另外計次。")+
   `<div class="row" style="margin-bottom:16px">
      <label class="fld">統計區間
        <select id="rMode"><option value="month" ${mode==="month"?"selected":""}>月報</option><option value="quarter" ${mode==="quarter"?"selected":""}>季報</option></select></label>
@@ -745,21 +870,25 @@ V.report=()=>{
      <div class="stat good"><div class="v">${sum.ontime}</div><div class="l">準點</div></div>
      <div class="stat mid"><div class="v">${sum.late}</div><div class="l">延遲</div></div>
      <div class="stat bad"><div class="v">${sum.noshow}</div><div class="l">未到</div></div>
+     <div class="stat"><div class="v">${sum.walkin}</div><div class="l">現場候位</div></div>
    </div>
+   <div class="note key" style="margin-bottom:20px">準點率的分母<b>只算線上預約</b>。現場候位當場報到必然準時，若混進分母，沒預約的人反而會是 100%，先預約的人被扣分——所以獨立成一欄，<b>次數本身就是要管理的指標</b>。延遲者當下改到的第二時段不另計一次到場，該筆維持「延遲」。</div>
    <div class="card"><div class="card-head"><h3>貨運業者別</h3><div class="spacer"></div>
      <span class="pill n">${list.length} 家</span></div>
      <div class="tbl-wrap"><table><thead><tr>
-       <th>代號</th><th>貨運業者</th><th>車次</th><th>準點</th><th>延遲</th><th>未到</th><th style="min-width:140px">準點率</th>
+       <th>代號</th><th>貨運業者</th><th>預約車次</th><th>準點</th><th>延遲</th><th>未到</th><th style="min-width:140px">準點率</th><th>現場候位</th>
      </tr></thead><tbody>${list.map(x=>{
-       const r=Math.round(x.ontime/x.total*100), cls=r>=85?"":(r>=70?"mid":"bad");
+       const r=x.total?Math.round(x.ontime/x.total*100):null, cls=r>=85?"":(r>=70?"mid":"bad");
        return `<tr><td class="num">${x.code}</td><td><b>${esc(x.name)}</b></td>
-         <td class="num">${x.total}</td><td class="num">${x.ontime}</td>
-         <td class="num" style="${x.late?"color:var(--accent)":""}">${x.late}</td>
-         <td class="num" style="${x.noshow?"color:var(--crit);font-weight:600":""}">${x.noshow}</td>
-         <td><div class="row" style="gap:8px;flex-wrap:nowrap"><span class="num" style="width:38px">${r}%</span>
-           <div class="bar-mini" style="flex:1"><i class="${cls}" style="width:${r}%"></i></div></div></td></tr>`;
-     }).join("")||`<tr><td colspan="7" class="empty">此區間沒有紀錄。</td></tr>`}</tbody></table></div></div>
-   <div class="note" style="margin-top:14px">目前僅供檢討，不影響預約權限。是否要對長期延遲的貨運業者採取措施（例如限制可預約時段），屬待確認事項。</div>`;
+         <td class="num">${x.total||"—"}</td><td class="num">${x.total?x.ontime:"—"}</td>
+         <td class="num" style="${x.late?"color:var(--accent)":""}">${x.total?x.late:"—"}${x.relate?`<br><span style="font-size:11px;color:var(--ink-3)">${x.relate} 次改時段</span>`:""}</td>
+         <td class="num" style="${x.noshow?"color:var(--crit);font-weight:600":""}">${x.total?x.noshow:"—"}</td>
+         <td>${r==null?`<span style="color:var(--ink-3)">無預約紀錄</span>`
+           :`<div class="row" style="gap:8px;flex-wrap:nowrap"><span class="num" style="width:38px">${r}%</span>
+             <div class="bar-mini" style="flex:1"><i class="${cls}" style="width:${r}%"></i></div></div>`}</td>
+         <td class="num" style="${x.walkin?"color:var(--accent);font-weight:600":""}">${x.walkin||"—"}</td></tr>`;
+     }).join("")||`<tr><td colspan="8" class="empty">此區間沒有紀錄。</td></tr>`}</tbody></table></div></div>
+   <div class="note" style="margin-top:14px">目前僅供檢討，不影響預約權限。是否要對長期延遲或經常不預約的貨運業者採取措施（例如限制可預約時段），屬待確認事項。</div>`;
 };
 
 /* ---- 5. 參數設定 ---- */
@@ -768,7 +897,8 @@ V.param=()=>head("參數設定","準點寬限與各物流中心、各倉別、�
    <div class="card"><div class="card-head"><h3>全廠參數</h3></div><div class="card-pad row" style="gap:20px">
      <label class="fld">準點寬限（分）<input type="number" class="mono" id="p-grace" value="${S.cfg.graceMin}" min="0" max="60" style="width:96px"></label>
      <label class="fld">未到判定：時段結束後（分）<input type="number" class="mono" id="p-noshow" value="${S.cfg.noShowAfterMin}" min="0" max="180" style="width:96px"></label>
-     <div class="note" style="flex:1;min-width:240px">過刷時間不晚於預約時段起始 <b>${S.cfg.graceMin}</b> 分鐘即算準點；超過即為延遲。時段結束後 <b>${S.cfg.noShowAfterMin}</b> 分鐘仍未過刷，判定為未到。</div>
+     <label class="fld">現場給時段的起算緩衝（分）<input type="number" class="mono" id="p-walklead" value="${S.cfg.walkinLeadMin||0}" min="0" max="120" style="width:96px"></label>
+     <div class="note" style="flex:1;min-width:240px">過刷時間不晚於預約時段起始 <b>${S.cfg.graceMin}</b> 分鐘即算準點；超過即為延遲。時段結束後 <b>${S.cfg.noShowAfterMin}</b> 分鐘仍未過刷，判定為未到。<br>延遲者改時段與現場候位，只會給<b>現在起 ${S.cfg.walkinLeadMin||0} 分鐘之後</b>的時段；覺得太趕就把這個數字調大。</div>
    </div></div>
    <div class="card"><div class="card-head"><h3>哪些倉別要預約</h3></div><div class="card-pad">
      <div class="note key">第一階段<b>以常溫為主</b>。${S.cfg.noBookingNote}下方可切換各倉別是否開放預約——關閉後，該倉別的採購單在預約頁會被擋下並提示不需預約。</div>
@@ -807,9 +937,22 @@ V.spec=()=>head("規格與待確認","D 案依 2026/09/08 內部討論的實際�
        <li><b>第一階段只做常溫。</b>${S.cfg.noBookingNote}低溫倉的採購單在預約頁會被擋下並提示不需預約，車輛依原有方式直接到廠。倉別是否開放預約是參數，未來要納入低溫隨時可開。</li>
        <li><b>支援多個物流中心。</b>貨運業者一天可能跑多個 DC，收貨地點由採購單決定，各 DC 各倉各車型池的時段與名額獨立設定。</li>
      </ol></div></div>
+   <div class="card"><div class="card-head"><h3>現場的兩種例外，都用「當下重新給時段」處理</h3></div><div class="card-pad">
+     <div class="note key" style="margin-bottom:11px">2026/09/10 補充。核心是把「現場排隊順序」轉成「重新預約」——系統仍然只管時段名額，不管誰先誰後，因此<b>不需要叫號，也不必推估下貨工時</b>。</div>
+     <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
+       <li><b>遲到者：過刷判定延遲的當下，直接給當天最快的可進場時段。</b>他人已經在現場等，所以不必再選、也不必再輸採購單號。原單的判定維持「延遲」——<b>遲到就結案</b>，不另外產生一筆預約，準點率因此不會被第二次報到稀釋。</li>
+       <li><b>未預約者：走「現場候位」，一樣當場給時段，由近到遠列出剩餘時段讓他選。</b>不需輸入採購單號，只輸車號數字。</li>
+       <li><b>採購單號的用途是「遠端佔位的防濫用憑證」，不是入場資格。</b>事先預約時人不在現場，需要單號防止惡意佔用名額；遲到者與現場候位者人車貨都在門口，實體存在本身就是驗證，這一關就不必把控。</li>
+       <li><b>兩者都佔名額。</b>那台車實際會用掉一個碼頭時段，所以延遲改到的時段與現場候位都要計入餘位，否則會超賣。</li>
+       <li><b>現場候位不列入準點率，只計次。</b>當場報到必然「準時」，混進分母會讓沒預約的人是 100%、乖乖預約的人反而被扣分。次數本身就是要管理的指標。</li>
+       <li><b>車號只輸數字，貨運業者靠過往紀錄反查。</b>唯一命中才自動帶出，多筆指向不同業者時一律不猜，報表獨立列出「未知業者」。</li>
+       <li><b>今日已無時段時</b>，畫面明說請於現場等候空檔，系統不做任何時間承諾——一承諾就得推估下貨工時，那正是這套設計要避開的。</li>
+     </ol></div></div>
    <div class="card"><div class="card-head"><h3>待確認</h3></div><div class="card-pad">
      <div class="openq"><b>貨運業者代號從哪裡來</b><p>目前 Demo 假設已有代號可填。實務上要不要建貨運業者主檔、由誰維護、供應商轉單時要不要一併指定貨運業者？<b>沒有穩定的識別就做不出月報與季報。</b></p></div>
      <div class="openq"><b>同一張採購單被多台車預約</b><p>量大分批送時會發生。目前不擋，因為主鍵是車牌。要不要設上限，或要求註記分批？</p></div>
+     <div class="openq"><b>現場候位要不要輸車號</b><p>目前只輸車號數字（不輸英文），系統靠過往紀錄反查貨運業者。<b>反查不到就只能算總次數、無法點名</b>。若要每一筆都能追到業者，可能得補英文碼或建車輛主檔。另外，現場候位若常有空檔，「乾脆別預約直接來」會不會慢慢變成常態？</p></div>
+     <div class="openq"><b>遲到者改到的時段會排擠後面的人</b><p>他插進後面的空格，會吃掉還沒預約者的名額。目前依先到先得不特別限制。若現場出現「準時的人反而約不到」的抱怨，就要另訂保留規則。</p></div>
      <div class="openq"><b>震動器號碼由誰發</b><p>Demo 由系統依當日該 DC 序號發放。實務上是現場人工遞出、還是系統指定？要不要把震動器編號與預約綁定以便叫車？</p></div>
      <div class="openq"><b>改約與取消</b><p>目前不提供。貨運業者臨時換車、換時段的頻率有多高？若要開放，截止時間怎麼訂？</p></div>
      <div class="openq"><b>延遲與未到要不要有後果</b><p>目前純統計。是否要對長期延遲者限制可預約時段，或列入年度評鑑？這關係到報表要送給誰。</p></div>
@@ -821,7 +964,8 @@ V.spec=()=>head("規格與待確認","D 案依 2026/09/08 內部討論的實際�
        <li>再挑一張標示<b>低溫・免預約</b>的採購單，確認系統會擋下並說明不需預約。</li>
        <li>在第 2 步<b>加入同車其他採購單</b>，看預約單上會一併列出供警衛核對。</li>
        <li>到<b>廠門口過刷</b>輸入剛拿到的預約單號或車牌，看畫面判定準時。</li>
-       <li>按上方<b>＋15 分</b>推進時間，再過刷另一筆，看判定變成延遲並顯示遲到分鐘數。</li>
+       <li>按上方<b>＋15 分</b>推進時間，再過刷另一筆，看判定變成延遲——並注意系統會<b>當場排定改進場的時段</b>，該筆仍記為延遲。</li>
+       <li>在過刷頁按<b>現場候位</b>，輸入 <b class="mono">7712</b>（已有紀錄，會反查到大順通運）或 <b class="mono">9988</b>（查無，歸未知業者），選車型後挑時段，看發出的憑證與線上預約有何不同。</li>
        <li>到<b>貨運準點報表</b>切換月報與季報，注意宏昌貨運（T02）的準點率明顯偏低——這正是這份報表要抓的對象。</li>
        <li>到<b>參數設定</b>把準點寬限從 ${S.cfg.graceMin} 分改成 20 分，回報表看準點率如何變動。</li>
      </ol>
@@ -838,21 +982,25 @@ function showTicket(id){
     <div class="th"><div class="co">範例物流股份有限公司<small>SAMPLE LOGISTICS — DEMO ONLY</small></div>
       <div style="text-align:right"><div class="eyebrow">預約單號</div><div class="big">${b.id}</div></div></div>
     <dl class="kv">
-      <dt>貨運業者</dt><dd>${esc(carrierOf(b.carrier).name)} <span class="mono">${b.carrier}</span></dd>
+      <dt>貨運業者</dt><dd>${esc(carrierName(b.carrier))} <span class="mono">${b.carrier||""}</span></dd>
       <dt>車牌</dt><dd class="mono" style="font-weight:700;font-size:17px">${esc(b.plate)}</dd>
       <dt>收貨</dt><dd>${esc(dc.name)}　${w.temp}・${esc(w.name)}</dd>
       <dt>進貨日</dt><dd class="mono">${dshow(b.date)}</dd>
-      <dt>預約時段</dt><dd class="mono" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
+      <dt>${isWalkin(b)?"現場給定時段":"預約時段"}</dt><dd class="mono" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
       <dt>車型</dt><dd>${g.name}（${g.stand}下貨）</dd>
-      <dt>採購單</dt><dd class="mono">${b.poRefs.join("<br>")}</dd>
+      <dt>採購單</dt><dd class="mono">${b.poRefs.length?b.poRefs.join("<br>"):"—"}</dd>
     </dl>
     <div class="qrbox" id="qr"></div>
-    <div style="text-align:center;font-size:11.5px;color:var(--ink-3)">廠門口過刷此碼完成報到</div>
-    <div class="rules"><ol>
+    <div style="text-align:center;font-size:11.5px;color:var(--ink-3)">${isWalkin(b)?"此碼供現場查詢與核對":"廠門口過刷此碼完成報到"}</div>
+    <div class="rules"><ol>${isWalkin(b)?`
+      <li>已在現場完成報到，<b>不需再過刷</b>。請於 <b>${hhmm(b.slot)}</b> 依現場人員指示進場。</li>
+      <li>震動器號碼 <b>${b.pager||"—"}</b>，請隨身攜帶。</li>
+      <li>本次為現場候位，不列入準點率，但會計入貨運業者的未預約次數。</li>
+      <li>下次請由貨運業者事先線上預約，可直接依預約時段到廠。</li>`:`
       <li>請於預約時段 <b>${hhmm(b.slot)}</b> 前抵達廠門口過刷，晚到 ${S.cfg.graceMin} 分鐘內仍算準點。</li>
       <li>過刷後領取震動器，依現場人員指示進場。</li>
-      <li>進場順序由現場控管，延遲抵達可能需再等候。</li>
-      <li>未過刷即離開將列為未到，並計入貨運業者到場紀錄。</li>
+      <li>超過寬限即判定延遲，系統會當場改給當天最快的可進場時段，該次仍記為延遲。</li>
+      <li>未過刷即離開將列為未到，並計入貨運業者到場紀錄。</li>`}
     </ol></div>
     <div class="row" style="margin-top:15px">
       <button class="btn" id="printT" style="flex:1">列印</button>
@@ -972,10 +1120,45 @@ function doScan(){
   if(b.status==="arrived"){S.ui.gateDup=true;S.ui.gateHit=b.id;save();render();return}
   const dayN=S.bookings.filter(x=>x.dc===b.dc&&x.date===S.simDate&&x.pager).length+1;
   b.status="arrived";b.checkinAt=S.simMin;b.pager="P-"+pad(dayN);
+  /* 判定延遲時，當下就給當天最快的可進場時段——他已經在現場等，不必再輸採購單號。
+     原單的判定維持「延遲」：遲到就結案，不另外產生一筆預約，報表也就不會被稀釋。 */
+  b.lateSlot=null;b.lateEnd=null;
+  const pu=punctuality(b);
+  if(pu==="late"){
+    const nx=openSlotsNow(b.dc,b.wh,b.group)[0];
+    if(nx){b.lateSlot=nx.start;b.lateEnd=nx.end}
+  }
   S.ui.gateHit=b.id;
   save();render();
-  const pu=punctuality(b);
-  toast(b.id+" 報到完成："+PLABEL[pu]+(pu==="late"?"（延遲 "+lateBy(b)+" 分）":""));
+  toast(b.id+" 報到完成："+PLABEL[pu]+(pu!=="late"?"":
+    (b.lateSlot!=null?"（延遲 "+lateBy(b)+" 分，改 "+hhmm(b.lateSlot)+" 進場）"
+                     :"（延遲 "+lateBy(b)+" 分，今日已無時段）")));
+}
+
+/* 現場候位：未預約的車到現場，由警衛當場給時段。不需採購單號，只輸車號數字。 */
+function doWalkin(){
+  const el=$("#walkPlate");
+  const wd=digitsOf(el?el.value:(S.ui.walkDigits||""));
+  const dc=S.ui.gateDc||S.cfg.dcs[0].code, w=bookableWh(dc), g=S.ui.walkGroup||"dock";
+  const slot=S.ui.walkSlot;
+  S.ui.walkDigits=wd;S.ui.walkErr="";
+  if(!wd){S.ui.walkErr="請輸入車號數字。";save();render();return}
+  if(!w||slot==null){S.ui.walkErr="請先選擇進場時段。";save();render();return}
+  if(remainAt(dc,w.id,g,S.simDate,slot)<=0||slot<S.simMin+(S.cfg.walkinLeadMin||0)){
+    S.ui.walkSlot=null;S.ui.walkErr="此時段剛被佔用或已過時，請改選。";save();render();return}
+  const carrier=carrierByDigits(wd);
+  const plate=plateByDigits(wd)||wd;
+  const step=60/poolOf(dc,w.id,g).split;
+  const n=S.bookings.filter(b=>b.dc===dc&&b.date===S.simDate).length+1;
+  const dayN=S.bookings.filter(x=>x.dc===dc&&x.date===S.simDate&&x.pager).length+1;
+  const b={id:dc+"-"+S.simDate.slice(5).replace("-","")+"-"+pad(n),
+    carrier,dc,wh:w.id,group:g,date:S.simDate,slot,end:slot+step,plate,poRefs:[],
+    source:"walkin",status:"walkin",checkinAt:S.simMin,pager:"P-"+pad(dayN),
+    lateSlot:null,lateEnd:null,createdAt:Date.now()};
+  S.bookings.push(b);
+  S.ui.walkOpen=false;S.ui.walkDigits="";S.ui.walkSlot=null;S.ui.walkErr="";
+  save();render();showTicket(b.id);
+  toast("現場候位成立："+b.id+"　進場 "+hhmm(slot));
 }
 function exportCsv(){
   const u=S.ui,mode=u.rMode||"month",period=u.rPeriod||"2026-08";
@@ -983,13 +1166,15 @@ function exportCsv(){
     if(mode==="month")return b.date.slice(0,7)===period;
     const[y,q]=period.split("-Q");return b.date.slice(0,4)===y&&Math.ceil(+b.date.slice(5,7)/3)===+q;
   };
-  const rows=S.bookings.filter(b=>inRange(b)&&punctuality(b));
-  const lines=["進貨日,預約單號,貨運業者代號,貨運業者,車牌,物流中心,倉別,車型,預約時段,過刷時間,遲到分鐘,判定"];
+  const rows=S.bookings.filter(b=>inRange(b)&&(punctuality(b)||isWalkin(b)))
+    .sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:a.slot-b.slot));
+  const lines=["進貨日,單號,來源,貨運業者代號,貨運業者,車牌,物流中心,倉別,車型,時段,過刷時間,遲到分鐘,延遲後進場,判定"];
   rows.forEach(b=>{
     const w=whOf(b.dc,b.wh),pu=punctuality(b);
-    lines.push([b.date,b.id,b.carrier,carrierOf(b.carrier).name,b.plate,dcOf(b.dc).name,
-      w.temp+w.name,grp(b.group).name,hhmm(b.slot),b.checkinAt!=null?hhmm(b.checkinAt):"",
-      pu==="late"?lateBy(b):"",PLABEL[pu]].join(","));
+    lines.push([b.date,b.id,isWalkin(b)?"現場候位":"線上預約",b.carrier||"",carrierName(b.carrier),
+      b.plate,dcOf(b.dc).name,w.temp+w.name,grp(b.group).name,hhmm(b.slot),
+      b.checkinAt!=null?hhmm(b.checkinAt):"",pu==="late"?lateBy(b):"",
+      b.lateSlot!=null?hhmm(b.lateSlot):"",isWalkin(b)?"現場候位":PLABEL[pu]].join(","));
   });
   const csv=lines.join("\n");
   $("#layer").innerHTML=`<div class="scrim" id="scrimC"><div class="modal" style="max-width:640px">
@@ -1034,7 +1219,21 @@ function bind(){
 
   const gd=$("#gateDc",v); if(gd)gd.onchange=e=>{S.ui.gateDc=e.target.value;S.ui.gateHit=null;S.ui.gateMsg="";save();render()};
   const sg=$("#scanGo",v); if(sg)sg.onclick=doScan;
-  const sc=$("#scan",v); if(sc){sc.onkeydown=e=>{if(e.key==="Enter")doScan()};sc.focus({preventScroll:true})}
+  const sc=$("#scan",v); if(sc){sc.onkeydown=e=>{if(e.key==="Enter")doScan()};
+    if(!S.ui.walkOpen)sc.focus({preventScroll:true})}
+  const wo=$("#walkOpen",v); if(wo)wo.onclick=()=>{S.ui.walkOpen=true;S.ui.walkErr="";save();render()};
+  const wcl=$("#walkClose",v); if(wcl)wcl.onclick=()=>{
+    S.ui.walkOpen=false;S.ui.walkSlot=null;S.ui.walkErr="";S.ui.walkDigits="";save();render()};
+  const wpl=$("#walkPlate",v); if(wpl){
+    const sync=e=>{S.ui.walkDigits=e.target.value.replace(/\D/g,"")};
+    wpl.oninput=sync;
+    wpl.onchange=e=>{sync(e);save();render()};
+    wpl.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();sync(e);save();render()}};
+    if(!S.ui.walkDigits)wpl.focus({preventScroll:true});
+  }
+  $$("[data-wg]",v).forEach(b=>b.onclick=()=>{S.ui.walkGroup=b.dataset.wg;S.ui.walkSlot=null;save();render()});
+  $$("[data-wslot]",v).forEach(b=>b.onclick=()=>{S.ui.walkSlot=+b.dataset.wslot;S.ui.walkErr="";save();render()});
+  const wgo=$("#walkGo",v); if(wgo)wgo.onclick=doWalkin;
 
   const rm=$("#rMode",v); if(rm)rm.onchange=e=>{
     S.ui.rMode=e.target.value;
@@ -1044,6 +1243,7 @@ function bind(){
 
   const pg=$("#p-grace",v); if(pg)pg.onchange=e=>{S.cfg.graceMin=Math.max(0,+e.target.value||0);save();render()};
   const pn=$("#p-noshow",v); if(pn)pn.onchange=e=>{S.cfg.noShowAfterMin=Math.max(0,+e.target.value||0);save();render()};
+  const pw=$("#p-walklead",v); if(pw)pw.onchange=e=>{S.cfg.walkinLeadMin=Math.max(0,+e.target.value||0);save();render()};
   $$("[data-book]",v).forEach(el=>el.onchange=e=>{
     const[dc,wh]=el.dataset.book.split("|");
     whOf(dc,wh).booking=e.target.checked;save();render();
