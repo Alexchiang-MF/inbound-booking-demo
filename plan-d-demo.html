@@ -4,239 +4,292 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="進貨預約 D 案 Demo：貨運業者為申請者、車牌為預約主鍵、單次過刷判定準點。">
+<meta name="description" content="進貨預約系統 D 案 Demo：採購單預約查詢合一、滿版過刷報到、即時看板、手機現場候位與報到分析。">
 <meta name="robots" content="noindex">
-<title>進貨預約 D 案</title>
+<title>範例物流 進貨預約系統</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
 <style>
+/* 白底高對比：內文與圖示一律深色，狀態色都挑在白底上對比 ≥ 4.5:1 的深色階，淺色只用在底色塊。 */
 :root{
-  --ground:#EDEFEC; --surface:#FFFFFF; --surface-2:#F6F7F5; --surface-3:#E4E8E3;
-  --ink:#161B19; --ink-2:#5C6663; --ink-3:#89918D;
-  --line:#D6DAD5; --line-2:#C2C8C1;
-  --primary:#0B4F4A; --primary-ink:#FFFFFF; --primary-soft:#DCEAE7;
-  --accent:#D98A14; --accent-soft:#FBEDD4;
-  --ok:#2E7D5B; --ok-soft:#DDEEE5;
-  --crit:#B03A2E; --crit-soft:#F6DEDA;
-  --t-amb:#B07C15; --t-chill:#3E7CA8;
-  --shadow:0 1px 2px rgba(22,27,25,.06),0 6px 18px rgba(22,27,25,.05);
-  --r:6px;
-  --f-display:"Noto Serif TC",Georgia,serif;
-  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
-    --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
-    --line:#2A3331; --line-2:#3A4643;
-    --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
-    --accent:#E8A33C; --accent-soft:#3A2C13;
-    --ok:#4FA57D; --ok-soft:#173029;
-    --crit:#D2685A; --crit-soft:#3A211D;
-    --t-amb:#D2A03E; --t-chill:#6BA6CF;
-    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
-  }
-}
-:root[data-theme="dark"]{
-  --ground:#101413; --surface:#171D1C; --surface-2:#1E2624; --surface-3:#26302E;
-  --ink:#E8EDEA; --ink-2:#93A09C; --ink-3:#6E7A77;
-  --line:#2A3331; --line-2:#3A4643;
-  --primary:#4FB3A6; --primary-ink:#08201E; --primary-soft:#1B3A37;
-  --accent:#E8A33C; --accent-soft:#3A2C13;
-  --ok:#4FA57D; --ok-soft:#173029;
-  --crit:#D2685A; --crit-soft:#3A211D;
-  --t-amb:#D2A03E; --t-chill:#6BA6CF;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+  color-scheme:light;
+  --bg:#FFFFFF; --soft:#F3F5F8; --soft-2:#E6EAF0;
+  --line:#CDD3DC; --line-2:#8C96A5;
+  --ink:#0B1220; --ink-2:#2A3342; --ink-3:#465163;
+  --brand:#0A4DA2; --brand-2:#083B7D; --brand-soft:#E5EEFA; --brand-line:#9DBBE6;
+  --ok:#0A6E35; --ok-bar:#12924A; --ok-soft:#E2F4E9; --ok-line:#8FCDA8;
+  --late:#8A4700; --late-bar:#D97A06; --late-soft:#FFF0D6; --late-line:#F0B660;
+  --bad:#A91B1B; --bad-bar:#D63B3B; --bad-soft:#FDE6E6; --bad-line:#EFA1A1;
+  --walk:#5A2C9E; --walk-bar:#7A4CC2; --walk-soft:#EFE8FA; --walk-line:#BFA5E6;
+  --wait:#2A3342; --wait-bar:#A7B0BD; --wait-soft:#EEF1F5;
+  --amb:#8A4F00; --chill:#0A5A8A;
+  --r:10px;
+  --shadow:0 1px 2px rgba(11,18,32,.06),0 4px 14px rgba(11,18,32,.06);
+  --f-body:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",Consolas,ui-monospace,monospace;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0}
-button{font-family:inherit;font-size:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font:15px/1.6 var(--f-body);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+b,strong{font-weight:700}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+.ic{display:inline-block;vertical-align:-3px;flex:none}
+a{color:var(--brand);font-weight:600}
 
-.app{display:grid;grid-template-columns:214px 1fr;min-height:100vh}
-.rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
-.brand{padding:0 8px 15px;border-bottom:1px solid var(--line);margin-bottom:12px}
-.brand h1{font-size:17px}
-.brand .sub{font-size:10.5px;color:var(--ink-3);letter-spacing:.13em;text-transform:uppercase;font-family:var(--f-mono);margin-top:4px}
-.rail-group{font-size:10.5px;letter-spacing:.16em;color:var(--ink-3);text-transform:uppercase;font-weight:700;padding:13px 8px 5px}
-.navbtn{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:0;border-radius:var(--r);padding:8px 9px;cursor:pointer;color:var(--ink-2);font-weight:500;transition:background .12s,color .12s}
-.navbtn:hover{background:var(--surface-2);color:var(--ink)}
-.navbtn[aria-current="true"]{background:var(--primary-soft);color:var(--primary);font-weight:700}
-.navbtn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.45;flex:none}
-.navbtn[aria-current="true"] .dot{opacity:1}
-
-main{min-width:0;display:flex;flex-direction:column}
-.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 26px;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
-.clock{display:flex;align-items:baseline;gap:8px}
-.clock .t{font-family:var(--f-mono);font-size:22px;font-weight:600}
-.clock .d{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
-.clock-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+/* ── 外框 ── */
+.topbar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:2px solid var(--ink);
+  display:flex;align-items:center;gap:18px;padding:10px 24px;flex-wrap:wrap}
+.brandmark{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:44px;height:44px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;flex:none}
+.brandmark .co{font-size:13px;font-weight:700;color:var(--ink-2);letter-spacing:.06em;line-height:1.2}
+.brandmark .sys{font-size:21px;font-weight:900;color:var(--ink);letter-spacing:.04em;line-height:1.25}
 .spacer{flex:1}
-.wrap{padding:26px;max-width:1180px;width:100%}
+.clockbox{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.clock{display:flex;align-items:baseline;gap:8px;padding:4px 12px;border:1.5px solid var(--line);border-radius:8px}
+.clock .lab{font-size:12px;color:var(--ink-3);font-weight:700}
+.clock .t{font-size:22px;font-weight:600}
+.clock .d{font-size:13px;color:var(--ink-2)}
+
+.app{display:grid;grid-template-columns:262px minmax(0,1fr);min-height:calc(100vh - 68px)}
+.rail{border-right:1.5px solid var(--line);padding:16px 12px;background:#fff}
+.rail-group{font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;margin:16px 10px 6px}
+.rail-group:first-child{margin-top:2px}
+.navrow{display:flex;align-items:center;gap:2px}
+.navbtn{flex:1;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;
+  padding:9px 10px;border-radius:8px;font-weight:600;color:var(--ink-2);cursor:pointer;min-width:0;white-space:nowrap}
+.navbtn:hover{background:var(--soft);color:var(--ink)}
+.navbtn[aria-current="true"]{background:var(--brand-soft);color:var(--brand-2);box-shadow:inset 3px 0 0 var(--brand)}
+.navbtn .tag{margin-left:auto;font-size:11px;font-weight:700;color:var(--ink-3);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.newtab{border:0;background:none;padding:7px;border-radius:6px;color:var(--ink-3);cursor:pointer;display:grid;place-items:center}
+.newtab:hover{background:var(--soft);color:var(--brand)}
+main.wrap{padding:26px 32px 60px;max-width:1320px;width:100%}
+
 .page-head{margin-bottom:20px}
-.page-head h2{font-size:22px}
-.page-head p{margin:5px 0 0;color:var(--ink-2);max-width:66ch}
-.eyebrow{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700;font-family:var(--f-mono)}
+.page-head h2{margin:0;font-size:26px;font-weight:900;letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+.page-head p{margin:6px 0 0;color:var(--ink-2);max-width:760px}
 
-.btn{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:7px 13px;cursor:pointer;font-weight:500;transition:border-color .12s,background .12s}
-.btn:hover{border-color:var(--ink-3);background:var(--surface-2)}
-.btn.pri{background:var(--primary);border-color:var(--primary);color:var(--primary-ink);font-weight:700}
-.btn.pri:hover{filter:brightness(1.08)}
-.btn.sm{padding:4px 9px;font-size:12.5px}
-.btn.danger{color:var(--crit);border-color:var(--crit)}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
-.card-pad{padding:18px 20px}
-.card-head{padding:13px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.card-head h3{font-size:15px}
+/* ── 元件 ── */
+.card{background:#fff;border:1.5px solid var(--line);border-radius:var(--r)}
+.card-h{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1.5px solid var(--line);flex-wrap:wrap}
+.card-h h3{margin:0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.pad{padding:16px 18px}
 .grid{display:grid;gap:16px}
+.grid>*,.card,.app>*{min-width:0}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-label.fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink-2);font-weight:500}
-input,select{font-family:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--surface);color:var(--ink);min-width:0}
-input.mono{font-family:var(--f-mono)}
-input:focus,select:focus{outline:2px solid var(--primary);outline-offset:-1px;border-color:var(--primary)}
-.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
-.pill.n{background:var(--surface-3);color:var(--ink-2)}
-.pill.p{background:var(--primary-soft);color:var(--primary)}
-.pill.a{background:var(--accent-soft);color:var(--accent)}
-.pill.o{background:var(--ok-soft);color:var(--ok)}
-.pill.c{background:var(--crit-soft);color:var(--crit)}
-.temp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
-.temp i{width:3px;height:12px;border-radius:2px;display:inline-block}
-.t-常溫{background:var(--t-amb)} .t-低溫{background:var(--t-chill)}
+.stepno{width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 16px;border-radius:8px;
+  border:1.5px solid var(--line-2);background:#fff;color:var(--ink);font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--soft)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.pri:hover{background:var(--brand-2)}
+.btn.sm{height:32px;padding:0 11px;font-size:13.5px}
+.btn.lg{height:52px;padding:0 22px;font-size:17px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.navbtn:focus-visible,input:focus-visible,select:focus-visible,.opt:focus-visible,.slot:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+
+.fld{display:grid;gap:5px;font-size:13.5px;font-weight:700;color:var(--ink-2)}
+input,select,textarea{height:44px;border:1.5px solid var(--line-2);border-radius:8px;background:#fff;padding:0 12px;min-width:0}
+input::placeholder{color:#6B7585}
+textarea{height:220px;width:100%;padding:10px;font-family:var(--f-mono);font-size:12.5px}
+
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;padding:1px 9px;border-radius:999px;border:1.5px solid;white-space:nowrap;line-height:1.6}
+.pill.ok{color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line)}
+.pill.late{color:var(--late);background:var(--late-soft);border-color:var(--late-line)}
+.pill.bad{color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line)}
+.pill.walk{color:var(--walk);background:var(--walk-soft);border-color:var(--walk-line)}
+.pill.wait{color:var(--wait);background:var(--wait-soft);border-color:var(--line)}
+.pill.brand{color:var(--brand-2);background:var(--brand-soft);border-color:var(--brand-line)}
+
+.note{padding:10px 14px;border-radius:8px;background:var(--soft);border-left:4px solid var(--line-2);color:var(--ink);font-size:14px}
+.note.brand{background:var(--brand-soft);border-color:var(--brand)}
+.note.ok{background:var(--ok-soft);border-color:var(--ok)}
+.note.warn{background:var(--late-soft);border-color:var(--late-bar)}
+.note.bad{background:var(--bad-soft);border-color:var(--bad)}
+
+dl.kv{display:grid;grid-template-columns:max-content 1fr;gap:7px 16px;margin:0}
+dl.kv dt{color:var(--ink-3);font-weight:700;font-size:13.5px}
+dl.kv dd{margin:0;font-weight:500}
+.muted{color:var(--ink-3)}
+.temp{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.temp i{width:4px;height:14px;border-radius:2px;display:inline-block}
+.temp .t-常溫{background:var(--amb)} .temp .t-低溫{background:var(--chill)}
+
 .tbl-wrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:13px}
-th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
-tbody tr:last-child td{border-bottom:0}
-tbody tr:hover{background:var(--surface-2)}
-.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-.empty{padding:32px 20px;text-align:center;color:var(--ink-3)}
-.note{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border-left:2px solid var(--line-2);padding:9px 13px;border-radius:0 var(--r) var(--r) 0}
-.note.warn{border-left-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
-.note.key{border-left-color:var(--primary);background:var(--primary-soft);color:var(--ink)}
-.note.bad{border-left-color:var(--crit);background:var(--crit-soft);color:var(--ink)}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px}
-.kv dt{color:var(--ink-2)} .kv dd{margin:0;font-weight:500}
-.stepsec{display:flex;align-items:center;gap:10px}
-.stepsec b{width:22px;height:22px;border-radius:50%;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;flex:none;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--soft);color:var(--ink-2);font-size:13px;font-weight:700;text-align:left;padding:9px 12px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--soft-2);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.empty{text-align:center;color:var(--ink-3);padding:26px}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--brand-soft)}
 
-.slotgrid{display:flex;flex-direction:column;gap:6px}
-.slotrow{display:grid;grid-template-columns:56px 1fr;align-items:center;gap:10px}
-.hourlab{font-family:var(--f-mono);font-size:13px;color:var(--ink-2);text-align:right}
-.slots{display:grid;gap:6px}
-.slot{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:8px 6px 7px;cursor:pointer;text-align:center;transition:border-color .12s,background .12s,transform .1s}
-.slot .st{display:block;font-family:var(--f-mono);font-size:13.5px;font-weight:600}
-.slot .sc{display:block;font-size:11px;color:var(--ink-3);margin-top:1px}
-.slot:hover:not(:disabled){border-color:var(--primary);transform:translateY(-1px)}
-.slot[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#1B1206}
-.slot[aria-pressed="true"] .sc{color:#1B1206;opacity:.8}
-.slot:disabled{cursor:not-allowed;background:var(--surface-2);border-style:dashed;border-color:var(--line);color:var(--ink-3)}
-.slot:disabled .st{text-decoration:line-through;opacity:.55}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{border:1.5px solid var(--line);border-radius:var(--r);padding:12px 16px;border-top:5px solid var(--line-2);background:#fff}
+.kpi .v{font-size:32px;font-weight:900;line-height:1.15;font-family:var(--f-mono)}
+.kpi .l{font-size:13.5px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.kpi .s{font-size:12.5px;color:var(--ink-3);font-weight:600}
+.kpi.ok{border-top-color:var(--ok-bar)} .kpi.ok .v{color:var(--ok)}
+.kpi.late{border-top-color:var(--late-bar)} .kpi.late .v{color:var(--late)}
+.kpi.bad{border-top-color:var(--bad-bar)} .kpi.bad .v{color:var(--bad)}
+.kpi.walk{border-top-color:var(--walk-bar)} .kpi.walk .v{color:var(--walk)}
+.kpi.brand{border-top-color:var(--brand)} .kpi.brand .v{color:var(--brand-2)}
+
+.stack{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--soft-2);border:1px solid var(--line)}
+.stack i{display:block;height:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
-.legend i{width:13px;height:13px;border-radius:3px;border:1px solid var(--line-2);display:inline-block}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.c-ok{background:var(--ok-bar)} .c-late{background:var(--late-bar)} .c-bad{background:var(--bad-bar)}
+.c-walk{background:var(--walk-bar)} .c-wait{background:var(--wait-bar)}
+.bar-mini{height:9px;border-radius:5px;background:var(--soft-2);overflow:hidden}
+.bar-mini i{display:block;height:100%;background:var(--ok-bar)}
 
-.vpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}
-.vopt{border:1px solid var(--line-2);border-radius:var(--r);padding:11px 13px;cursor:pointer;background:var(--surface);text-align:left;transition:border-color .12s,background .12s}
-.vopt:hover{border-color:var(--primary)}
-.vopt[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft);box-shadow:inset 0 0 0 1px var(--primary)}
-.vopt b{display:block;font-size:14px}
-.vopt small{color:var(--ink-2);font-size:11.5px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line-2);background:#fff;border-radius:999px;padding:3px 12px;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:18px;flex-wrap:wrap}
+.tab{border:0;background:none;padding:10px 16px;font-weight:700;color:var(--ink-3);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;font-size:15px}
+.tab[aria-selected="true"]{color:var(--brand-2);border-bottom-color:var(--brand)}
 
-.verdict{border-radius:8px;padding:22px 24px;margin-bottom:16px;border:1px solid}
-.verdict.ok{background:var(--ok-soft);border-color:var(--ok)}
-.verdict.late{background:var(--accent-soft);border-color:var(--accent)}
-.verdict.bad{background:var(--crit-soft);border-color:var(--crit)}
-.verdict .big{font-family:var(--f-display);font-size:34px;font-weight:700;line-height:1.15}
-.verdict.ok .big{color:var(--ok)} .verdict.late .big{color:var(--accent)} .verdict.bad .big{color:var(--crit)}
-.verdict .sub{font-size:14px;color:var(--ink-2);margin-top:4px}
-.pager{display:inline-flex;align-items:center;gap:9px;background:var(--surface);border:1px dashed var(--line-2);border-radius:var(--r);padding:8px 14px;margin-top:12px;font-size:13px}
-.pager b{font-family:var(--f-mono);font-size:20px;font-weight:600}
+/* 預約 */
+.search{display:flex;gap:10px;flex-wrap:wrap}
+.search .inp{flex:1;min-width:240px;position:relative}
+.search .inp input{width:100%;height:54px;font-size:19px;padding-left:46px;font-family:var(--f-mono);text-transform:uppercase;border-width:2px}
+.search .inp input::placeholder{font-family:var(--f-body);text-transform:none;font-size:16px}
+.search .inp .ic{position:absolute;left:14px;top:15px;color:var(--ink-2)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.opt{border:2px solid var(--line);background:#fff;border-radius:10px;padding:12px 14px;text-align:left;cursor:pointer;display:grid;gap:2px}
+.opt b{font-size:16px} .opt small{color:var(--ink-3);font-size:13px;font-weight:600}
+.opt[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
+.slotrow{display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:center;margin-bottom:8px}
+.hourlab{font-family:var(--f-mono);font-weight:600;color:var(--ink-2);font-size:14px}
+.slots{display:grid;gap:8px}
+.slot{border:1.5px solid var(--line-2);background:#fff;border-radius:8px;padding:6px 4px;cursor:pointer;display:grid;text-align:center;line-height:1.3}
+.slot .st{font-family:var(--f-mono);font-weight:600;font-size:15px}
+.slot .sc{font-size:12px;color:var(--ok);font-weight:700}
+.slot[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+.slot[aria-pressed="true"] .sc{color:#fff}
+.slot:disabled{background:var(--soft);border-style:dashed;border-color:var(--line);cursor:not-allowed;color:var(--ink-3)}
+.slot:disabled .sc{color:var(--ink-3)}
+.polist{display:flex;gap:6px;flex-wrap:wrap}
+.potag{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-weight:600;font-size:13.5px;border:1.5px solid var(--line-2);border-radius:6px;padding:2px 4px 2px 9px}
+.potag button{border:0;background:var(--soft);border-radius:4px;cursor:pointer;width:22px;height:22px;display:grid;place-items:center}
+.sticky{position:sticky;top:84px}
 
-.polist{display:flex;flex-wrap:wrap;gap:6px}
-.potag{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:3px 6px 3px 9px;font-family:var(--f-mono);font-size:12px}
-.potag button{border:0;background:none;cursor:pointer;color:var(--ink-3);font-size:14px;line-height:1;padding:0 2px}
-.potag button:hover{color:var(--crit)}
+/* 滿版 */
+.kiosk{min-height:100vh;display:flex;flex-direction:column;background:#fff}
+.kbar{display:flex;align-items:center;gap:14px;padding:8px 18px;border-bottom:2px solid var(--ink);flex-wrap:wrap}
+.kbar .brandmark .sys{font-size:18px} .kbar .logo{width:38px;height:38px}
+.kbar .title{font-size:22px;font-weight:900;padding-left:14px;border-left:2px solid var(--line)}
+.kbody{flex:1;padding:18px 22px}
+.gate{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:18px;align-items:start}
+.scanbox input{width:100%;height:84px;font-size:36px;font-family:var(--f-mono);font-weight:600;text-transform:uppercase;border:3px solid var(--ink);border-radius:12px;padding:0 22px}
+.scanbox input::placeholder{font-size:22px;font-family:var(--f-body);font-weight:500;text-transform:none}
+.scanbox input:focus{outline:4px solid var(--brand-line);border-color:var(--brand)}
+.verdict{border-radius:14px;border:3px solid var(--line);padding:22px 26px;margin-top:16px;min-height:300px}
+.verdict .big{font-size:58px;font-weight:900;line-height:1.1;display:flex;align-items:center;gap:14px}
+.verdict .sub{font-size:20px;font-weight:600;margin-top:8px}
+.verdict.idle{display:grid;place-items:center;text-align:center;color:var(--ink-3);border-style:dashed}
+.verdict.idle .big{font-size:30px;color:var(--ink-2);justify-content:center}
+.verdict.ok{background:var(--ok-soft);border-color:var(--ok-bar)} .verdict.ok .big{color:var(--ok)}
+.verdict.late{background:var(--late-soft);border-color:var(--late-bar)} .verdict.late .big{color:var(--late)}
+.verdict.bad{background:var(--bad-soft);border-color:var(--bad-bar)} .verdict.bad .big{color:var(--bad);font-size:40px}
+.verdict.dup{background:var(--brand-soft);border-color:var(--brand)} .verdict.dup .big{color:var(--brand-2);font-size:44px}
+.pager{display:inline-flex;align-items:center;gap:14px;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:8px 20px;margin-top:16px}
+.pager .l{font-size:18px;font-weight:700} .pager .n{font-size:52px;font-weight:600;font-family:var(--f-mono);line-height:1.1}
+.reslot{margin-top:14px;font-size:22px;font-weight:700;background:#fff;border:2.5px solid var(--late-bar);border-radius:10px;padding:10px 16px;color:var(--late)}
+.qrwrap{display:grid;justify-items:center;gap:8px;text-align:center}
+.qrwrap .qr{padding:10px;border:1.5px solid var(--line);border-radius:10px;background:#fff}
 
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.stat{background:var(--surface);padding:13px 15px}
-.stat .v{font-family:var(--f-mono);font-size:25px;font-weight:600;line-height:1.15}
-.stat .l{font-size:11.5px;color:var(--ink-2);margin-top:2px}
-.stat.good .v{color:var(--ok)} .stat.bad .v{color:var(--crit)} .stat.mid .v{color:var(--accent)}
-.bar-mini{height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden;margin-top:6px;min-width:70px}
-.bar-mini i{display:block;height:100%;background:var(--ok)}
-.bar-mini i.mid{background:var(--accent)} .bar-mini i.bad{background:var(--crit)}
+/* 看板 */
+.hours{display:grid;gap:6px}
+.hour{display:grid;grid-template-columns:66px 150px minmax(0,1fr);gap:12px;align-items:center;padding:7px 10px;border-radius:8px;border:1.5px solid transparent}
+.hour.now{border-color:var(--brand);background:var(--brand-soft)}
+.hour .h{font-family:var(--f-mono);font-weight:600;font-size:16px}
+.cap{display:grid;gap:3px;font-size:12px;font-weight:700;color:var(--ink-2)}
+.vchips{display:flex;gap:5px;flex-wrap:wrap}
+.vchip{font-size:12.5px;font-weight:700;border-radius:6px;padding:1px 7px;border:1.5px solid;font-family:var(--f-mono);white-space:nowrap}
+.vchip.ok{color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line)}
+.vchip.late{color:var(--late);background:var(--late-soft);border-color:var(--late-line)}
+.vchip.bad{color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line)}
+.vchip.walk{color:var(--walk);background:var(--walk-soft);border-color:var(--walk-line)}
+.vchip.wait{color:var(--wait);background:#fff;border-color:var(--line-2)}
+.feed{display:grid}
+.feed>div{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--soft-2)}
+.feed>div:last-child{border-bottom:0}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--ok)}
+.live i{width:9px;height:9px;border-radius:50%;background:var(--ok-bar);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.25}}
 
-.scrim{position:fixed;inset:0;background:rgba(10,14,13,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60;overflow-y:auto}
-.modal{background:var(--surface);border-radius:8px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);border:1px solid var(--line)}
+/* 分析圖 */
+.hchart{display:flex;align-items:flex-end;gap:8px;height:210px;padding:10px 4px 0;border-bottom:2px solid var(--ink-2)}
+.hcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:26px}
+.hcol .tot{font-size:12.5px;font-weight:700;font-family:var(--f-mono);margin-bottom:3px}
+.hcol .bars{width:100%;max-width:46px;display:flex;flex-direction:column-reverse;border-radius:4px 4px 0 0;overflow:hidden}
+.hlabels{display:flex;gap:8px;padding:5px 4px 0}
+.hlabels span{flex:1;min-width:26px;text-align:center;font-size:12px;font-family:var(--f-mono);font-weight:600;color:var(--ink-2)}
+
+/* 手機候位 */
+.phone-stage{min-height:100vh;background:var(--soft);display:grid;justify-items:center;align-content:start;padding:18px 12px}
+.phone{width:100%;max-width:430px;background:#fff;border:1.5px solid var(--line);border-radius:18px;overflow:hidden;min-height:720px}
+.phone .ph{padding:14px 18px;border-bottom:2px solid var(--ink);display:flex;align-items:center;gap:10px}
+.phone .pb{padding:18px}
+.phone h2{margin:0 0 4px;font-size:24px;font-weight:900}
+.phone .slot{padding:12px 6px}
+.phone .slot .st{font-size:18px}
+@media (max-width:520px){.phone-stage{padding:0;background:#fff}.phone{border:0;border-radius:0}}
+
+/* 預約單 */
+#layer .scrim{position:fixed;inset:0;background:rgba(11,18,32,.55);display:grid;place-items:center;padding:16px;z-index:50;overflow:auto}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:540px;max-height:calc(100vh - 32px);overflow:auto;border:2px solid var(--ink)}
 .ticket{padding:22px 24px}
-.ticket .th{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:14px}
-.ticket .th .co{font-family:var(--f-display);font-size:15px;font-weight:700}
-.ticket .th .co small{display:block;font-family:var(--f-mono);font-size:9px;letter-spacing:.1em;color:var(--ink-3);font-weight:400}
-.ticket .big{font-family:var(--f-mono);font-size:27px;font-weight:600;line-height:1.1}
-.qrbox{background:#fff;padding:10px;border-radius:var(--r);width:max-content;margin:14px auto 4px;border:1px solid var(--line)}
-.qrbox img,.qrbox canvas{display:block}
-.rules{font-size:11.5px;color:var(--ink-2);border-top:1px dashed var(--line-2);margin-top:12px;padding-top:11px}
-.rules ol{margin:0;padding-left:18px}
-.rules li{margin-bottom:3px}
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 18px;border-radius:99px;font-weight:500;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-textarea{width:100%;min-height:150px;font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line-2);border-radius:var(--r);padding:10px;background:var(--surface-2);color:var(--ink);resize:vertical}
-.openq{border-left:2px solid var(--accent);padding:2px 0 2px 14px;margin-bottom:15px}
-.openq b{display:block;font-size:14px}
-.openq p{margin:3px 0 0;color:var(--ink-2);font-size:13px}
-@media (max-width:900px){
-  .app{grid-template-columns:1fr}
-  .rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);align-items:center}
-  .brand{border-bottom:0;margin:0;padding:0 12px 0 0;flex:none}
-  .rail-group{display:none}
-  .navbtn{width:auto}
-  .wrap{padding:18px 16px}
+.ticket .th{display:flex;justify-content:space-between;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:14px;align-items:flex-end}
+.ticket .co{font-weight:900;font-size:17px;line-height:1.3}
+.ticket .co small{display:block;font-size:13px;font-weight:700;color:var(--ink-2)}
+.ticket .bigid{font-family:var(--f-mono);font-size:26px;font-weight:600;line-height:1.1}
+.codes{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;margin:16px 0 6px;padding:14px;border:1.5px solid var(--line);border-radius:10px}
+.bc{display:grid;justify-items:center;gap:2px;min-width:0}
+.bc svg{max-width:100%;height:64px}
+.bc .hr{font-family:var(--f-mono);font-weight:600;font-size:18px;letter-spacing:.12em}
+.rules ol{margin:12px 0 0;padding-left:20px;display:grid;gap:4px;font-size:13.5px}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;z-index:60;box-shadow:var(--shadow);max-width:90vw}
+.openq{padding:10px 0;border-bottom:1px solid var(--soft-2)} .openq:last-child{border-bottom:0}
+.openq p{margin:4px 0 0;color:var(--ink-2);font-size:14px}
+ol.plain{margin:0;padding-left:20px;display:grid;gap:8px}
+.copybtn{border:1.5px solid var(--line-2);background:#fff;border-radius:6px;height:28px;padding:0 8px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700}
+.copybtn:hover{background:var(--brand-soft);border-color:var(--brand)}
+
+@media (max-width:980px){
+  .gate{grid-template-columns:1fr}
+  .split2{grid-template-columns:1fr!important}
+  .sticky{position:static}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .rail{border-right:0;border-bottom:1.5px solid var(--line);display:flex;gap:4px;overflow-x:auto;padding:8px 12px}
+  .rail-group{display:none}
+  .navrow{flex:none} .navbtn{white-space:nowrap} .navbtn .tag,.newtab{display:none}
+  main.wrap{padding:18px 16px 50px}
+  .topbar{padding:8px 16px}
+  .hour{grid-template-columns:56px 1fr}.hour .vchips{grid-column:1/-1}
+  .verdict .big{font-size:40px}
+  .scanbox input{font-size:26px;height:68px}
+  .codes{grid-template-columns:1fr;justify-items:center}
+}
+@media print{
+  body *{visibility:hidden}
+  #layer .ticket,#layer .ticket *{visibility:visible}
+  #layer .scrim{position:absolute;inset:0;background:#fff;display:block;padding:0}
+  #layer .modal{border:0;max-height:none}
+  .noprint{display:none!important}
+}
 </style>
 </head>
 <body>
-<div class="app">
-  <aside class="rail">
-    <div class="brand">
-      <h1>進貨預約 D 案</h1>
-      <div class="sub">Carrier booking</div>
-    </div>
-    <div class="rail-group">貨運業者</div>
-    <button class="navbtn" data-view="book"><i class="dot"></i>預約申請</button>
-    <button class="navbtn" data-view="query"><i class="dot"></i>預約查詢</button>
-    <div class="rail-group">現場</div>
-    <button class="navbtn" data-view="gate"><i class="dot"></i>廠門口過刷</button>
-    <div class="rail-group">管理</div>
-    <button class="navbtn" data-view="report"><i class="dot"></i>貨運準點報表</button>
-    <button class="navbtn" data-view="param"><i class="dot"></i>參數設定</button>
-    <div class="rail-group">Demo</div>
-    <button class="navbtn" data-view="spec"><i class="dot"></i>規格與待確認</button>
-  </aside>
-
-  <main>
-    <div class="topbar">
-      <div>
-        <div class="clock-label">模擬時間</div>
-        <div class="clock"><span class="t mono" id="simTime">09:10</span><span class="d mono" id="simDate">2026/09/08 (二)</span></div>
-      </div>
-      <div class="row" style="gap:6px">
-        <button class="btn sm" data-adv="5">＋5 分</button>
-        <button class="btn sm" data-adv="15">＋15 分</button>
-        <button class="btn sm" data-adv="60">＋1 小時</button>
-      </div>
-      <div class="spacer"></div>
-      <span class="pill a" title="本頁所有貨運業者、供應商、採購單與統計數據皆為虛構">示範資料</span>
-      <button class="btn sm" id="resetBtn">重設 Demo 資料</button>
-    </div>
-    <div class="wrap" id="view"></div>
-  </main>
-</div>
+<div id="root"></div>
 <div id="layer"></div>
 
 <!-- qrcodejs 1.0.0 (MIT, davidshimjs) — 內嵌以確保離線／內網環境可用 -->
@@ -245,8 +298,10 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 </script>
 <script>
 "use strict";
-const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
-const KEY="tdc-plan-d-v2";   // v2：加入延遲改時段與現場候位，舊資料沒有這些欄位，換 key 讓大家拿到新種子
+/*CORE-BEGIN*/
+const BRAND={co:"範例物流股份有限公司",sys:"進貨預約系統"};
+/* v3：拿掉貨運業者、車牌選填、一張採購單只能預約一次、候位分手機／代為。舊資料結構不同，換 key 讓大家拿到新種子。 */
+const KEY="tdc-plan-d-v3";
 
 /* ── 工具 ───────────────────────────── */
 const pad=n=>String(n).padStart(2,"0");
@@ -266,24 +321,19 @@ const GROUPS=[
 ];
 const grp=id=>GROUPS.find(g=>g.id===id)||GROUPS[0];
 
-const CARRIERS=[
-  {code:"T01",name:"大順通運"},{code:"T02",name:"宏昌貨運"},{code:"T03",name:"立通物流"},
-  {code:"T04",name:"永泰運輸"},{code:"T05",name:"昇富貨運"}
-];
-const carrierOf=c=>CARRIERS.find(x=>x.code===String(c||"").toUpperCase());
-
 const SUPPLIERS=[
   {code:"V231",name:"甲上食品"},{code:"V518",name:"乙誠食品"},{code:"V742",name:"丙原冷凍"},
-  {code:"V863",name:"丁豐農產"},{code:"V102",name:"戊記飲料"}
+  {code:"V863",name:"丁豐農產"},{code:"V102",name:"戊記飲料"},{code:"V305",name:"己新日用"},
+  {code:"V417",name:"庚和紙業"},{code:"V629",name:"辛泰家品"},{code:"V754",name:"壬光乳品"},
+  {code:"V980",name:"癸隆雜糧"}
 ];
-const supplierOf=c=>SUPPLIERS.find(x=>x.code===c);
+const supplierOf=c=>SUPPLIERS.find(x=>x.code===c)||{code:c,name:"—"};
 
 function defaultConfig(){
   return{
     graceMin:10,          // 報到晚於預約時段起始這麼多分鐘內，仍算準點
     noShowAfterMin:30,    // 時段結束再過這麼久仍未報到，判定未到
     walkinLeadMin:0,      // 現場給時段時，從「現在＋這麼多分鐘」之後才起算
-    /* booking:false 的倉別不開放預約，車輛依原有方式直接到廠。 */
     noBookingNote:"低溫進貨集中在夜間時段，現場沒有排隊問題，因此第一階段不納入預約。",
     dcs:[
       {code:"N",name:"北區物流中心",warehouses:[
@@ -306,7 +356,7 @@ const dcOf=code=>S.cfg.dcs.find(d=>d.code===code);
 const whOf=(dc,id)=>dcOf(dc)?.warehouses.find(w=>w.id===id);
 const poolOf=(dc,wh,g)=>whOf(dc,wh)?.pools[g];
 
-/* ── 時段 ───────────────────────────── */
+/* ── 時段與名額 ───────────────────────────── */
 function slotsOf(dc,wh,g){
   const p=poolOf(dc,wh,g); if(!p)return [];
   const st=toMin(p.open),en=toMin(p.close),step=60/p.split,out=[];
@@ -316,7 +366,7 @@ function slotsOf(dc,wh,g){
 /* 名額：同 DC＋同倉＋同池＋同日＋同時段的有效預約數。
    遲到者改到的第二時段（lateSlot）與現場候位同樣佔一格——那台車實際會用掉碼頭。 */
 function usedAt(dc,wh,g,date,start,excludeId){
-  return S.bookings.filter(b=>b.dc===dc&&b.wh===wh&&b.group===g&&b.date===date
+  return S.bookings.filter(b=>b.date===date&&b.dc===dc&&b.wh===wh&&b.group===g
     &&b.status!=="cancelled"&&b.id!==excludeId
     &&(b.slot===start||b.lateSlot===start)).length;
 }
@@ -325,955 +375,1185 @@ function remainAt(dc,wh,g,date,start,excludeId){
 }
 const isFuture=(date,start)=>date>S.simDate||(date===S.simDate&&start>S.simMin);
 
-/* ── 種子資料 ───────────────────────────── */
-const TODAY="2026-09-08";
-function seed(){
-  const orders=[],bookings=[];
-  let pn=0;
-  const mkPO=(sup,dc,wh,date,pallets,valid=true)=>{
-    const po="PO-"+date.slice(2).replace(/-/g,"")+"-"+String(++pn).padStart(3,"0");
-    orders.push({po,supplier:sup,dc,wh,date,pallets,valid});
-    return po;
-  };
-  const seq={};
-  const mk=(carrier,dc,wh,g,date,slot,plate,pos,ev)=>{
-    const k=dc+"|"+date; seq[k]=(seq[k]||0)+1;
-    const p=poolOf(dc,wh,g),step=60/p.split;
-    bookings.push({
-      id:dc+"-"+date.slice(5).replace("-","")+"-"+pad(seq[k]),
-      carrier,dc,wh,group:g,date,slot,end:slot+step,plate,poRefs:pos,
-      status:ev.st||"booked",checkinAt:ev.ci??null,pager:ev.pg||null,
-      source:ev.src||"online",lateSlot:ev.ls??null,lateEnd:ev.le??null,
-      createdAt:Date.now()-Math.random()*1e7
-    });
-  };
+/* ── 查找 ───────────────────────────── */
+const norm=s=>String(s||"").trim().toUpperCase();
+const orderOf=po=>{const k=norm(po);return S.orders.find(o=>o.po===k)};
+const bookingById=id=>{const k=norm(id);return S.bookings.find(b=>b.id===k)};
+/* 一張採購單只能用來預約一次——主單與同車其他單都算。 */
+const bookingOfPO=po=>{const k=norm(po);return S.bookings.find(b=>b.status!=="cancelled"&&b.poRefs.includes(k))};
+/* 有填車牌時，同車同日同物流中心也不可重複預約。車牌空白不比對。 */
+const bookingOfTruck=(plate,date,dc)=>plate?S.bookings.find(b=>b.plate===plate&&b.date===date&&b.dc===dc&&b.status!=="cancelled"):null;
 
-  /* 今日一律為常溫倉：北區（08:00 起，每 20 分）、中區（07:00 起，每 15 分）。
-     低溫倉不開放預約，因此今日沒有低溫的預約紀錄。 */
-  const A=mkPO("V231","N","N1",TODAY,8), B=mkPO("V518","N","N1",TODAY,6),
-        C=mkPO("V742","N","N1",TODAY,12),D=mkPO("V863","N","N1",TODAY,7),
-        E=mkPO("V102","N","N1",TODAY,9);
-  mk("T01","N","N1","dock",TODAY,toMin("08:00"),"KBC-7712",[A],{st:"arrived",ci:toMin("07:58"),pg:"P-01"});
-  mk("T03","N","N1","dock",TODAY,toMin("08:00"),"RDA-2081",[B],{st:"arrived",ci:toMin("08:07"),pg:"P-02"});
-  // 08:20 這台延遲 18 分，過刷當下已排定改 09:00 進場（遲到結案，不另外產生預約）
-  mk("T02","N","N1","dock",TODAY,toMin("08:20"),"HAA-6305",[C],
-     {st:"arrived",ci:toMin("08:38"),pg:"P-03",ls:toMin("09:00"),le:toMin("09:20")});
-  mk("T04","N","N1","dock",TODAY,toMin("08:40"),"DYA-4408",[D],{st:"arrived",ci:toMin("08:36"),pg:"P-04"});
-  mk("T02","N","N1","dock",TODAY,toMin("08:40"),"MJC-7788",[E],{});   // 已逾準點時限、尚未判未到
-
-  const F=mkPO("V231","N","N1",TODAY,5), G=mkPO("V518","N","N1",TODAY,11),
-        H=mkPO("V863","N","N1",TODAY,4), I=mkPO("V102","N","N1",TODAY,9),
-        J=mkPO("V742","N","N1",TODAY,6);
-  mk("T01","N","N1","dock",TODAY,toMin("09:20"),"ABC-1234",[F],{});
-  mk("T03","N","N1","dock",TODAY,toMin("09:20"),"TPL-9042",[G,H,I],{});  // 一車三單
-  mk("T05","N","N1","wing",TODAY,toMin("08:00"),"WNG-7788",[J],{st:"arrived",ci:toMin("08:02"),pg:"P-05"});
-
-  // 未預約直接到廠，警衛以現場候位給了 09:40：不佔準點率，只計次
-  mk(null,"N","N1","dock",TODAY,toMin("09:40"),"5566",[],
-     {st:"walkin",src:"walkin",ci:toMin("09:05"),pg:"P-06"});
-
-  const K=mkPO("V518","M","N1",TODAY,7), L=mkPO("V102","M","N1",TODAY,10),
-        M=mkPO("V231","M","N1",TODAY,6);
-  mk("T04","M","N1","dock",TODAY,toMin("07:30"),"GTR-1102",[K],{st:"arrived",ci:toMin("07:26"),pg:"P-01"});
-  mk("T02","M","N1","dock",TODAY,toMin("08:00"),"LNW-4417",[L],{});   // 已判定未到
-  mk("T01","M","N1","dock",TODAY,toMin("09:45"),"PLM-3021",[M],{});
-
-  /* 未預約的採購單，供演練新增。低溫那張用來示範「此倉別不需預約」。 */
-  [["V231","N","N1",6],["V518","N","N1",13],["V863","M","N1",5],["V102","M","N1",9],
-   ["V742","N","C1",8]].forEach(([s,dc,wh,p])=>mkPO(s,dc,wh,TODAY,p));
-  [1,2].forEach(off=>{
-    const d=addDays(TODAY,off);
-    [["V231","N","N1",7],["V518","N","N1",12],["V102","M","N1",8],["V231","M","N1",5],
-     ["V742","N","C1",6]].forEach(([s,dc,wh,p])=>mkPO(s,dc,wh,d,p));
-  });
-  mkPO("V231","N","N1",TODAY,4,false);   // 已作廢採購單
-
-  /* 歷史：兩個月的到場紀錄，供準點報表。用固定配額而非亂數，讓每次重設看到的數字一致。
-     宏昌貨運（T02）刻意設為明顯偏低，正是報表要抓出來的對象。 */
-  const HIST={
-    "2026-07":{T01:{n:13,late:1,noshow:0},T02:{n:15,late:5,noshow:2},T03:{n:11,late:1,noshow:1},
-               T04:{n:9, late:1,noshow:0},T05:{n:12,late:2,noshow:1}},
-    "2026-08":{T01:{n:14,late:1,noshow:1},T02:{n:16,late:6,noshow:3},T03:{n:12,late:2,noshow:0},
-               T04:{n:10,late:0,noshow:1},T05:{n:13,late:3,noshow:1}}
-  };
-  const FLEET={T01:["KBC-7712","DYA-4408","PLM-3021"],T02:["HAA-6305","MJC-7788","LNW-4417"],
-               T03:["RDA-2081","TPL-9042","QSE-6614"],T04:["GTR-1102","BQD-3391","VHN-8250"],
-               T05:["WNG-7788","SDG-6603","FKR-9174"]};
-  Object.entries(HIST).forEach(([month,byCarrier])=>{
-    CARRIERS.forEach((c,ci)=>{
-      const q=byCarrier[c.code];
-      const outs=[];
-      for(let k=0;k<q.late;k++)outs.push("late");
-      for(let k=0;k<q.noshow;k++)outs.push("noshow");
-      while(outs.length<q.n)outs.push("ontime");
-      // 確定性打散，避免延遲全擠在月初
-      const spread=outs.map((o,k)=>[o,(k*7)%outs.length]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
-      spread.forEach((kind,i)=>{
-        const date=month+"-"+pad(2+((i*2+ci*3)%26));
-        const dc=(i%3===0)?"M":"N", wh="N1", g=(i%7===0)?"wing":"dock";  // 只統計常溫
-        const sl=slotsOf(dc,wh,g); if(!sl.length)return;
-        const s=sl[(i*3+ci)%sl.length].start;
-        const po=mkPO(SUPPLIERS[(i+ci)%5].code,dc,wh,date,5+(i%10));
-        const ev=kind==="noshow"?{st:"noshow"}
-          :kind==="late"?{st:"arrived",ci:s+13+(i%22)}      // 超過 10 分寬限
-          :{st:"arrived",ci:s-5+(i%14)};                    // 早到或晚 10 分內
-        // 依現行規則，延遲者當下會被改到當天較晚的時段；接近收工而排不下的就沒有
-        if(kind==="late"){
-          const si=sl.findIndex(x=>x.start===s), ni=si+2+(i%4);
-          if(ni<sl.length){ev.ls=sl[ni].start;ev.le=sl[ni].end}
-        }
-        mk(c.code,dc,wh,g,date,s,FLEET[c.code][i%3],[po],ev);
-      });
-    });
-  });
-  /* 現場候位歷史：不進準點率，只計次。刻意留幾筆「未知業者」，
-     呈現只輸車號、系統又反查不到時，報表會長成什麼樣子。
-     宏昌貨運（T02）除了準點率墊底，也是最常不預約就直接來的那家。 */
-  const WALKIN={"2026-07":{T02:3,T04:1,"?":2},"2026-08":{T02:4,T03:1,T05:1,"?":3}};
-  const ANON=["5566","8123","4790","6208","3355"];
-  let wi=0;
-  Object.entries(WALKIN).forEach(([month,byCarrier])=>{
-    Object.entries(byCarrier).forEach(([code,cnt])=>{
-      for(let k=0;k<cnt;k++,wi++){
-        const date=month+"-"+pad(3+((wi*3)%25));
-        const dc=(wi%3===0)?"M":"N", wh="N1", g="dock";
-        const sl=slotsOf(dc,wh,g); if(!sl.length)continue;
-        const start=sl[(wi*5+k)%sl.length].start;
-        const known=code!=="?";
-        mk(known?code:null,dc,wh,g,date,start,
-           known?digitsOf(FLEET[code][k%3]):ANON[wi%ANON.length],[],
-           {st:"walkin",src:"walkin",ci:start-8-(wi%9),pg:"P-"+pad(1+(wi%9))});
-      }
-    });
-  });
-  return{orders,bookings};
-}
-
-/* ── 狀態 ───────────────────────────── */
-let S=null;
-function fresh(){
-  // 先建立設定，seed() 產生種子時要靠 S.cfg 推算時段與名額
-  S={cfg:defaultConfig(),orders:[],bookings:[],
-     simDate:TODAY,simMin:toMin("09:10"),view:"book",ui:{}};
-  const s=seed();
-  S.orders=s.orders;S.bookings=s.bookings;
-  save();
-}
-function load(){
-  try{const raw=localStorage.getItem(KEY);if(raw){const x=JSON.parse(raw);if(x&&Array.isArray(x.bookings)){S=x;return}}}catch(e){}
-  fresh();
-}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-
-const orderOf=po=>S.orders.find(o=>o.po.toUpperCase()===String(po||"").trim().toUpperCase());
-/* 預約主鍵：車牌＋進貨日＋DC。採購單號只是資格憑證，不是鎖。 */
-const bookingOfTruck=(plate,date,dc)=>S.bookings.find(b=>
-  b.plate===plate&&b.date===date&&b.dc===dc&&b.status!=="cancelled");
-const bookingById=id=>S.bookings.find(b=>b.id===String(id||"").trim().toUpperCase());
-
-/* ── 準點判定 ─────────────────────────────
+/* ── 判定 ─────────────────────────────
    現場候位不進準點率：他本來就沒預約，當場報到必然「準時」，
-   混進分母會讓沒預約的人準點率 100%，乖乖預約的人反而被扣分。 */
+   混進分母會讓沒預約的人準點率 100%，先預約的人反而被扣分。 */
+const isWalkin=b=>b.source==="walkin";
 function punctuality(b){
-  if(b.source==="walkin")return null;
+  if(isWalkin(b))return null;
   if(b.status==="noshow")return"noshow";
   if(b.status!=="arrived"||b.checkinAt==null)return null;
   return b.checkinAt<=b.slot+S.cfg.graceMin?"ontime":"late";
 }
-const PLABEL={ontime:"準點",late:"延遲",noshow:"未到"};
+const PLABEL={ontime:"準點",late:"遲到",noshow:"未到"};
 const lateBy=b=>Math.max(0,(b.checkinAt??0)-b.slot);
-const isWalkin=b=>b.source==="walkin";
-const carrierName=c=>carrierOf(c)?.name||"未知業者";
-
-/* ── 現場給時段 ─────────────────────────────
-   遲到者與現場候位共用同一套邏輯：人車貨都已在門口，差別只在入口。
-   採購單號的用途是「遠端佔位的防濫用憑證」，人到現場了就不需要這一關。 */
-const digitsOf=p=>String(p||"").replace(/\D/g,"");
-/* 現場候位只輸車號數字，貨運業者靠過往紀錄反查。
-   查無、或多筆紀錄指向不同業者時一律不猜，報表歸「未知業者」，避免誤植到別家頭上。 */
-function carrierByDigits(d){
-  if(!d)return null;
-  const set=[...new Set(S.bookings.filter(b=>b.carrier&&digitsOf(b.plate)===d).map(b=>b.carrier))];
-  return set.length===1?set[0]:null;
-}
-function plateByDigits(d){
-  if(!d)return null;
-  const set=[...new Set(S.bookings.filter(b=>digitsOf(b.plate)===d).map(b=>b.plate))];
-  return set.length===1?set[0]:null;
-}
+const bookableWh=dc=>dcOf(dc)?.warehouses.find(w=>w.booking)||null;
 /* 當日該倉該車型，從現在（＋緩衝）之後仍有名額的時段，由近到遠。 */
 function openSlotsNow(dc,wh,g){
   const from=S.simMin+(S.cfg.walkinLeadMin||0);
   return slotsOf(dc,wh,g).filter(x=>x.start>=from&&remainAt(dc,wh,g,S.simDate,x.start)>0);
 }
-/* 該物流中心第一個開放預約的倉別（第一階段＝常溫）。 */
-const bookableWh=dc=>dcOf(dc)?.warehouses.find(w=>w.booking)||dcOf(dc)?.warehouses[0];
-
 function autoNoShow(){
   let ch=false;
   S.bookings.forEach(b=>{
     if(b.status!=="booked")return;
     if(b.date<S.simDate||(b.date===S.simDate&&S.simMin>b.end+S.cfg.noShowAfterMin)){b.status="noshow";ch=true}
   });
-  if(ch)save();
+  return ch;
+}
+const nextPager=(dc,date)=>"P-"+pad(S.bookings.filter(x=>x.dc===dc&&x.date===date&&x.pager).length+1);
+function newId(dc,date){
+  const pre=dc+"-"+date.slice(5).replace("-","")+"-";
+  let n=S.bookings.filter(b=>b.dc===dc&&b.date===date).length+1;
+  while(bookingById(pre+pad(n)))n++;
+  return pre+pad(n);
 }
 
-/* ── 畫面 ───────────────────────────── */
-const V={};
-function render(){
-  autoNoShow();
-  $("#simTime").textContent=hhmm(S.simMin);
-  $("#simDate").textContent=dshow(S.simDate);
-  $$(".navbtn").forEach(b=>b.setAttribute("aria-current",String(b.dataset.view===S.view)));
-  $("#view").innerHTML=V[S.view]();
-  bind();
-}
-function toast(msg){
-  $$(".toast").forEach(x=>x.remove());
-  const t=document.createElement("div");t.className="toast";t.textContent=msg;
-  document.body.appendChild(t);setTimeout(()=>t.remove(),2400);
-}
-function go(v){S.view=v;save();render();window.scrollTo(0,0)}
-function head(t,d){return `<div class="page-head"><div class="eyebrow">貨運業者進貨預約</div><h2>${t}</h2><p>${d}</p></div>`}
-const tempTag=w=>`<span class="temp"><i class="t-${w.temp}"></i>${w.temp}・${esc(w.name)}</span>`;
+/* ── 種子資料 ─────────────────────────────
+   全部用固定規則產生（不用亂數），每次重設數字一致，測試劇本才能指名。 */
+const TODAY="2026-09-08";
+const PLATE_POOL=(()=>{
+  const L="ABCDEFGHJKLMNPQRSTUVWXYZ",out=[];
+  for(let i=0;i<48;i++)out.push(L[(i*7+3)%24]+L[(i*11+5)%24]+L[(i*5+1)%24]+"-"+(1000+(i*7919+137)%9000));
+  return out;
+})();
+function seed(){
+  const orders=[],bookings=[],poSeq={},idSeq={},used={};
+  const WH="N1";
+  const mkPO=(sup,dc,wh,date,valid=true)=>{
+    poSeq[date]=(poSeq[date]||0)+1;
+    const po="PO-"+date.slice(2).replace(/-/g,"")+"-"+String(poSeq[date]).padStart(3,"0");
+    orders.push({po,supplier:sup,dc,wh,date,pallets:4+((poSeq[date]*7+sup.charCodeAt(2))%11),valid});
+    return po;
+  };
+  let supN=0;
+  const nextSup=()=>SUPPLIERS[(supN++*3)%SUPPLIERS.length].code;
+  const key=(dc,g,date,slot)=>dc+"|"+g+"|"+date+"|"+slot;
+  const room=(dc,g,date,slot)=>poolOf(dc,WH,g).capacity-(used[key(dc,g,date,slot)]||0);
+  const take=(dc,g,date,slot)=>{const k=key(dc,g,date,slot);used[k]=(used[k]||0)+1};
+  const mk=o=>{
+    const k=o.dc+"|"+o.date; idSeq[k]=(idSeq[k]||0)+1;
+    const step=60/poolOf(o.dc,WH,o.g).split;
+    const b={id:o.dc+"-"+o.date.slice(5).replace("-","")+"-"+pad(idSeq[k]),
+      dc:o.dc,wh:WH,group:o.g,date:o.date,slot:o.slot,end:o.slot+step,plate:o.plate||"",
+      poRefs:o.pos||[],status:o.st||"booked",checkinAt:o.ci??null,pager:null,
+      source:o.st==="walkin"?"walkin":"online",via:o.via||null,
+      lateSlot:null,lateEnd:null,createdAt:0};
+    take(o.dc,o.g,o.date,o.slot);
+    if(o.ls!=null){b.lateSlot=o.ls;b.lateEnd=o.ls+step;take(o.dc,o.g,o.date,o.ls)}
+    bookings.push(b);return b;
+  };
+  /* 手排的一筆：[車型, 時段, 車牌, 採購單張數, 狀態, 過刷, 改排時段, 候位方式] */
+  const hand=(dc,date,rows)=>rows.forEach(([g,t,plate,npo,st,ci,ls,via])=>{
+    const pos=[];for(let j=0;j<npo;j++)pos.push(mkPO(nextSup(),dc,WH,date));
+    mk({dc,g,date,slot:toMin(t),plate,pos,st,ci:ci?toMin(ci):null,ls:ls?toMin(ls):null,via});
+  });
 
-/* ---- 1. 預約申請 ---- */
-V.book=()=>{
-  const u=S.ui, o=u.order;
-  const H=head("預約申請","貨運業者收到供應商轉來的採購單號後，用其中<b>任何一張</b>單號即可預約。一台車只需要一個時段，不必每張單都預約。");
-  if(!o){
-    const free=S.orders.filter(x=>x.valid&&x.date>=S.simDate
-      &&!S.bookings.some(b=>b.poRefs.includes(x.po))).slice(0,6);
-    return H+`<div class="card card-pad grid" style="max-width:660px">
-      <div><div class="eyebrow">Step 1</div><h3 style="font-size:16px;margin-top:4px">採購單號、貨運業者與車牌</h3>
-        <p style="color:var(--ink-2);margin:4px 0 0">進貨日與收貨物流中心由採購單決定。貨運業者代號用來累計到場準點紀錄，車牌是這次預約的識別。</p></div>
-      <div class="row">
-        <label class="fld" style="flex:2;min-width:190px">採購單號
-          <input class="mono" id="poIn" placeholder="PO-260908-006" value="${esc(u.po||"")}"></label>
-        <label class="fld" style="flex:1;min-width:120px">貨運業者代號
-          <input class="mono" id="carIn" placeholder="T01" value="${esc(u.carrier||"")}" style="text-transform:uppercase"></label>
-        <label class="fld" style="flex:1;min-width:130px">車牌號碼
-          <input class="mono" id="plateIn" placeholder="ABC-1234" value="${esc(u.plate||"")}" style="text-transform:uppercase"></label>
-      </div>
-      <div><button class="btn pri" id="lookup">查詢可預約時段</button></div>
-      ${u.err?`<div class="note ${u.errKind||"warn"}">${u.err}</div>`:""}
-      <div><div class="eyebrow" style="margin-bottom:6px">Demo 可用資料</div>
-        <div class="row" style="gap:6px">${free.map(x=>{const w=whOf(x.dc,x.wh);
-          return `<button class="btn sm mono" data-fill="${x.po}" title="${esc(dcOf(x.dc).name)}　${w.temp}${w.name}">${x.po}
-            <span style="font-family:var(--f-body);color:var(--ink-3);font-weight:400">${w.temp}${w.booking?"":"・免預約"}</span></button>`}).join("")}</div>
-        <div class="note" style="margin-top:8px">貨運業者代號：${CARRIERS.map(c=>`<b class="mono">${c.code}</b> ${c.name}`).join("　")}</div>
-      </div>
-    </div>`;
+  /* 歷史：07/01 起到演練日前一天，週日休。週一刻意偏差，讓每日趨勢看得出規律。 */
+  let d="2026-07-01",di=0;
+  while(d<TODAY){
+    const dow=new Date(d+"T00:00:00").getDay();
+    if(dow!==0){
+      [["N",0],["M",1]].forEach(([dc,off])=>{
+        const n=(dc==="N"?13:10)+((di*3+off)%5)-(dow===6?5:0);
+        const lateP=dow===1?30:16, nsP=dow===1?10:5;
+        for(let k=0;k<n;k++){
+          const g=(k%6===5)?"wing":"dock", sl=slotsOf(dc,WH,g);
+          let si=(k*5+di*3+off)%sl.length,tries=0;
+          while(room(dc,g,d,sl[si].start)<=0&&tries<sl.length){si=(si+1)%sl.length;tries++}
+          if(tries>=sl.length)continue;
+          const s=sl[si].start, h=(di*37+k*53+off*11)%100;
+          const kind=h<nsP?"noshow":(h<nsP+lateP?"late":"ontime");
+          const pos=[];for(let j=0;j<((k%7===3)?2:1);j++)pos.push(mkPO(SUPPLIERS[(di+k*3+j+off)%10].code,dc,WH,d));
+          const ev={dc,g,date:d,slot:s,plate:(k%10<7)?PLATE_POOL[(di+k*2+off)%PLATE_POOL.length]:"",pos};
+          if(kind==="noshow")ev.st="noshow";
+          else if(kind==="late"){
+            ev.st="arrived";ev.ci=s+11+((di+k)%25);
+            const ni=si+2+((di+k)%3);
+            if(ni<sl.length&&room(dc,g,d,sl[ni].start)>0)ev.ls=sl[ni].start;
+          }else{ev.st="arrived";ev.ci=s-8+((di*7+k*3)%18)}
+          mk(ev);
+        }
+        const wn=Math.max(0,((di*3+off*2)%4)-(dow===6?1:0));
+        const sl=slotsOf(dc,WH,"dock");
+        for(let k=0;k<wn;k++){
+          let si=(k*9+di*5+off+7)%sl.length,tries=0;
+          while(room(dc,"dock",d,sl[si].start)<=0&&tries<sl.length){si=(si+1)%sl.length;tries++}
+          if(tries>=sl.length)continue;
+          const s=sl[si].start;
+          mk({dc,g:"dock",date:d,slot:s,plate:(k%2)?"":String(1000+((di*131+k*71)%9000)),pos:[],
+              st:"walkin",ci:s-10-((di+k)%20),via:(di+k)%3===0?"guard":"phone"});
+        }
+      });
+    }
+    d=addDays(d,1);di++;
   }
 
-  const w=whOf(o.dc,o.wh), dc=dcOf(o.dc), g=grp(u.group||"dock");
-  const slots=slotsOf(o.dc,o.wh,g.id), cap=poolOf(o.dc,o.wh,g.id).capacity;
-  const p=poolOf(o.dc,o.wh,g.id);
+  /* 演練日：北區（碼頭每 20 分 3 位、廣場每 30 分 1 位），模擬時間 09:10。 */
+  hand("N",TODAY,[
+    ["dock","08:00","KBC-7712",1,"arrived","07:56"],
+    ["dock","08:00","",1,"arrived","08:07"],
+    ["dock","08:00","RDA-2081",1,"noshow"],
+    ["dock","08:20","HAA-6305",1,"arrived","08:38","09:00"],
+    ["dock","08:20","",3,"arrived","08:24"],
+    ["dock","08:40","DYA-4408",1,"arrived","08:35"],
+    ["dock","08:40","MJC-7788",1,"booked"],
+    ["dock","08:40","",1,"arrived","08:55","09:20"],
+    ["dock","09:00","",1,"arrived","08:58"],
+    ["dock","09:00","TPL-9042",3,"booked"],
+    ["dock","09:20","ABC-1234",1,"booked"],
+    ["dock","09:20","",1,"booked"],
+    ["dock","09:40","5566",0,"walkin","09:02",null,"phone"],
+    ["dock","09:40","GTR-2210",2,"booked"],
+    ["dock","09:40","",1,"booked"],
+    ["dock","10:00","PLM-3021",2,"booked"],
+    ["dock","10:00","",1,"booked"],
+    ["dock","10:20","",0,"walkin","09:08",null,"guard"],
+    ["dock","10:20","SDG-5180",1,"booked"],
+    ["dock","10:40","",1,"booked"],
+    ["dock","10:40","QSE-6614",1,"booked"],
+    ["dock","11:00","FKR-9174",1,"booked"],
+    ["dock","11:00","",2,"booked"],
+    ["dock","11:20","VHN-8250",1,"booked"],
+    ["dock","11:40","",1,"booked"],
+    ["dock","13:00","BQD-3391",1,"booked"],
+    ["dock","13:00","",1,"booked"],
+    ["dock","13:20","LNW-4417",2,"booked"],
+    ["dock","13:40","",1,"booked"],
+    ["dock","14:00","WNG-2233",1,"booked"],
+    ["dock","14:20","",1,"booked"],
+    ["wing","08:00","WNG-7788",1,"arrived","08:02"],
+    ["wing","08:30","",1,"arrived","08:44","09:00"],
+    ["wing","10:00","SDG-6603",1,"booked"],
+    ["wing","11:00","",1,"booked"],
+    ["wing","13:30","KTR-5521",1,"booked"]
+  ]);
+  /* 中區（碼頭每 15 分 2 位、廣場每小時 1 位）。 */
+  hand("M",TODAY,[
+    ["dock","07:00","GTR-1102",1,"arrived","06:58"],
+    ["dock","07:00","",1,"arrived","07:05"],
+    ["dock","07:15","LMK-4410",1,"arrived","07:31","07:45"],
+    ["dock","07:30","",1,"arrived","07:26"],
+    ["dock","07:30","PRT-6620",1,"noshow"],
+    ["dock","07:45","",2,"arrived","07:44"],
+    ["dock","08:00","HNB-3307",1,"noshow"],
+    ["dock","08:00","",1,"arrived","08:03"],
+    ["dock","08:15","CVD-8812",1,"arrived","08:40","08:45"],
+    ["dock","08:30","",1,"arrived","08:31"],
+    ["dock","08:45","MXE-2290",1,"arrived","08:41"],
+    ["dock","09:00","",1,"booked"],
+    ["dock","09:00","JQW-7731",1,"arrived","08:55"],
+    ["dock","09:15","BRT-5561",2,"booked"],
+    ["dock","09:15","",1,"booked"],
+    ["dock","09:30","8123",0,"walkin","08:50",null,"phone"],
+    ["dock","09:30","",1,"booked"],
+    ["dock","09:45","ZKL-1180",1,"booked"],
+    ["dock","10:00","",1,"booked"],
+    ["dock","10:15","YTA-6602",1,"booked"],
+    ["dock","10:30","",2,"booked"],
+    ["dock","11:00","NMS-4492",1,"booked"],
+    ["dock","11:15","",1,"booked"],
+    ["dock","13:00","PKR-7008",1,"booked"],
+    ["dock","13:30","",1,"booked"],
+    ["wing","07:00","WMA-1010",1,"arrived","07:02"],
+    ["wing","08:00","",1,"noshow"],
+    ["wing","10:00","WMB-2020",1,"booked"],
+    ["wing","12:00","",1,"booked"]
+  ]);
+  /* 未來兩天已有的預約 */
+  const D1=addDays(TODAY,1),D2=addDays(TODAY,2);
+  hand("N",D1,[["dock","08:00","KBC-7712",1],["dock","08:00","",1],["dock","08:40","HAA-6305",1],
+    ["dock","09:20","",2],["dock","10:00","TPL-9042",1],["dock","10:40","",2],["dock","13:00","DYA-4408",1],["wing","09:00","",1]]);
+  hand("M",D1,[["dock","07:30","GTR-1102",1],["dock","08:15","",1],["dock","09:00","CVD-8812",1],
+    ["dock","10:00","",1],["dock","11:00","MXE-2290",1],["wing","08:00","",1]]);
+  hand("N",D2,[["dock","08:20","",1],["dock","09:40","ABC-1234",1],["dock","11:00","",1]]);
+  hand("M",D2,[["dock","08:00","LMK-4410",1],["dock","09:30","",1]]);
+
+  /* 演練日依過刷先後發放震動器號碼（各物流中心各自從 P-01 起算）。 */
+  const byDay={};
+  bookings.filter(b=>b.checkinAt!=null).forEach(b=>{(byDay[b.dc+"|"+b.date]=byDay[b.dc+"|"+b.date]||[]).push(b)});
+  Object.values(byDay).forEach(list=>list.sort((a,b)=>a.checkinAt-b.checkinAt).forEach((b,i)=>b.pager="P-"+pad(i+1)));
+
+  /* 尚未預約的採購單，供測試新增預約（至少 20 張，另備擋下用的示範單）。 */
+  const free=(dc,wh,date,n)=>{for(let i=0;i<n;i++)mkPO(nextSup(),dc,wh,date)};
+  free("N","N1",TODAY,8); free("M","N1",TODAY,6);
+  free("N","N1",D1,4);    free("M","N1",D1,3);
+  free("N","N1",D2,3);    free("M","N1",D2,2);
+  free("N","N1",addDays(TODAY,3),2);
+  free("N","C1",TODAY,2); free("N","C1",D1,1);          // 低溫：不需預約
+  mkPO(nextSup(),"N","N1",TODAY,false); mkPO(nextSup(),"M","N1",D1,false);   // 已作廢
+  free("N","N1",addDays(TODAY,-1),2);                  // 進貨日已過
+  return{orders,bookings};
+}
+/*CORE-END*/
+
+/* ── 狀態 ─────────────────────────────
+   S＝共用資料（存 localStorage，各分頁即時同步）；view／U＝這個分頁自己的畫面狀態，不寫進共用資料，
+   否則在過刷分頁切畫面會連看板分頁一起被切走。 */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+let S=null, view="book", U={}, kdc=null, lastView="book";
+const KIOSK=new Set(["gate","board","walkin"]);
+
+function fresh(){
+  // 先建立設定，seed() 產生種子時要靠 S.cfg 推算時段與名額
+  S={v:3,cfg:defaultConfig(),orders:[],bookings:[],simDate:TODAY,simMin:toMin("09:10")};
+  const s=seed(); S.orders=s.orders; S.bookings=s.bookings;
+  save();
+}
+function load(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){const x=JSON.parse(raw);
+      if(x&&x.v===3&&x.cfg&&Array.isArray(x.orders)&&Array.isArray(x.bookings)){S=x;return}}
+  }catch(e){}
+  fresh();
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S))}
+  catch(e){toast("瀏覽器儲存空間寫入失敗，這次的變更重新整理後會遺失")}
+}
+const pageUrl=()=>location.href.split(/[?#]/)[0];
+const urlFor=(v,dc)=>pageUrl()+"?view="+v+(dc?"&dc="+dc:"");
+const curDc=()=>(kdc&&dcOf(kdc))?kdc:S.cfg.dcs[0].code;
+function syncUrl(){
+  const q=new URLSearchParams();
+  if(view!=="book")q.set("view",view);
+  if(KIOSK.has(view))q.set("dc",curDc());
+  try{history.replaceState(null,"",pageUrl()+(q.toString()?"?"+q:""))}catch(e){}
+}
+function go(v){
+  if(!KIOSK.has(view))lastView=view;
+  view=v;U={};syncUrl();render();window.scrollTo(0,0);
+}
+
+/* ── 圖示（線條一律 currentColor，跟著文字色走） ── */
+const ICONS={
+  calendar:'<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',
+  search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M20.5 20.5l-5.2-5.2"/>',
+  scan:'<path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M7 8v8M10 8v8M13.5 8v8M17 8v8"/>',
+  board:'<rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M8 17v-5M12.5 17V8M17 17v-8"/>',
+  sliders:'<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  phone:'<rect x="6.5" y="2" width="11" height="20" rx="2.5"/><path d="M10.5 18.5h3"/>',
+  doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+  clip:'<rect x="8" y="2.5" width="8" height="4" rx="1"/><path d="M16 4.5h2a2 2 0 0 1 2 2V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2h2"/><path d="M8.5 12h7M8.5 16h5"/>',
+  truck:'<path d="M2.5 6h11v10h-11z"/><path d="M13.5 9.5h4l3 3.5V16h-7"/><circle cx="6.5" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  check:'<path d="M4.5 12.5l5 5 10-11"/>',
+  alert:'<path d="M12 3.5l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  back:'<path d="M15 18l-6-6 6-6"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
+  print:'<path d="M6 9V3h12v6"/><path d="M6 18H4v-8h16v8h-2"/><path d="M6 14h12v7H6z"/>',
+  qr:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v1M14 20h1M18 18h3v3"/>',
+  refresh:'<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  guard:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+  ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.5M3.5 12h.5M3.5 18h.5"/>'
+};
+const ic=(n,s=18,w=2)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||""}</svg>`;
+
+/* ── 共用片段 ── */
+const brandHtml=()=>`<div class="brandmark"><div class="logo">${ic("truck",26,2.2)}</div>
+  <div><div class="co">${BRAND.co}</div><div class="sys">${BRAND.sys}</div></div></div>`;
+const clockHtml=()=>`<div class="clockbox">
+  <div class="clock" title="Demo 用的模擬時間，所有分頁共用"><span class="lab">模擬時間</span>
+    <span class="t mono">${hhmm(S.simMin)}</span><span class="d mono">${dshow(S.simDate)}</span></div>
+  <button class="btn sm" data-adv="5">＋5 分</button><button class="btn sm" data-adv="15">＋15 分</button><button class="btn sm" data-adv="60">＋1 小時</button></div>`;
+const head=(t,d,i)=>`<div class="page-head"><h2>${i?ic(i,26):""}${t}</h2>${d?`<p>${d}</p>`:""}</div>`;
+const tempTag=w=>`<span class="temp"><i class="t-${w.temp}"></i>${w.temp}・${esc(w.name)}</span>`;
+const plateTxt=b=>b.plate?`<span class="mono" style="font-weight:600">${esc(b.plate)}</span>`:`<span class="muted">未填</span>`;
+const dcSelect=(id,val,all)=>`<select id="${id}" aria-label="物流中心">${all?`<option value="ALL" ${val==="ALL"?"selected":""}>全部物流中心</option>`:""}
+  ${S.cfg.dcs.map(d=>`<option value="${d.code}" ${d.code===val?"selected":""}>${esc(d.name)}</option>`).join("")}</select>`;
+const supNames=b=>[...new Set(b.poRefs.map(p=>orderOf(p)?.supplier).filter(Boolean))].map(c=>esc(supplierOf(c).name)).join("、")||"—";
+function statusOf(b){
+  if(isWalkin(b))return"walkin";
+  const p=punctuality(b); if(p)return p;
+  return"wait";
+}
+const SLABEL={ontime:"準點",late:"遲到",noshow:"未到",walkin:"現場候位",wait:"待報到"};
+const SCLS={ontime:"ok",late:"late",noshow:"bad",walkin:"walk",wait:"wait"};
+const statusPill=b=>{const s=statusOf(b);return `<span class="pill ${SCLS[s]}">${SLABEL[s]}${s==="late"?" +"+lateBy(b)+" 分":""}</span>`};
+const viaTxt=b=>isWalkin(b)?(b.via==="guard"?"警衛代為候位":"司機手機候位"):"線上預約";
+function toast(msg){
+  $$(".toast").forEach(x=>x.remove());
+  const t=document.createElement("div");t.className="toast";t.setAttribute("role","status");t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2600);
+}
+function copyText(txt,label){
+  const done=()=>toast("已複製"+(label?"："+label:""));
+  const fallback=()=>{const ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done()}catch(e){toast("複製失敗，請手動選取")}ta.remove()};
+  try{navigator.clipboard.writeText(txt).then(done,fallback)}catch(e){fallback()}
+}
+
+/* ── Code128-B 一維條碼 ─────────────────────────────
+   一維條碼槍讀不了 QRcode，所以預約單兩種都印。內容就是預約單號，與手輸的字串完全相同。 */
+const C128=("212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 "+
+  "123122 123221 223211 221132 221231 213212 223112 312131 311222 321122 321221 312212 322112 322211 212123 212321 232121 "+
+  "111323 131123 131321 112313 132113 132311 211313 231113 231311 112133 112331 132131 113123 113321 133121 313121 211331 "+
+  "231131 213113 213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 "+
+  "141122 141221 112214 112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 "+
+  "124112 124211 411212 421112 421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 "+
+  "311141 411131 211412 211214 211232 2331112").split(" ");
+function code128(text,h=62){
+  const vals=[104];
+  for(const ch of String(text)){const c=ch.charCodeAt(0);if(c>=32&&c<=126)vals.push(c-32)}
+  let sum=104;for(let i=1;i<vals.length;i++)sum+=vals[i]*i;
+  vals.push(sum%103);vals.push(106);
+  let x=10,r="";
+  vals.forEach(v=>{const p=C128[v];for(let i=0;i<p.length;i++){const w=+p[i];if(i%2===0)r+=`<rect x="${x}" y="0" width="${w}" height="${h}"/>`;x+=w}});
+  const W=x+10;
+  return `<svg viewBox="0 0 ${W} ${h}" width="${W*2}" height="${h}" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="條碼 ${esc(text)}"><rect width="${W}" height="${h}" fill="#fff"/><g fill="#000">${r}</g></svg>`;
+}
+function drawQR(el,text,size){
+  if(!el)return;
+  try{if(window.QRCode){el.innerHTML="";new QRCode(el,{text,width:size,height:size,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});return}}catch(e){}
+  el.innerHTML=`<div class="muted" style="width:${size}px;height:${size}px;display:grid;place-items:center;border:1.5px dashed var(--line-2)">QRcode 載入失敗</div>`;
+}
+
+/* ── 外框 ── */
+const NAV=[
+  {g:"貨運業者"},
+  {v:"book",t:"預約（查詢／新增）",i:"calendar"},
+  {v:"walkin",t:"手機現場候位",i:"phone",k:1},
+  {g:"現場"},
+  {v:"gate",t:"過刷報到",i:"scan",k:1},
+  {v:"board",t:"即時看板",i:"board",k:1},
+  {g:"後台"},
+  {v:"report",t:"報到分析",i:"chart"},
+  {v:"param",t:"參數設定",i:"sliders"},
+  {g:"Demo"},
+  {v:"testdata",t:"測試採購單",i:"clip"},
+  {v:"spec",t:"規格與待確認",i:"doc"}
+];
+function shell(inner){
+  return `<header class="topbar">${brandHtml()}<div class="spacer"></div>${clockHtml()}
+    <span class="pill brand" title="本頁資料皆為測試用虛構資料">示範資料</span>
+    <button class="btn sm" id="resetBtn">${ic("refresh",16)}重設 Demo 資料</button></header>
+  <div class="app"><nav class="rail" aria-label="主選單">${NAV.map(n=>n.g?`<div class="rail-group">${n.g}</div>`:
+    `<div class="navrow"><button class="navbtn" data-nav="${n.v}" aria-current="${n.v===view}">${ic(n.i,19)}<span>${n.t}</span>${n.k?`<span class="tag">滿版</span>`:""}</button>
+      ${n.k?`<button class="newtab" data-newtab="${n.v}" title="在新分頁開啟（可與其他分頁同步演示）" aria-label="${n.t}：新分頁開啟">${ic("ext",16)}</button>`:""}</div>`).join("")}
+  </nav><main class="wrap">${inner}</main></div>`;
+}
+function kbar(title,icon){
+  return `<div class="kbar"><button class="btn sm" id="kBack">${ic("back",16)}返回</button>${brandHtml()}
+    <div class="title">${ic(icon,24)} ${title}</div>${dcSelect("kDc",curDc())}
+    <div class="spacer"></div><span class="live" title="其他分頁的過刷、預約會自動同步到這裡"><i></i>即時同步</span>${clockHtml()}</div>`;
+}
+
+/* ═════════ 1. 預約（查詢＋新增） ═════════ */
+const V={};
+V.book=()=>{
+  const H=head("預約","輸入<b>採購單號</b>即可查詢或新增：已預約的單會顯示預約內容，尚未預約的單會直接進入預約步驟。也可以輸入預約單號或車牌查詢。","calendar");
+  const quick=S.orders.filter(o=>o.valid&&o.date===S.simDate&&whOf(o.dc,o.wh).booking&&!bookingOfPO(o.po)).slice(0,5);
+  const form=`<div class="card pad grid" style="gap:12px;max-width:900px">
+    <div class="search"><label class="inp">${ic("search",22)}
+      <input id="q" value="${esc(U.q||"")}" placeholder="輸入採購單號，例如 ${quick[0]?.po||"PO-260908-074"}" autocomplete="off" aria-label="採購單號、預約單號或車牌"></label>
+      <button class="btn pri lg" id="qGo">${ic("search",20)}查詢</button></div>
+    <div class="muted" style="font-size:13.5px;font-weight:600">可輸入：採購單號（PO-260908-074）・預約單號（N-0908-05）・車牌（ABC-1234）</div>
+    ${U.msg?`<div class="note ${U.msgKind||"warn"}">${U.msg}</div>`:""}
+    ${!U.mode?`<div class="row" style="gap:6px"><span class="muted" style="font-size:13px;font-weight:700">Demo 快速帶入：</span>
+      ${quick.map(o=>`<button class="btn sm mono" data-fill="${o.po}">${o.po}</button>`).join("")}
+      <button class="btn sm" data-nav="testdata">${ic("clip",15)}完整測試清單</button></div>`:""}
+  </div>`;
+  if(U.mode==="found")return H+form+`<div class="grid" style="margin-top:16px">${U.found.map(id=>bookingCard(bookingById(id))).join("")}</div>`;
+  if(U.mode==="book")return H+form+bookFlow();
+  return H+form;
+};
+function runSearch(raw){
+  let q=String(raw||"").trim();
+  const m=q.match(/[?&]id=([^&#]+)/); if(m)q=decodeURIComponent(m[1]);
+  q=q.toUpperCase();
+  U={q};
+  if(!q){U.msg="請輸入採購單號、預約單號或車牌。";return}
+  const b=bookingById(q);
+  if(b){U.mode="found";U.found=[b.id];return}
+  const o=orderOf(q);
+  if(o){
+    const bk=bookingOfPO(o.po);
+    if(bk){
+      U.mode="found";U.found=[bk.id];U.msgKind="brand";
+      U.msg=`採購單 <b class="mono">${o.po}</b> 已經預約過${bk.poRefs[0]!==o.po?`（以同車其他單的身分，主單為 <span class="mono">${bk.poRefs[0]}</span>）`:""}，以下是這張預約。<b>一張採購單只能預約一次。</b>`;
+      return;
+    }
+    if(!o.valid){U.msg=`採購單 <b class="mono">${o.po}</b> 已作廢，無法預約。`;U.msgKind="bad";return}
+    if(o.date<S.simDate){U.msg=`採購單 <b class="mono">${o.po}</b> 的指定進貨日 ${dshow(o.date)} 已過，無法預約。`;U.msgKind="bad";return}
+    const w=whOf(o.dc,o.wh);
+    if(!w.booking){U.msg=`採購單 <b class="mono">${o.po}</b> 的收貨倉別是 <b>${w.temp}・${esc(w.name)}</b>，<b>目前不需預約</b>。${S.cfg.noBookingNote}請依原有方式直接到廠卸貨。`;U.msgKind="brand";return}
+    Object.assign(U,{mode:"book",order:o.po,group:"dock",slot:null,extras:[],plate:""});
+    return;
+  }
+  const list=S.bookings.filter(x=>x.plate===q&&x.status!=="cancelled"&&x.date>=S.simDate)
+    .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.slot-b.slot);
+  if(list.length){U.mode="found";U.found=list.map(x=>x.id);U.msgKind="brand";U.msg=`車牌 <b class="mono">${esc(q)}</b> 今日起共有 ${list.length} 筆預約。`;return}
+  U.msg=S.bookings.some(x=>x.plate===q)
+    ?`車牌 <b class="mono">${esc(q)}</b> 查無今日以後的預約（只有過去的紀錄）。`
+    :"查無此採購單號、預約單號或車牌。請確認供應商提供的採購單號是否正確。";
+}
+function progressNote(b){
+  const pu=punctuality(b);
+  if(isWalkin(b))return `<div class="note brand">未預約直接到廠，${b.via==="guard"?"由警衛代為":"由司機以手機"}於 <b class="mono">${hhmm(b.checkinAt)}</b> 候位，進場時段 <b class="mono">${hhmm(b.slot)}–${hhmm(b.end)}</b>，震動器 <b class="mono">${b.pager||"—"}</b>。不列入準點率，計入現場候位次數。</div>`;
+  if(b.status==="arrived")return `<div class="note ${pu==="ontime"?"ok":"warn"}">已於 <b class="mono">${hhmm(b.checkinAt)}</b> 過刷報到，判定 <b>${PLABEL[pu]}</b>${pu==="late"?`（晚 ${lateBy(b)} 分）`:""}，震動器 <b class="mono">${b.pager||"—"}</b>。${b.lateSlot!=null?`已改排 <b class="mono">${hhmm(b.lateSlot)}–${hhmm(b.lateEnd)}</b> 進場，不需再過刷。`:""}</div>`;
+  if(b.status==="noshow")return `<div class="note bad">預約時段已過且未過刷報到，這張預約的採購單記為<b>未到</b>。</div>`;
+  if(b.date===S.simDate&&S.simMin>b.slot+S.cfg.graceMin)return `<div class="note warn">已超過準點時限 <b class="mono">${hhmm(b.slot+S.cfg.graceMin)}</b>，現在過刷將判定為<b>遲到</b>。</div>`;
+  return `<div class="note">請於 <b class="mono">${hhmm(b.slot)}</b> 前抵達廠門口過刷，晚到 ${S.cfg.graceMin} 分鐘內仍算準點。</div>`;
+}
+function bookingCard(b){
+  if(!b)return"";
+  const dc=dcOf(b.dc),w=whOf(b.dc,b.wh),g=grp(b.group);
+  return `<div class="card"><div class="card-h"><h3 class="mono" style="font-size:19px">${b.id}</h3>${statusPill(b)}
+    <span class="pill wait">${viaTxt(b)}</span><div class="spacer"></div><b class="mono">${dshow(b.date)}</b></div>
+    <div class="pad grid split2" style="grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start">
+      <div class="grid" style="gap:12px"><dl class="kv">
+        <dt>採購單</dt><dd class="mono" style="font-weight:600">${b.poRefs.length?b.poRefs.join("、"):`<span class="muted" style="font-family:var(--f-body)">現場候位不需採購單</span>`}</dd>
+        <dt>供應商</dt><dd>${supNames(b)}</dd>
+        <dt>車牌</dt><dd>${plateTxt(b)}</dd>
+        <dt>收貨</dt><dd>${esc(dc.name)}　${tempTag(w)}</dd>
+        <dt>車型</dt><dd>${g.name}（${g.stand}下貨）</dd>
+        <dt>${isWalkin(b)?"進場時段":"預約時段"}</dt><dd class="mono" style="font-weight:600;font-size:16px">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
+        ${b.lateSlot!=null?`<dt>改排進場</dt><dd class="mono" style="font-weight:600;color:var(--late)">${hhmm(b.lateSlot)}–${hhmm(b.lateEnd)}</dd>`:""}
+      </dl>${progressNote(b)}</div>
+      <button class="btn pri" data-ticket="${b.id}">${ic("qr",18)}預約單／條碼</button>
+    </div></div>`;
+}
+function bookFlow(){
+  const o=orderOf(U.order); if(!o)return"";
+  const w=whOf(o.dc,o.wh),dc=dcOf(o.dc),g=grp(U.group),p=poolOf(o.dc,o.wh,g.id);
+  const slots=slotsOf(o.dc,o.wh,g.id);
   const openN=slots.filter(s=>isFuture(o.date,s.start)&&remainAt(o.dc,o.wh,g.id,o.date,s.start)>0).length;
   const rows=[];
   for(let h=toMin(p.open);h<toMin(p.close);h+=60){
-    const inH=slots.filter(s=>s.start>=h&&s.start<h+60);
-    if(!inH.length)continue;
-    rows.push(`<div class="slotrow"><div class="hourlab">${hhmm(h)}</div>
-      <div class="slots" style="grid-template-columns:repeat(${p.split},1fr)">
-      ${inH.map(s=>{
-        const left=remainAt(o.dc,o.wh,g.id,o.date,s.start), fut=isFuture(o.date,s.start), ok=fut&&left>0;
-        return `<button class="slot" data-slot="${s.start}" ${ok?"":"disabled"} aria-pressed="${u.slot===s.start}">
-          <span class="st">${hhmm(s.start)}</span>
-          <span class="sc">${ok?"餘 "+left+" 位":(fut?"已額滿":"已過時")}</span></button>`;
-      }).join("")}</div></div>`);
+    const inH=slots.filter(s=>s.start>=h&&s.start<h+60); if(!inH.length)continue;
+    rows.push(`<div class="slotrow"><div class="hourlab">${hhmm(h)}</div><div class="slots" style="grid-template-columns:repeat(${p.split},1fr)">
+      ${inH.map(s=>{const left=remainAt(o.dc,o.wh,g.id,o.date,s.start),fut=isFuture(o.date,s.start),ok=fut&&left>0;
+        return `<button class="slot" data-slot="${s.start}" ${ok?"":"disabled"} aria-pressed="${U.slot===s.start}">
+          <span class="st">${hhmm(s.start)}</span><span class="sc">${ok?"餘 "+left+" 位":(fut?"已額滿":"已過時")}</span></button>`}).join("")}
+    </div></div>`);
   }
-  const extras=u.extras||[];
-  return H+`<div class="grid" style="grid-template-columns:minmax(0,1fr) 320px;align-items:start">
-    <div class="grid">
-      <div class="card"><div class="card-head"><h3>採購單 ${esc(o.po)}</h3><span class="pill p">有效</span>
-        <div class="spacer"></div><button class="btn sm" id="clear">重新輸入</button></div>
-        <div class="card-pad"><dl class="kv">
-          <dt>供應商</dt><dd>${esc(supplierOf(o.supplier).name)} <span class="mono" style="color:var(--ink-3)">${o.supplier}</span></dd>
-          <dt>收貨</dt><dd>${esc(dc.name)}　${tempTag(w)}</dd>
-          <dt>指定進貨日</dt><dd class="mono">${dshow(o.date)}</dd>
-          <dt>參考板數</dt><dd class="mono">約 ${o.pallets} 板</dd>
-          <dt>貨運業者</dt><dd>${esc(carrierOf(u.carrier).name)} <span class="mono" style="color:var(--ink-3)">${u.carrier}</span></dd>
-          <dt>車牌</dt><dd class="mono">${esc(u.plate)}</dd>
-        </dl></div></div>
-
-      <div class="card"><div class="card-head stepsec"><b>2</b><h3>同車其他採購單</h3>
-        <div class="spacer"></div><span class="pill n">選填</span></div>
-        <div class="card-pad grid" style="gap:11px">
-          <div class="note">一台車常常帶多張採購單。這裡加入的單號只是<b>讓警衛核對時知道車上還有哪些貨</b>，不會多佔一個時段，也不影響名額。沒加入的採購單不會被視為未到。</div>
-          <div class="row">
-            <input class="mono" id="extraIn" placeholder="PO-260908-007" style="flex:1;min-width:180px">
-            <button class="btn" id="addExtra">加入</button>
-          </div>
-          ${u.exErr?`<div class="note warn">${u.exErr}</div>`:""}
-          ${extras.length?`<div class="polist">${extras.map(x=>`<span class="potag">${x}<button data-rmextra="${x}" title="移除">×</button></span>`).join("")}</div>`:""}
-        </div></div>
-
-      <div class="card"><div class="card-head stepsec"><b>3</b><h3>車型</h3></div>
-        <div class="card-pad">
-          <div class="vpick">${GROUPS.map(x=>`<button class="vopt" data-g="${x.id}" aria-pressed="${x.id===g.id}">
-            <b>${x.name}</b><small>${x.hint}・${dc.name}${w.name}可用 ${poolOf(o.dc,o.wh,x.id).capacity} 位</small></button>`).join("")}</div>
-          <div class="note" style="margin-top:11px">鷗翼車在廣場下貨、非鷗翼車靠碼頭，<b>兩邊名額各自獨立</b>，碼頭額滿不會影響廣場。</div>
-        </div></div>
-
-      <div class="card"><div class="card-head stepsec"><b>4</b><h3>可預約時段</h3><div class="spacer"></div>
-        <span class="pill ${openN?"o":"c"}">${openN?"尚有 "+openN+" 個時段":"已無可預約時段"}</span></div>
-        <div class="card-pad">
-          ${openN?`<div class="slotgrid">${rows.join("")}</div>
-          <div class="legend">
-            <span><i style="background:var(--surface)"></i>可預約</span>
-            <span><i style="background:var(--accent);border-color:var(--accent)"></i>已選擇</span>
-            <span><i style="background:var(--surface-2);border-style:dashed"></i>額滿或已過時</span>
-          </div>`:`<div class="empty">此進貨日的${g.name}時段已無空位，請改選車型或洽物流中心現場安排。</div>`}
-        </div></div>
-    </div>
-
-    <div class="card" style="position:sticky;top:78px">
-      <div class="card-head"><h3>預約確認</h3></div>
-      <div class="card-pad grid" style="gap:12px">
-        <dl class="kv">
-          <dt>物流中心</dt><dd>${esc(dc.name)}</dd>
-          <dt>車型</dt><dd>${g.name}（${g.stand}）</dd>
-          <dt>採購單</dt><dd class="mono">${1+extras.length} 張</dd>
-          <dt>時段</dt><dd class="mono" style="font-weight:600">${u.slot!=null?hhmm(u.slot)+"–"+hhmm(u.slot+60/p.split):"—"}</dd>
-        </dl>
-        <button class="btn pri" id="confirm" ${u.slot!=null?"":"disabled"}>確認預約</button>
-        <div class="note" style="font-size:11.5px">預約成立後產生預約單與 QRcode，司機到廠門口過刷即可完成報到。</div>
-      </div>
-    </div>
-  </div>`;
-};
-
-/* ---- 2. 預約查詢 ---- */
-V.query=()=>{
-  const u=S.ui, list=u.qResult;
-  const H=head("預約查詢","以車牌加進貨日查詢，或直接輸入預約單號。同一台車同一天若跑兩個物流中心，會列出兩筆。");
-  const form=`<div class="card card-pad grid" style="max-width:620px;gap:13px">
-    <div class="row">
-      <label class="fld" style="flex:1;min-width:140px">車牌號碼
-        <input class="mono" id="qPlate" placeholder="ABC-1234" value="${esc(u.qPlate||"")}" style="text-transform:uppercase"></label>
-      <label class="fld" style="flex:1;min-width:150px">進貨日
-        <input type="date" id="qDate" value="${esc(u.qDate||S.simDate)}"></label>
-    </div>
-    <div class="row"><button class="btn pri" id="qGo">查詢</button>
-      <span style="color:var(--ink-3);font-size:12.5px">或直接輸入預約單號</span>
-      <input class="mono" id="qId" placeholder="N-0908-05" value="${esc(u.qId||"")}" style="width:130px;text-transform:uppercase">
-      <button class="btn" id="qGoId">查單號</button></div>
-    ${u.qErr?`<div class="note warn">${esc(u.qErr)}</div>`:""}
-  </div>`;
-  if(!list||!list.length)return H+form;
-  return H+form+`<div class="grid" style="margin-top:16px">${list.map(b=>{
-    const dc=dcOf(b.dc), w=whOf(b.dc,b.wh), pu=punctuality(b);
-    let progress="";
-    if(isWalkin(b)){
-      progress=`<div class="note key">未預約直接到廠，於 <b class="mono">${hhmm(b.checkinAt)}</b> 由現場給定 <b class="mono">${hhmm(b.slot)}–${hhmm(b.end)}</b> 進場。${b.pager?`震動器號碼 <b class="mono">${b.pager}</b>，`:""}本次列為<b>現場候位</b>，不計入準點率，但會計入未預約次數。</div>`;
-    }else if(b.status==="arrived"){
-      progress=`<div class="note ${pu==="ontime"?"key":"warn"}">已於 <b class="mono">${hhmm(b.checkinAt)}</b> 完成過刷報到，判定為 <b>${PLABEL[pu]}</b>${pu==="late"?`（延遲 ${lateBy(b)} 分）`:""}。${b.pager?`震動器號碼 <b class="mono">${b.pager}</b>，`:""}${b.lateSlot!=null?`因延遲抵達，已改排 <b class="mono">${hhmm(b.lateSlot)}–${hhmm(b.lateEnd)}</b> 進場，<b>不需再過刷</b>。`:"請依現場人員指示進場。"}</div>`;
-    }else if(b.status==="noshow"){
-      progress=`<div class="note bad">預約時段已過且未過刷報到，本次列為<b>未到</b>並計入貨運業者到場紀錄。</div>`;
-    }else if(b.date===S.simDate&&S.simMin>b.slot+S.cfg.graceMin){
-      progress=`<div class="note warn">已超過準點時限（${hhmm(b.slot+S.cfg.graceMin)}），現在過刷將判定為<b>延遲</b>。</div>`;
-    }else{
-      progress=`<div class="note">請於 <b class="mono">${hhmm(b.slot)}</b> 前抵達廠門口過刷。晚到 ${S.cfg.graceMin} 分鐘內仍算準點。</div>`;
-    }
-    return `<div class="card"><div class="card-head"><h3 class="mono">${b.id}</h3>${statusPill(b)}
-      <div class="spacer"></div><span class="mono" style="font-size:12px;color:var(--ink-2)">${dshow(b.date)}</span></div>
-      <div class="card-pad grid" style="grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start">
-        <div class="grid" style="gap:11px">
-          <dl class="kv">
-            <dt>貨運業者</dt><dd>${esc(carrierName(b.carrier))} <span class="mono" style="color:var(--ink-3)">${b.carrier||""}</span></dd>
-            <dt>車牌</dt><dd class="mono" style="font-weight:600">${esc(b.plate)}</dd>
-            <dt>收貨</dt><dd>${esc(dc.name)}　${tempTag(w)}</dd>
-            <dt>車型</dt><dd>${grp(b.group).name}（${grp(b.group).stand}下貨）</dd>
-            <dt>${isWalkin(b)?"現場給定時段":"預約時段"}</dt><dd class="mono" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
-            ${b.lateSlot!=null?`<dt>延遲後進場</dt><dd class="mono" style="font-weight:600;color:var(--accent)">${hhmm(b.lateSlot)}–${hhmm(b.lateEnd)}</dd>`:""}
-            <dt>採購單</dt><dd class="mono">${b.poRefs.length?b.poRefs.join("、"):"—（現場候位不需採購單號）"}</dd>
-          </dl>
-          ${progress}
-        </div>
-        <div class="row" style="flex-direction:column;align-items:stretch;gap:8px;min-width:130px">
-          <button class="btn pri" data-ticket="${b.id}">預約單 / QRcode</button>
-        </div>
-      </div></div>`;
-  }).join("")}</div>`;
-};
-function statusPill(b){
-  const pu=punctuality(b);
-  if(b.status==="walkin")return `<span class="pill p">現場候位</span>`;
-  if(b.status==="arrived")return `<span class="pill ${pu==="ontime"?"o":"a"}">${PLABEL[pu]}報到</span>`;
-  if(b.status==="noshow")return `<span class="pill c">未到</span>`;
-  return `<span class="pill n">待報到</span>`;
-}
-
-/* ---- 3. 廠門口過刷 ---- */
-V.gate=()=>{
-  const dcCode=S.ui.gateDc||S.cfg.dcs[0].code;
-  const today=S.bookings.filter(b=>b.dc===dcCode&&b.date===S.simDate).sort((a,b)=>a.slot-b.slot);
-  const waiting=today.filter(b=>b.status==="booked");
-  const arrived=today.filter(b=>b.status==="arrived").sort((a,b)=>b.checkinAt-a.checkinAt);
-  const missed=today.filter(b=>b.status==="noshow");
-  const walkins=today.filter(b=>b.status==="walkin").sort((a,b)=>a.slot-b.slot);
-  const hit=S.ui.gateHit?bookingById(S.ui.gateHit):null;
-  let verdict="";
-  if(hit){
-    const pu=punctuality(hit), dc=dcOf(hit.dc), w=whOf(hit.dc,hit.wh);
-    const cls=pu==="ontime"?"ok":(pu==="late"?"late":"bad");
-    const title=pu==="ontime"?"準時抵達":(pu==="late"?"延遲抵達":"未完成報到");
-    verdict=`<div class="verdict ${cls}">
-      <div class="eyebrow">${esc(hit.id)}　${esc(hit.plate)}</div>
-      <div class="big">${title}</div>
-      <div class="sub">預約 <b class="mono">${hhmm(hit.slot)}</b>　實際過刷 <b class="mono">${hit.checkinAt!=null?hhmm(hit.checkinAt):"—"}</b>
-        ${pu==="late"?`　<b style="color:var(--accent)">延遲 ${lateBy(hit)} 分鐘</b>`:(pu==="ontime"&&hit.checkinAt>hit.slot?`　（晚 ${lateBy(hit)} 分，在 ${S.cfg.graceMin} 分寬限內）`:"")}</div>
-      ${hit.pager?`<div class="pager">請領取震動器 <b>${hit.pager}</b></div>`:""}
-      ${pu==="late"?`<div class="note key" style="margin-top:12px">${hit.lateSlot!=null
-        ?`已排定改於 <b class="mono">${hhmm(hit.lateSlot)}–${hhmm(hit.lateEnd)}</b> 進場，請在現場等候。此單到此結案，不需再過刷。`
-        :`今日已無可用時段，請於現場等候空檔，由現場人員視狀況安排進場。`}</div>`:""}
-      ${S.ui.gateDup?`<div class="note" style="margin-top:12px;background:var(--surface)">此單稍早已完成報到，重複過刷不會更改原判定與時間。</div>`:""}
-    </div>
-    <div class="card"><div class="card-head"><h3>核對資料</h3><div class="spacer"></div>
-      <span class="pill p">${grp(hit.group).stand}下貨</span></div>
-      <div class="card-pad"><dl class="kv">
-        <dt>貨運業者</dt><dd>${esc(carrierName(hit.carrier))} <span class="mono" style="color:var(--ink-3)">${hit.carrier||""}</span></dd>
-        <dt>車牌</dt><dd class="mono" style="font-weight:600;font-size:16px">${esc(hit.plate)}</dd>
+  return `<div class="grid split2" style="grid-template-columns:minmax(0,1fr) 330px;align-items:start;margin-top:16px">
+  <div class="grid">
+    <div class="card"><div class="card-h"><h3>${ic("check",18,2.6)} 採購單 <span class="mono">${o.po}</span></h3><span class="pill ok">可預約</span>
+      <div class="spacer"></div><button class="btn sm" id="clear">重新輸入</button></div>
+      <div class="pad"><dl class="kv">
+        <dt>供應商</dt><dd>${esc(supplierOf(o.supplier).name)} <span class="mono muted">${o.supplier}</span></dd>
         <dt>收貨</dt><dd>${esc(dc.name)}　${tempTag(w)}</dd>
-        <dt>車型</dt><dd>${grp(hit.group).name}</dd>
-        <dt>預約時段</dt><dd class="mono">${hhmm(hit.slot)}–${hhmm(hit.end)}</dd>
-        ${hit.lateSlot!=null?`<dt>延遲後進場</dt><dd class="mono" style="font-weight:600;color:var(--accent)">${hhmm(hit.lateSlot)}–${hhmm(hit.lateEnd)}</dd>`:""}
-        <dt>採購單</dt><dd class="mono">${hit.poRefs.join("、")}</dd>
-        <dt>供應商</dt><dd>${[...new Set(hit.poRefs.map(p=>orderOf(p)?.supplier).filter(Boolean))].map(c=>esc(supplierOf(c).name)).join("、")||"—"}</dd>
+        <dt>指定進貨日</dt><dd class="mono" style="font-weight:600">${dshow(o.date)}</dd>
+        <dt>參考板數</dt><dd>約 ${o.pallets} 板</dd>
+      </dl></div></div>
+
+    <div class="card"><div class="card-h"><span class="stepno">1</span><h3>車牌</h3><span class="pill wait">選填</span></div>
+      <div class="pad grid" style="gap:10px">
+        <input class="mono" id="plateIn" value="${esc(U.plate||"")}" placeholder="例如 ABC-1234，不確定可以不填" style="max-width:320px;text-transform:uppercase;font-size:17px" autocomplete="off">
+        <div class="note" style="font-size:13.5px">不填也能預約。有填的話，警衛可以用車牌過刷，系統也會檢查同一台車當天在同一物流中心不重複預約。</div>
+      </div></div>
+
+    <div class="card"><div class="card-h"><span class="stepno">2</span><h3>同車其他採購單</h3><span class="pill wait">選填</span></div>
+      <div class="pad grid" style="gap:10px">
+        <div class="note" style="font-size:13.5px">一台車常載多張採購單。加入的單號<b>不多佔時段</b>，只讓警衛核對車上還有哪些貨；<b>加入後這些單也算已預約</b>，不能再拿來另外預約。</div>
+        <div class="row"><input class="mono" id="extraIn" placeholder="PO-260908-075" style="flex:1;min-width:180px;max-width:320px;text-transform:uppercase">
+          <button class="btn" id="addExtra">${ic("plus",16)}加入</button></div>
+        ${U.exErr?`<div class="note warn">${U.exErr}</div>`:""}
+        ${U.extras.length?`<div class="polist">${U.extras.map(x=>`<span class="potag">${x}<button data-rmextra="${x}" aria-label="移除 ${x}">${ic("x",14,2.4)}</button></span>`).join("")}</div>`:""}
+      </div></div>
+
+    <div class="card"><div class="card-h"><span class="stepno">3</span><h3>車型</h3></div>
+      <div class="pad grid" style="gap:10px">
+        <div class="opts">${GROUPS.map(x=>`<button class="opt" data-g="${x.id}" aria-pressed="${x.id===g.id}"><b>${x.name}</b>
+          <small>${x.hint}・每時段 ${poolOf(o.dc,o.wh,x.id).capacity} 位</small></button>`).join("")}</div>
+        <div class="muted" style="font-size:13.5px;font-weight:600">鷗翼車在廣場下貨、非鷗翼車靠碼頭，兩邊名額各自獨立。</div>
+      </div></div>
+
+    <div class="card"><div class="card-h"><span class="stepno">4</span><h3>時段</h3><div class="spacer"></div>
+      <span class="pill ${openN?"ok":"bad"}">${openN?"尚有 "+openN+" 個時段":"已無可預約時段"}</span></div>
+      <div class="pad">${openN?rows.join(""):`<div class="note bad">此進貨日的${g.name}時段已無空位，請改選車型或洽物流中心。</div>`}</div></div>
+  </div>
+
+  <div class="card sticky"><div class="card-h"><h3>預約確認</h3></div>
+    <div class="pad grid" style="gap:12px">
+      <dl class="kv">
+        <dt>物流中心</dt><dd>${esc(dc.name)}</dd>
+        <dt>進貨日</dt><dd class="mono">${dshow(o.date)}</dd>
+        <dt>採購單</dt><dd>${1+U.extras.length} 張</dd>
+        <dt>車牌</dt><dd id="sumPlate">${U.plate?`<span class="mono" style="font-weight:600">${esc(U.plate)}</span>`:`<span class="muted">未填</span>`}</dd>
+        <dt>車型</dt><dd>${g.name}</dd>
+        <dt>時段</dt><dd class="mono" style="font-weight:700;font-size:18px">${U.slot!=null?hhmm(U.slot)+"–"+hhmm(U.slot+60/p.split):"—"}</dd>
       </dl>
-      <div class="note" style="margin-top:12px">進場順序由現場人員判斷，系統不指派碼頭。延遲者改到新時段後，仍由現場視狀況放行。</div>
-      </div></div>`;
-  }
-  /* 現場候位面板：與遲到者共用「當下給時段」的邏輯，差別只在入口。 */
-  const wWh=bookableWh(dcCode), wG=S.ui.walkGroup||"dock";
-  const wSlots=wWh?openSlotsNow(dcCode,wWh.id,wG):[];
-  const wd=digitsOf(S.ui.walkDigits||""), wc=carrierByDigits(wd), wp=plateByDigits(wd);
-  const wSel=S.ui.walkSlot!=null&&wSlots.some(x=>x.start===S.ui.walkSlot);
-  const walkPanel=S.ui.walkOpen?`
-    <div class="card"><div class="card-head"><h3>現場候位</h3><div class="spacer"></div>
-      <button class="btn sm" id="walkClose">收合</button></div>
-      <div class="card-pad grid" style="gap:11px">
-        <div class="note">未預約的車直接到廠時，由現場當場給時段。<b>不需輸入採購單號</b>——人車貨都在門口，沒有惡意佔用名額的空間。這筆會標記為現場候位，<b>不列入準點率，只計次</b>。</div>
-        <label class="fld">車號（只輸數字）
-          <input class="mono" id="walkPlate" value="${esc(S.ui.walkDigits||"")}" inputmode="numeric" placeholder="7712" style="font-size:19px;max-width:180px"></label>
-        ${wd?`<div class="note ${wc?"key":""}" style="font-size:12px">${wc
-          ?`已比對到 <b>${esc(carrierName(wc))}</b>（車牌 ${esc(wp||"")}），依過往到場紀錄。`
-          :`車號 ${esc(wd)} 查無可辨識的過往紀錄，報表將歸入<b>未知業者</b>。`}</div>`:""}
-        <div class="vpick">${GROUPS.map(x=>`<button class="vopt" data-wg="${x.id}" aria-pressed="${x.id===wG}">
-          <b>${x.name}</b><small>${x.hint}</small></button>`).join("")}</div>
-        ${!wWh?`<div class="note bad">此物流中心目前沒有開放預約的倉別。</div>`
-          :wSlots.length?`<div class="slotgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px">
-            ${wSlots.map(x=>`<button class="slot" data-wslot="${x.start}" aria-pressed="${S.ui.walkSlot===x.start}">
-              <span class="st">${hhmm(x.start)}</span>
-              <span class="sc">餘 ${remainAt(dcCode,wWh.id,wG,S.simDate,x.start)} 位</span></button>`).join("")}</div>
-            <div class="note" style="font-size:11.5px">由近到遠列出今日剩餘時段。遲到者改時段與線上預約也吃同一份名額。</div>`
-          :`<div class="note bad">今日已無可用時段。請於現場等候空檔，由現場人員視狀況安排進場。</div>`}
-        ${S.ui.walkErr?`<div class="note warn">${esc(S.ui.walkErr)}</div>`:""}
-        <button class="btn pri" id="walkGo" ${wSel?"":"disabled"}>確認候位並發放震動器</button>
-      </div></div>`
-    :`<button class="btn" id="walkOpen" style="width:100%">現場候位（未預約直接到廠）</button>`;
-
-  return head("廠門口過刷","司機到廠門口過刷預約單，畫面立即顯示準時或延遲，並發放震動器。延遲者當下改給最快的可進場時段；未預約者走現場候位。")+
-  `<div class="row" style="margin-bottom:16px">
-     <label class="fld">物流中心<select id="gateDc">${S.cfg.dcs.map(d=>`<option value="${d.code}" ${d.code===dcCode?"selected":""}>${d.name}</option>`).join("")}</select></label>
-   </div>
-   <div class="grid" style="grid-template-columns:minmax(0,420px) minmax(0,1fr);align-items:start">
-     <div class="grid">
-       <div class="card"><div class="card-head"><h3>過刷報到</h3></div>
-         <div class="card-pad grid" style="gap:10px">
-           <label class="fld">掃描 QRcode，或輸入預約單號 / 車牌
-             <input class="mono" id="scan" placeholder="N-0908-05" style="text-transform:uppercase;font-size:17px"></label>
-           <button class="btn pri" id="scanGo">過刷</button>
-           ${S.ui.gateMsg?`<div class="note ${S.ui.gateMsgKind||"warn"}">${S.ui.gateMsg}</div>`:""}
-         </div></div>
-       ${walkPanel}
-       ${verdict}
-     </div>
-     <div class="grid">
-       <div class="card"><div class="card-head"><h3>今日尚未報到</h3><div class="spacer"></div><span class="pill n">${waiting.length}</span></div>
-         <div class="tbl-wrap"><table><thead><tr><th>時段</th><th>單號</th><th>貨運業者 / 車牌</th><th>倉別</th><th></th></tr></thead>
-         <tbody>${waiting.map(b=>{
-           const over=S.simMin>b.slot+S.cfg.graceMin;
-           return `<tr><td class="num" style="font-weight:600">${hhmm(b.slot)}</td>
-           <td class="num" style="font-size:12px">${b.id}</td>
-           <td>${esc(carrierName(b.carrier))}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(b.plate)}</span></td>
-           <td>${tempTag(whOf(b.dc,b.wh))}</td>
-           <td>${over?`<span class="pill a">已逾準點</span>`:""}</td></tr>`}).join("")
-           ||`<tr><td colspan="5" class="empty">今日預約皆已報到。</td></tr>`}</tbody></table></div></div>
-       <div class="card"><div class="card-head"><h3>今日已報到</h3><div class="spacer"></div>
-         <span class="pill o">${arrived.filter(b=>punctuality(b)==="ontime").length} 準點</span>
-         <span class="pill a">${arrived.filter(b=>punctuality(b)==="late").length} 延遲</span>
-         ${missed.length?`<span class="pill c">${missed.length} 未到</span>`:""}</div>
-         <div class="tbl-wrap"><table><thead><tr><th>過刷</th><th>單號</th><th>貨運業者 / 車牌</th><th>預約</th><th>判定</th><th>震動器</th></tr></thead>
-         <tbody>${arrived.map(b=>{const pu=punctuality(b);return `<tr>
-           <td class="num" style="font-weight:600">${hhmm(b.checkinAt)}</td>
-           <td class="num" style="font-size:12px">${b.id}</td>
-           <td>${esc(carrierName(b.carrier))}<br><span class="num" style="font-size:12px;color:var(--ink-2)">${esc(b.plate)}</span></td>
-           <td class="num">${hhmm(b.slot)}</td>
-           <td><span class="pill ${pu==="ontime"?"o":"a"}">${PLABEL[pu]}</span>${pu==="late"?` <span class="num" style="font-size:12px;color:var(--accent)">+${lateBy(b)}分</span>`:""}
-             ${b.lateSlot!=null?`<br><span class="num" style="font-size:11.5px;color:var(--ink-2)">改 ${hhmm(b.lateSlot)} 進場</span>`:""}</td>
-           <td class="num">${b.pager||"—"}</td></tr>`}).join("")
-           ||`<tr><td colspan="6" class="empty">尚無報到紀錄。</td></tr>`}</tbody></table></div></div>
-       <div class="card"><div class="card-head"><h3>今日現場候位</h3><div class="spacer"></div>
-         <span class="pill n">${walkins.length}</span></div>
-         <div class="tbl-wrap"><table><thead><tr><th>到場</th><th>單號</th><th>車號 / 業者</th><th>進場時段</th><th>震動器</th></tr></thead>
-         <tbody>${walkins.map(b=>`<tr>
-           <td class="num" style="font-weight:600">${hhmm(b.checkinAt)}</td>
-           <td class="num" style="font-size:12px">${b.id}</td>
-           <td><span class="num" style="font-weight:600">${esc(b.plate)}</span><br>
-             <span style="font-size:12px;color:var(--ink-2)">${esc(carrierName(b.carrier))}</span></td>
-           <td class="num" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</td>
-           <td class="num">${b.pager||"—"}</td></tr>`).join("")
-           ||`<tr><td colspan="5" class="empty">今日尚無現場候位。</td></tr>`}</tbody></table></div>
-         <div class="card-pad" style="padding-top:0"><div class="note" style="font-size:11.5px">現場候位不列入準點率，只在報表計次——這才是要管理的指標。</div></div></div>
-     </div>
-   </div>`;
-};
-
-/* ---- 4. 貨運準點報表 ---- */
-V.report=()=>{
-  const u=S.ui, mode=u.rMode||"month", period=u.rPeriod||"2026-08";
-  const inRange=b=>{
-    if(mode==="month")return b.date.slice(0,7)===period;
-    const[y,q]=period.split("-Q"), m=+b.date.slice(5,7);
-    return b.date.slice(0,4)===y&&Math.ceil(m/3)===+q;
-  };
-  const rows=S.bookings.filter(b=>inRange(b)&&b.status!=="cancelled"&&punctuality(b));
-  const wrows=S.bookings.filter(b=>inRange(b)&&isWalkin(b));
-  const Z=()=>({ontime:0,late:0,noshow:0,total:0,walkin:0,relate:0});
-  const agg={};
-  CARRIERS.forEach(c=>agg[c.code]=Object.assign({code:c.code,name:c.name},Z()));
-  rows.forEach(b=>{const p=punctuality(b);if(!agg[b.carrier])return;
-    agg[b.carrier][p]++;agg[b.carrier].total++;if(b.lateSlot!=null)agg[b.carrier].relate++});
-  /* 反查不到業者的現場候位獨立一列——這是「只輸車號」的代價，要讓它看得見。 */
-  const unk=Object.assign({code:"—",name:"未知業者（車號反查不到）"},Z());
-  wrows.forEach(b=>{const t=(b.carrier&&agg[b.carrier])?agg[b.carrier]:unk;t.walkin++});
-  const list=Object.values(agg).filter(x=>x.total||x.walkin)
-    .sort((a,b)=>(a.total?a.ontime/a.total:2)-(b.total?b.ontime/b.total:2));
-  if(unk.walkin)list.push(unk);
-  const sum=list.reduce((a,x)=>({ontime:a.ontime+x.ontime,late:a.late+x.late,noshow:a.noshow+x.noshow,
-    total:a.total+x.total,walkin:a.walkin+x.walkin,relate:a.relate+x.relate}),Z());
-  const months=[...new Set(S.bookings.map(b=>b.date.slice(0,7)))].sort();
-  const quarters=[...new Set(S.bookings.map(b=>b.date.slice(0,4)+"-Q"+Math.ceil(+b.date.slice(5,7)/3)))].sort();
-  return head("貨運業者到場準點報表","依貨運業者統計到場紀錄，供採購與物流檢討使用。準點定義：過刷時間不晚於預約時段起始 "+S.cfg.graceMin+" 分鐘。現場候位不列入準點率，另外計次。")+
-  `<div class="row" style="margin-bottom:16px">
-     <label class="fld">統計區間
-       <select id="rMode"><option value="month" ${mode==="month"?"selected":""}>月報</option><option value="quarter" ${mode==="quarter"?"selected":""}>季報</option></select></label>
-     <label class="fld">期間
-       <select id="rPeriod">${(mode==="month"?months:quarters).map(m=>`<option value="${m}" ${m===period?"selected":""}>${m}</option>`).join("")}</select></label>
-     <div class="spacer"></div><button class="btn" id="exportCsv">匯出 CSV</button>
-   </div>
-   <div class="stats" style="margin-bottom:20px">
-     <div class="stat good"><div class="v">${sum.total?Math.round(sum.ontime/sum.total*100):0}%</div><div class="l">整體準點率</div></div>
-     <div class="stat"><div class="v">${sum.total}</div><div class="l">總到場車次</div></div>
-     <div class="stat good"><div class="v">${sum.ontime}</div><div class="l">準點</div></div>
-     <div class="stat mid"><div class="v">${sum.late}</div><div class="l">延遲</div></div>
-     <div class="stat bad"><div class="v">${sum.noshow}</div><div class="l">未到</div></div>
-     <div class="stat"><div class="v">${sum.walkin}</div><div class="l">現場候位</div></div>
-   </div>
-   <div class="note key" style="margin-bottom:20px">準點率的分母<b>只算線上預約</b>。現場候位當場報到必然準時，若混進分母，沒預約的人反而會是 100%，先預約的人被扣分——所以獨立成一欄，<b>次數本身就是要管理的指標</b>。延遲者當下改到的第二時段不另計一次到場，該筆維持「延遲」。</div>
-   <div class="card"><div class="card-head"><h3>貨運業者別</h3><div class="spacer"></div>
-     <span class="pill n">${list.length} 家</span></div>
-     <div class="tbl-wrap"><table><thead><tr>
-       <th>代號</th><th>貨運業者</th><th>預約車次</th><th>準點</th><th>延遲</th><th>未到</th><th style="min-width:140px">準點率</th><th>現場候位</th>
-     </tr></thead><tbody>${list.map(x=>{
-       const r=x.total?Math.round(x.ontime/x.total*100):null, cls=r>=85?"":(r>=70?"mid":"bad");
-       return `<tr><td class="num">${x.code}</td><td><b>${esc(x.name)}</b></td>
-         <td class="num">${x.total||"—"}</td><td class="num">${x.total?x.ontime:"—"}</td>
-         <td class="num" style="${x.late?"color:var(--accent)":""}">${x.total?x.late:"—"}${x.relate?`<br><span style="font-size:11px;color:var(--ink-3)">${x.relate} 次改時段</span>`:""}</td>
-         <td class="num" style="${x.noshow?"color:var(--crit);font-weight:600":""}">${x.total?x.noshow:"—"}</td>
-         <td>${r==null?`<span style="color:var(--ink-3)">無預約紀錄</span>`
-           :`<div class="row" style="gap:8px;flex-wrap:nowrap"><span class="num" style="width:38px">${r}%</span>
-             <div class="bar-mini" style="flex:1"><i class="${cls}" style="width:${r}%"></i></div></div>`}</td>
-         <td class="num" style="${x.walkin?"color:var(--accent);font-weight:600":""}">${x.walkin||"—"}</td></tr>`;
-     }).join("")||`<tr><td colspan="8" class="empty">此區間沒有紀錄。</td></tr>`}</tbody></table></div></div>
-   <div class="note" style="margin-top:14px">目前僅供檢討，不影響預約權限。是否要對長期延遲或經常不預約的貨運業者採取措施（例如限制可預約時段），屬待確認事項。</div>`;
-};
-
-/* ---- 5. 參數設定 ---- */
-V.param=()=>head("參數設定","準點寬限與各物流中心、各倉別、各車型池的時段設定。調整後回預約頁即可看到差異。")+
- `<div class="grid">
-   <div class="card"><div class="card-head"><h3>全廠參數</h3></div><div class="card-pad row" style="gap:20px">
-     <label class="fld">準點寬限（分）<input type="number" class="mono" id="p-grace" value="${S.cfg.graceMin}" min="0" max="60" style="width:96px"></label>
-     <label class="fld">未到判定：時段結束後（分）<input type="number" class="mono" id="p-noshow" value="${S.cfg.noShowAfterMin}" min="0" max="180" style="width:96px"></label>
-     <label class="fld">現場給時段的起算緩衝（分）<input type="number" class="mono" id="p-walklead" value="${S.cfg.walkinLeadMin||0}" min="0" max="120" style="width:96px"></label>
-     <div class="note" style="flex:1;min-width:240px">過刷時間不晚於預約時段起始 <b>${S.cfg.graceMin}</b> 分鐘即算準點；超過即為延遲。時段結束後 <b>${S.cfg.noShowAfterMin}</b> 分鐘仍未過刷，判定為未到。<br>延遲者改時段與現場候位，只會給<b>現在起 ${S.cfg.walkinLeadMin||0} 分鐘之後</b>的時段；覺得太趕就把這個數字調大。</div>
-   </div></div>
-   <div class="card"><div class="card-head"><h3>哪些倉別要預約</h3></div><div class="card-pad">
-     <div class="note key">第一階段<b>以常溫為主</b>。${S.cfg.noBookingNote}下方可切換各倉別是否開放預約——關閉後，該倉別的採購單在預約頁會被擋下並提示不需預約。</div>
-   </div></div>
-   ${S.cfg.dcs.map(d=>`<div class="card">
-     <div class="card-head"><h3>${esc(d.name)}</h3><span class="pill n mono">${d.code}</span></div>
-     <div class="tbl-wrap"><table><thead><tr><th>倉別</th><th>車型 / 下貨區</th><th>開放時間</th><th>每小時切分</th><th>每段名額</th><th>每日時段數</th></tr></thead>
-     <tbody>${d.warehouses.flatMap(w=>GROUPS.map((g,gi)=>{
-       const p=w.pools[g.id], n=slotsOf(d.code,w.id,g.id).length;
-       return `<tr${w.booking?"":' style="opacity:.5"'}>
-         ${gi===0?`<td rowspan="2">${tempTag(w)}
-           <label class="row" style="gap:6px;margin-top:7px;cursor:pointer;font-size:12px">
-             <input type="checkbox" data-book="${d.code}|${w.id}" ${w.booking?"checked":""} style="width:15px;height:15px;accent-color:var(--primary)">
-             ${w.booking?"開放預約":"不開放預約"}</label></td>`:""}
-         <td>${g.name}<br><span style="font-size:12px;color:var(--ink-2)">${g.stand}下貨</span></td>
-         <td class="row" style="gap:5px;flex-wrap:nowrap">
-           <input type="time" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|open" value="${p.open}" style="width:110px">
-           <input type="time" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|close" value="${p.close}" style="width:110px"></td>
-         <td><select data-cfg="${d.code}|${w.id}|${g.id}|split">${[1,2,3,4].map(x=>`<option value="${x}" ${x===p.split?"selected":""}>${x} 段（每 ${60/x} 分）</option>`).join("")}</select></td>
-         <td><input type="number" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|capacity" value="${p.capacity}" min="0" max="20" style="width:76px"></td>
-         <td class="num">${n}</td></tr>`;
-     })).join("")}</tbody></table></div></div>`).join("")}
- </div>`;
-
-/* ---- 6. 規格與待確認 ---- */
-V.spec=()=>head("規格與待確認","D 案依 2026/09/08 內部討論的實際作業流程重做。以下區分已確認的規則與仍待拍板的項目。")+
- `<div class="note warn" style="margin-bottom:16px">本頁為流程討論用的示範系統。<b>所有貨運業者、供應商、採購單號、車牌與統計數據皆為虛構</b>，與任何實際公司或營運數據無關。</div>
-  <div class="note key" style="margin-bottom:16px">完整文件：<a href="plan-d-guide.html" style="color:inherit;font-weight:700">D 案手冊</a>（架構、操作步驟、判定邏輯與七組測試劇本）　·　<a href="plan-d-deploy.html" style="color:inherit;font-weight:700">上線規格</a>（採購單匯入到每日實績的端到端規格與待補清單）。</div>
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
-   <div class="card"><div class="card-head"><h3>D 案與 A／B／C 的關鍵差異</h3></div><div class="card-pad">
-     <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
-       <li><b>申請者是貨運業者，不是供應商。</b>採購下單後由供應商把採購單號轉給貨運，貨運才是預約的人。因此入口需要貨運業者代號，準點統計的對象也是貨運業者。</li>
-       <li><b>預約主鍵是「車牌＋進貨日＋物流中心」，不是採購單。</b>一台車帶多張採購單時，<b>取其中任一張單號預約即可</b>；其餘採購單可選填帶上供現場核對，<b>不會被視為未到</b>。</li>
-       <li><b>只過刷一次。</b>廠門口過刷即完成報到，當下顯示準時或延遲並發放震動器。系統不做叫號、不指派碼頭、不追蹤進場與離場。</li>
-       <li><b>準點定義：過刷時間不晚於預約時段起始 ${S.cfg.graceMin} 分鐘。</b>超過即為延遲，時段結束後 ${S.cfg.noShowAfterMin} 分鐘未過刷為未到。</li>
-       <li><b>進場順序完全人工。</b>延遲者可能延後一兩台再進場，現場沒有其他車等待時也可直接放行——這段由警衛判斷，系統只留紀錄。</li>
-       <li><b>第一階段只做常溫。</b>${S.cfg.noBookingNote}低溫倉的採購單在預約頁會被擋下並提示不需預約，車輛依原有方式直接到廠。倉別是否開放預約是參數，未來要納入低溫隨時可開。</li>
-       <li><b>支援多個物流中心。</b>貨運業者一天可能跑多個 DC，收貨地點由採購單決定，各 DC 各倉各車型池的時段與名額獨立設定。</li>
-     </ol></div></div>
-   <div class="card"><div class="card-head"><h3>現場的兩種例外，都用「當下重新給時段」處理</h3></div><div class="card-pad">
-     <div class="note key" style="margin-bottom:11px">2026/09/10 補充。核心是把「現場排隊順序」轉成「重新預約」——系統仍然只管時段名額，不管誰先誰後，因此<b>不需要叫號，也不必推估下貨工時</b>。</div>
-     <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
-       <li><b>遲到者：過刷判定延遲的當下，直接給當天最快的可進場時段。</b>他人已經在現場等，所以不必再選、也不必再輸採購單號。原單的判定維持「延遲」——<b>遲到就結案</b>，不另外產生一筆預約，準點率因此不會被第二次報到稀釋。</li>
-       <li><b>未預約者：走「現場候位」，一樣當場給時段，由近到遠列出剩餘時段讓他選。</b>不需輸入採購單號，只輸車號數字。</li>
-       <li><b>採購單號的用途是「遠端佔位的防濫用憑證」，不是入場資格。</b>事先預約時人不在現場，需要單號防止惡意佔用名額；遲到者與現場候位者人車貨都在門口，實體存在本身就是驗證，這一關就不必把控。</li>
-       <li><b>兩者都佔名額。</b>那台車實際會用掉一個碼頭時段，所以延遲改到的時段與現場候位都要計入餘位，否則會超賣。</li>
-       <li><b>現場候位不列入準點率，只計次。</b>當場報到必然「準時」，混進分母會讓沒預約的人是 100%、乖乖預約的人反而被扣分。次數本身就是要管理的指標。</li>
-       <li><b>車號只輸數字，貨運業者靠過往紀錄反查。</b>唯一命中才自動帶出，多筆指向不同業者時一律不猜，報表獨立列出「未知業者」。</li>
-       <li><b>今日已無時段時</b>，畫面明說請於現場等候空檔，系統不做任何時間承諾——一承諾就得推估下貨工時，那正是這套設計要避開的。</li>
-     </ol></div></div>
-   <div class="card"><div class="card-head"><h3>待確認</h3></div><div class="card-pad">
-     <div class="openq"><b>貨運業者代號從哪裡來</b><p>目前 Demo 假設已有代號可填。實務上要不要建貨運業者主檔、由誰維護、供應商轉單時要不要一併指定貨運業者？<b>沒有穩定的識別就做不出月報與季報。</b></p></div>
-     <div class="openq"><b>同一張採購單被多台車預約</b><p>量大分批送時會發生。目前不擋，因為主鍵是車牌。要不要設上限，或要求註記分批？</p></div>
-     <div class="openq"><b>現場候位要不要輸車號</b><p>目前只輸車號數字（不輸英文），系統靠過往紀錄反查貨運業者。<b>反查不到就只能算總次數、無法點名</b>。若要每一筆都能追到業者，可能得補英文碼或建車輛主檔。另外，現場候位若常有空檔，「乾脆別預約直接來」會不會慢慢變成常態？</p></div>
-     <div class="openq"><b>遲到者改到的時段會排擠後面的人</b><p>他插進後面的空格，會吃掉還沒預約者的名額。目前依先到先得不特別限制。若現場出現「準時的人反而約不到」的抱怨，就要另訂保留規則。</p></div>
-     <div class="openq"><b>震動器號碼由誰發</b><p>Demo 由系統依當日該 DC 序號發放。實務上是現場人工遞出、還是系統指定？要不要把震動器編號與預約綁定以便叫車？</p></div>
-     <div class="openq"><b>改約與取消</b><p>目前不提供。貨運業者臨時換車、換時段的頻率有多高？若要開放，截止時間怎麼訂？</p></div>
-     <div class="openq"><b>延遲與未到要不要有後果</b><p>目前純統計。是否要對長期延遲者限制可預約時段，或列入年度評鑑？這關係到報表要送給誰。</p></div>
-     <div class="openq"><b>收費可行性</b><p>以節省的司機等待工時為基礎收取系統手續費，正在評估中。牽涉成本是否轉嫁回自身、收費後的服務承諾，以及法規面，尚未列入 Demo。</p></div>
-   </div></div>
-   <div class="card"><div class="card-head"><h3>建議操作順序</h3></div><div class="card-pad">
-     <ol style="margin:0;padding-left:18px;display:grid;gap:9px">
-       <li><b>預約申請</b>挑一張<b>常溫</b>採購單，填貨運業者代號與車牌，選車型後挑時段。試著切換鷗翼與非鷗翼，看名額是分開的。</li>
-       <li>再挑一張標示<b>低溫・免預約</b>的採購單，確認系統會擋下並說明不需預約。</li>
-       <li>在第 2 步<b>加入同車其他採購單</b>，看預約單上會一併列出供警衛核對。</li>
-       <li>到<b>廠門口過刷</b>輸入剛拿到的預約單號或車牌，看畫面判定準時。</li>
-       <li>按上方<b>＋15 分</b>推進時間，再過刷另一筆，看判定變成延遲——並注意系統會<b>當場排定改進場的時段</b>，該筆仍記為延遲。</li>
-       <li>在過刷頁按<b>現場候位</b>，輸入 <b class="mono">7712</b>（已有紀錄，會反查到大順通運）或 <b class="mono">9988</b>（查無，歸未知業者），選車型後挑時段，看發出的憑證與線上預約有何不同。</li>
-       <li>到<b>貨運準點報表</b>切換月報與季報，注意宏昌貨運（T02）的準點率明顯偏低——這正是這份報表要抓的對象。</li>
-       <li>到<b>參數設定</b>把準點寬限從 ${S.cfg.graceMin} 分改成 20 分，回報表看準點率如何變動。</li>
-     </ol>
-     <div class="note" style="margin-top:12px">資料存在瀏覽器本機，重新整理不會消失；要回到初始狀態按右上「重設 Demo 資料」。</div>
-   </div>
- </div>`;
-
-/* ── 預約單 ───────────────────────────── */
-function ticketUrl(b){return location.origin+location.pathname+"?id="+encodeURIComponent(b.id)}
-function showTicket(id){
-  const b=bookingById(id); if(!b)return;
-  const dc=dcOf(b.dc), w=whOf(b.dc,b.wh), g=grp(b.group);
-  $("#layer").innerHTML=`<div class="scrim" id="scrim"><div class="modal"><div class="ticket">
-    <div class="th"><div class="co">範例物流股份有限公司<small>SAMPLE LOGISTICS — DEMO ONLY</small></div>
-      <div style="text-align:right"><div class="eyebrow">預約單號</div><div class="big">${b.id}</div></div></div>
-    <dl class="kv">
-      <dt>貨運業者</dt><dd>${esc(carrierName(b.carrier))} <span class="mono">${b.carrier||""}</span></dd>
-      <dt>車牌</dt><dd class="mono" style="font-weight:700;font-size:17px">${esc(b.plate)}</dd>
-      <dt>收貨</dt><dd>${esc(dc.name)}　${w.temp}・${esc(w.name)}</dd>
-      <dt>進貨日</dt><dd class="mono">${dshow(b.date)}</dd>
-      <dt>${isWalkin(b)?"現場給定時段":"預約時段"}</dt><dd class="mono" style="font-weight:600">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
-      <dt>車型</dt><dd>${g.name}（${g.stand}下貨）</dd>
-      <dt>採購單</dt><dd class="mono">${b.poRefs.length?b.poRefs.join("<br>"):"—"}</dd>
-    </dl>
-    <div class="qrbox" id="qr"></div>
-    <div style="text-align:center;font-size:11.5px;color:var(--ink-3)">${isWalkin(b)?"此碼供現場查詢與核對":"廠門口過刷此碼完成報到"}</div>
-    <div class="rules"><ol>${isWalkin(b)?`
-      <li>已在現場完成報到，<b>不需再過刷</b>。請於 <b>${hhmm(b.slot)}</b> 依現場人員指示進場。</li>
-      <li>震動器號碼 <b>${b.pager||"—"}</b>，請隨身攜帶。</li>
-      <li>本次為現場候位，不列入準點率，但會計入貨運業者的未預約次數。</li>
-      <li>下次請由貨運業者事先線上預約，可直接依預約時段到廠。</li>`:`
-      <li>請於預約時段 <b>${hhmm(b.slot)}</b> 前抵達廠門口過刷，晚到 ${S.cfg.graceMin} 分鐘內仍算準點。</li>
-      <li>過刷後領取震動器，依現場人員指示進場。</li>
-      <li>超過寬限即判定延遲，系統會當場改給當天最快的可進場時段，該次仍記為延遲。</li>
-      <li>未過刷即離開將列為未到，並計入貨運業者到場紀錄。</li>`}
-    </ol></div>
-    <div class="row" style="margin-top:15px">
-      <button class="btn" id="printT" style="flex:1">列印</button>
-      <button class="btn pri" id="closeT" style="flex:1">關閉</button></div>
-  </div></div></div>`;
-  try{
-    if(window.QRCode)new QRCode($("#qr"),{text:ticketUrl(b),width:148,height:148,
-      colorDark:"#161B19",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
-    else $("#qr").innerHTML=fakeQR(b.id);
-  }catch(e){$("#qr").innerHTML=fakeQR(b.id)}
-  $("#closeT").onclick=()=>$("#layer").innerHTML="";
-  $("#printT").onclick=()=>window.print();
-  $("#scrim").onclick=ev=>{if(ev.target.id==="scrim")$("#layer").innerHTML=""};
-}
-function fakeQR(seed){
-  let h=0;for(const c of seed)h=(h*31+c.charCodeAt(0))>>>0;
-  let s="";const n=21;
-  for(let y=0;y<n;y++)for(let x=0;x<n;x++){h=(h*1103515245+12345)>>>0;if((h>>>16)%2)s+=`<rect x="${x*6}" y="${y*6}" width="6" height="6"/>`}
-  return `<svg width="126" height="126" viewBox="0 0 126 126" fill="#161B19">${s}</svg>`;
-}
-
-/* ── 動作 ───────────────────────────── */
-function lookup(){
-  const po=($("#poIn").value||"").trim().toUpperCase();
-  const car=($("#carIn").value||"").trim().toUpperCase();
-  const plate=($("#plateIn").value||"").trim().toUpperCase();
-  S.ui={po,carrier:car,plate,err:"",errKind:"warn"};
-  const o=orderOf(po);
-  if(!po||!car||!plate){S.ui.err="請完整填寫採購單號、貨運業者代號與車牌。";save();render();return}
-  if(!o){S.ui.err="查無此採購單號。請確認供應商提供的單號是否正確。";save();render();return}
-  if(!o.valid){S.ui.err="採購單 "+o.po+" 已作廢，無法預約。";save();render();return}
-  if(o.date<S.simDate){S.ui.err="採購單指定進貨日 "+o.date+" 已過期。";save();render();return}
-  const ow=whOf(o.dc,o.wh);
-  if(!ow.booking){
-    S.ui.err="採購單 "+o.po+" 的收貨倉別是 <b>"+ow.temp+"・"+ow.name+"</b>，<b>目前不需預約</b>。"
-      +S.cfg.noBookingNote+"請依原有方式直接到廠卸貨。";
-    S.ui.errKind="key";save();render();return;
-  }
-  if(!carrierOf(car)){S.ui.err="查無此貨運業者代號。可用："+CARRIERS.map(c=>c.code).join("、");save();render();return}
-  if(!/^[A-Z0-9-]{4,12}$/.test(plate)){S.ui.err="車牌格式請填 4～12 碼英數，可含連字號。";save();render();return}
-  const dup=bookingOfTruck(plate,o.date,o.dc);
-  if(dup){
-    S.ui={qPlate:plate,qDate:o.date,qResult:[dup],qErr:""};
-    save();go("query");toast("這台車在 "+dcOf(o.dc).name+" 當日已有預約 "+dup.id);return;
-  }
-  S.ui.order=o;S.ui.group="dock";S.ui.slot=null;S.ui.extras=[];
-  save();render();
+      ${U.bookErr?`<div class="note bad">${U.bookErr}</div>`:""}
+      <button class="btn pri lg" id="confirm" ${U.slot!=null?"":"disabled"}>確認預約</button>
+      <div class="muted" style="font-size:13px;font-weight:600">成立後產生預約單（QRcode＋條碼＋單號），司機到廠門口過刷即完成報到。</div>
+    </div></div>
+  </div>`;
 }
 function addExtra(){
-  const u=S.ui,o=u.order,v=($("#extraIn").value||"").trim().toUpperCase();
-  u.exErr="";
-  const x=orderOf(v);
-  if(!x)u.exErr="查無此採購單號。";
-  else if(!x.valid)u.exErr=x.po+" 已作廢。";
-  else if(x.po===o.po)u.exErr="這已經是主要採購單。";
-  else if(u.extras.includes(x.po))u.exErr=x.po+" 已加入。";
-  else if(x.dc!==o.dc||x.date!==o.date)u.exErr=x.po+" 的收貨中心或進貨日不同，無法併在同一車。";
-  else u.extras.push(x.po);
-  save();render();
-  const el=$("#extraIn");if(el&&!u.exErr)el.focus();
+  const o=orderOf(U.order), v=norm($("#extraIn").value);
+  U.exErr="";
+  const x=orderOf(v), used=x&&bookingOfPO(x.po);
+  if(!v)U.exErr="請輸入採購單號。";
+  else if(!x)U.exErr="查無此採購單號。";
+  else if(!x.valid)U.exErr=x.po+" 已作廢。";
+  else if(x.po===o.po)U.exErr="這已經是主要採購單。";
+  else if(U.extras.includes(x.po))U.exErr=x.po+" 已加入。";
+  else if(used)U.exErr=`${x.po} 已在預約 <span class="mono">${used.id}</span> 中使用，一張採購單只能預約一次。`;
+  else if(x.dc!==o.dc||x.date!==o.date||x.wh!==o.wh)U.exErr=x.po+" 的收貨中心、倉別或進貨日不同，無法併在同一車。";
+  else U.extras.push(x.po);
+  render();
+  const el=$("#extraIn");if(el&&!U.exErr)el.focus();
 }
 function confirmBooking(){
-  const u=S.ui,o=u.order,g=grp(u.group);
-  if(u.slot==null)return;
-  if(remainAt(o.dc,o.wh,g.id,o.date,u.slot)<=0||!isFuture(o.date,u.slot)){
-    u.slot=null;save();render();toast("此時段剛被訂走或已過時，請改選其他時段");return;
-  }
-  if(bookingOfTruck(u.plate,o.date,o.dc)){save();render();toast("這台車當日在此物流中心已有預約");return}
+  const o=orderOf(U.order),g=grp(U.group),plate=norm(U.plate);
+  U.bookErr="";
+  if(U.slot==null)return;
+  if(plate&&!/^[A-Z0-9-]{2,12}$/.test(plate)){U.bookErr="車牌請填 2～12 碼英數字，可含連字號；不確定可以留白。";render();return}
+  const usedPo=[o.po,...U.extras].find(p=>bookingOfPO(p));
+  if(usedPo){U.bookErr=`採購單 ${usedPo} 剛剛已被預約（${bookingOfPO(usedPo).id}），請重新查詢。`;render();return}
+  const dup=bookingOfTruck(plate,o.date,o.dc);
+  if(dup){U.bookErr=`車牌 ${plate} 在${dcOf(o.dc).name} ${dshow(o.date)} 已有預約 <span class="mono">${dup.id}</span>，同一台車同日同物流中心不可重複預約。`;render();return}
+  if(remainAt(o.dc,o.wh,g.id,o.date,U.slot)<=0||!isFuture(o.date,U.slot)){
+    U.slot=null;U.bookErr="此時段剛被訂走或已過時，請改選其他時段。";render();return}
   const step=60/poolOf(o.dc,o.wh,g.id).split;
-  const n=S.bookings.filter(b=>b.dc===o.dc&&b.date===o.date).length+1;
-  const b={id:o.dc+"-"+o.date.slice(5).replace("-","")+"-"+pad(n),
-    carrier:u.carrier,dc:o.dc,wh:o.wh,group:g.id,date:o.date,slot:u.slot,end:u.slot+step,
-    plate:u.plate,poRefs:[o.po,...u.extras],status:"booked",checkinAt:null,pager:null,createdAt:Date.now()};
-  S.bookings.push(b);
-  S.ui={qPlate:b.plate,qDate:b.date,qResult:[b],qErr:""};S.view="query";
-  save();render();showTicket(b.id);
-  toast("預約成立："+b.id);
+  const b={id:newId(o.dc,o.date),dc:o.dc,wh:o.wh,group:g.id,date:o.date,slot:U.slot,end:U.slot+step,plate,
+    poRefs:[o.po,...U.extras],status:"booked",checkinAt:null,pager:null,source:"online",via:null,
+    lateSlot:null,lateEnd:null,createdAt:Date.now()};
+  S.bookings.push(b);save();
+  U={q:o.po,mode:"found",found:[b.id],msgKind:"ok",msg:`${ic("check",16,2.6)} 預約成立，預約單號 <b class="mono">${b.id}</b>。`};
+  render();showTicket(b.id);
 }
-function doQuery(byId){
-  const u=S.ui;
-  if(byId){
-    const id=($("#qId").value||"").trim().toUpperCase();
-    const b=bookingById(id);
-    S.ui={qId:id,qErr:b?"":"查無此預約單號。",qResult:b?[b]:null};
+
+/* ═════════ 2. 手機現場候位 ═════════ */
+function createWalkin(dc,g,slot,digits,via){
+  const w=bookableWh(dc);
+  if(!w)return"此物流中心目前沒有開放預約的倉別。";
+  if(slot==null)return"請先選擇進場時段。";
+  if(remainAt(dc,w.id,g,S.simDate,slot)<=0||slot<S.simMin+(S.cfg.walkinLeadMin||0))return"此時段剛被佔用或已過時，請改選。";
+  const step=60/poolOf(dc,w.id,g).split;
+  const b={id:newId(dc,S.simDate),dc,wh:w.id,group:g,date:S.simDate,slot,end:slot+step,plate:digits||"",poRefs:[],
+    source:"walkin",via,status:"walkin",checkinAt:S.simMin,pager:nextPager(dc,S.simDate),
+    lateSlot:null,lateEnd:null,createdAt:Date.now()};
+  S.bookings.push(b);save();
+  return b;
+}
+function walkinFields(dc,st,prefix){
+  const w=bookableWh(dc), g=st.g||"dock", slots=w?openSlotsNow(dc,w.id,g):[];
+  return `<div class="grid" style="gap:14px">
+    <div><div class="fld" style="margin-bottom:6px">1　車型</div>
+      <div class="opts" style="grid-template-columns:1fr 1fr">${GROUPS.map(x=>`<button class="opt" data-${prefix}g="${x.id}" aria-pressed="${x.id===g}"><b>${x.name}</b><small>${x.hint}</small></button>`).join("")}</div></div>
+    <div><div class="fld" style="margin-bottom:6px">2　進場時段</div>
+      ${!w?`<div class="note bad">此物流中心目前沒有開放預約的倉別。</div>`
+       :slots.length?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${slots.map(x=>`<button class="slot" data-${prefix}slot="${x.start}" aria-pressed="${st.slot===x.start}">
+          <span class="st">${hhmm(x.start)}</span><span class="sc">餘 ${remainAt(dc,w.id,g,S.simDate,x.start)} 位</span></button>`).join("")}</div>
+          <div class="muted" style="font-size:13px;font-weight:600;margin-top:6px">由近到遠列出今天還有名額的時段。</div>`
+       :`<div class="note bad">今日已無可用時段，請於現場等候空檔，由現場人員視狀況安排進場。</div>`}</div>
+    <label class="fld">3　車號（選填，只輸數字）
+      <input class="mono" id="${prefix}Digits" value="${esc(st.digits||"")}" inputmode="numeric" placeholder="例如 7712" style="font-size:20px;max-width:200px"></label>
+    ${st.err?`<div class="note bad">${st.err}</div>`:""}
+  </div>`;
+}
+V.walkin=()=>{
+  const dc=curDc(), d=dcOf(dc);
+  let body;
+  const done=U.done&&bookingById(U.done);
+  if(done){
+    body=`<div class="grid" style="gap:14px;text-align:center">
+      <div style="color:var(--ok)">${ic("check",64,2.6)}</div>
+      <h2>候位完成</h2>
+      <div class="pager" style="justify-self:center;margin:0"><span class="l">震動器</span><span class="n">${done.pager}</span></div>
+      <div style="font-size:18px;font-weight:700">進場時段<br><span class="mono" style="font-size:34px">${hhmm(done.slot)}–${hhmm(done.end)}</span></div>
+      <div class="note ok" style="text-align:left">請<b>出示此畫面給警衛</b>領取震動器，並依時段進場。震動器響時請到指定位置下貨。</div>
+      <div class="muted mono" style="font-weight:600">候位單號 ${done.id}　${esc(d.name)}</div>
+      <button class="btn lg" id="wDone">完成</button></div>`;
   }else{
-    const plate=($("#qPlate").value||"").trim().toUpperCase();
-    const date=$("#qDate").value;
-    const list=S.bookings.filter(b=>b.plate===plate&&b.date===date&&b.status!=="cancelled");
-    S.ui={qPlate:plate,qDate:date,qErr:list.length?"":"查無這台車在該日的預約。",qResult:list.length?list:null};
+    body=`<div class="muted" style="font-weight:700">${esc(d.name)}</div>
+      <h2>現場候位</h2>
+      <p style="margin:0 0 14px;color:var(--ink-2)">沒有預約的車，可以在這裡取得今天的進場時段，<b>不需要採購單號</b>。</p>
+      ${walkinFields(dc,U,"w")}
+      <button class="btn pri lg" id="wGo" style="width:100%;margin-top:16px" ${U.slot!=null?"":"disabled"}>確認候位</button>
+      <div class="muted" style="font-size:12.5px;margin-top:12px;font-weight:600">現場候位不列入準點率，會計入現場候位次數。下次請事先線上預約。</div>`;
   }
-  save();render();
-}
-/* 過刷：掃到即完成報到，並立即顯示判定。重複過刷不覆寫原時間與判定。 */
-function doScan(){
-  let raw=($("#scan").value||"").trim();
-  const dcCode=S.ui.gateDc||S.cfg.dcs[0].code;
-  S.ui.gateMsg="";S.ui.gateMsgKind="warn";S.ui.gateHit=null;S.ui.gateDup=false;
-  if(!raw){S.ui.gateMsg="請掃描 QRcode 或輸入預約單號 / 車牌。";save();render();return}
-  const m=raw.match(/[?&]id=([^&]+)/); if(m)raw=decodeURIComponent(m[1]);
-  raw=raw.toUpperCase();
-  let b=bookingById(raw);
+  return `<div class="phone-stage">
+    <div class="row noprint" style="width:100%;max-width:430px;margin-bottom:10px;justify-content:space-between">
+      <button class="btn sm" id="kBack">${ic("back",16)}返回</button>
+      <span class="muted" style="font-size:12.5px;font-weight:700">Demo：這是司機手機掃 QRcode 後看到的畫面</span></div>
+    <div class="phone"><div class="ph"><div class="logo" style="width:34px;height:34px;border-radius:8px">${ic("truck",20,2.2)}</div>
+      <div><div style="font-size:12px;font-weight:700;color:var(--ink-2)">${BRAND.co}</div><div style="font-weight:900;font-size:16px">${BRAND.sys}</div></div>
+      <div class="spacer"></div><span class="mono" style="font-weight:600">${hhmm(S.simMin)}</span></div>
+      <div class="pb">${body}</div></div>
+    <div class="note warn" style="max-width:430px;margin-top:12px;font-size:13px">Demo 限制：資料存在各自瀏覽器。<b>在同一台電腦另開分頁</b>會與過刷頁、看板即時同步；用真的手機掃描可以操作，但電腦上看不到那筆。</div>
+  </div>`;
+};
+
+/* ═════════ 3. 過刷報到（滿版） ═════════ */
+V.gate=()=>{
+  const dc=curDc(), hit=U.hit?bookingById(U.hit):null;
+  let verdict;
+  const detail=b=>`<div style="background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px 16px;margin-top:16px">
+    <dl class="kv" style="font-size:16px">
+      <dt>預約單號</dt><dd class="mono" style="font-weight:600">${b.id}</dd>
+      <dt>車牌</dt><dd>${plateTxt(b)}</dd>
+      <dt>採購單</dt><dd class="mono">${b.poRefs.join("、")||"—"}</dd>
+      <dt>供應商</dt><dd>${supNames(b)}</dd>
+      <dt>車型</dt><dd><b>${grp(b.group).name}</b>・${grp(b.group).stand}下貨</dd>
+    </dl></div>`;
+  if(U.kind==="err"){
+    verdict=`<div class="verdict bad" role="alert"><div class="big">${ic("x",46,3)}無法報到</div><div class="sub">${U.msg}</div></div>`;
+  }else if(hit&&U.kind==="dup"){
+    verdict=`<div class="verdict dup" role="status"><div class="big">${ic("alert",40,2.6)}已完成報到</div>
+      <div class="sub">首次過刷 <span class="mono">${hhmm(hit.checkinAt)}</span>，判定 <b>${SLABEL[statusOf(hit)]}</b>。重複過刷不會變更原時間與判定。</div>
+      ${hit.pager?`<div class="pager"><span class="l">震動器</span><span class="n">${hit.pager}</span></div>`:""}${detail(hit)}</div>`;
+  }else if(hit&&U.kind==="ontime"){
+    verdict=`<div class="verdict ok" role="status"><div class="big">${ic("check",60,3)}準時抵達</div>
+      <div class="sub">預約 <span class="mono">${hhmm(hit.slot)}</span>　過刷 <span class="mono">${hhmm(hit.checkinAt)}</span>${hit.checkinAt>hit.slot?`（晚 ${lateBy(hit)} 分，在 ${S.cfg.graceMin} 分寬限內）`:""}</div>
+      <div class="pager"><span class="l">請領取震動器</span><span class="n">${hit.pager}</span></div>${detail(hit)}</div>`;
+  }else if(hit&&U.kind==="late"){
+    verdict=`<div class="verdict late" role="status"><div class="big">${ic("alert",56,2.6)}遲到 ${lateBy(hit)} 分</div>
+      <div class="sub">預約 <span class="mono">${hhmm(hit.slot)}</span>　過刷 <span class="mono">${hhmm(hit.checkinAt)}</span>　此次記為遲到</div>
+      <div class="reslot">${hit.lateSlot!=null?`改於 <span class="mono">${hhmm(hit.lateSlot)}–${hhmm(hit.lateEnd)}</span> 進場，請在現場等候`:"今日已無可用時段，請於現場等候空檔，由現場人員安排"}</div>
+      <div class="pager"><span class="l">請領取震動器</span><span class="n">${hit.pager}</span></div>${detail(hit)}</div>`;
+  }else{
+    verdict=`<div class="verdict idle"><div><div style="color:var(--ink-2)">${ic("scan",72,1.6)}</div>
+      <div class="big">請掃描預約單</div><div class="sub" style="color:var(--ink-3)">條碼、QRcode 都可以；掃不到時手動輸入單號後按 Enter</div></div></div>`;
+  }
+  const recent=S.bookings.filter(b=>b.dc===dc&&b.date===S.simDate&&b.checkinAt!=null).sort((a,b)=>b.checkinAt-a.checkinAt||(b.createdAt-a.createdAt)).slice(0,7);
+  return `<div class="kiosk">${kbar("過刷報到","scan")}<div class="kbody"><div class="gate">
+    <div>
+      <label class="scanbox" style="display:block"><span class="fld" style="font-size:16px;margin-bottom:6px;color:var(--ink)">預約單號 / 採購單號 / 車牌</span>
+        <input id="scan" autocomplete="off" placeholder="掃描條碼或手動輸入，按 Enter 送出" aria-label="掃描或輸入預約單號、採購單號或車牌"></label>
+      ${verdict}
+    </div>
+    <div class="grid">
+      <div class="card"><div class="card-h"><h3>${ic("phone",20)}未預約車輛：現場候位</h3></div>
+        <div class="pad qrwrap">
+          <div class="qr" id="wkQr"></div>
+          <div style="font-size:18px;font-weight:900">司機請用手機掃描</div>
+          <div class="muted" style="font-size:13px;font-weight:600">${esc(dcOf(dc).name)}專用・取得今日進場時段</div>
+          <div class="row" style="justify-content:center;margin-top:6px">
+            <button class="btn pri" id="guardWalk">${ic("guard",18)}代為候位（手機無法掃描）</button>
+            <button class="btn" id="simPhone">${ic("ext",16)}模擬手機開啟</button></div>
+        </div></div>
+      <div class="card"><div class="card-h"><h3>${ic("list",20)}最近報到</h3><div class="spacer"></div><button class="btn sm" id="toBoard">${ic("board",15)}即時看板</button></div>
+        <div class="feed">${recent.map(b=>`<div><b class="mono">${hhmm(b.checkinAt)}</b>
+          <div><span class="mono" style="font-weight:600">${b.id}</span>　${plateTxt(b)}</div>
+          <div>${statusPill(b)} <b class="mono">${b.pager||""}</b></div></div>`).join("")||`<div class="muted" style="display:block;text-align:center">今日尚無報到</div>`}</div></div>
+    </div>
+  </div></div></div>`;
+};
+function doScan(raw){
+  const dc=curDc();
+  let q=String(raw||"").trim();
+  const m=q.match(/[?&]id=([^&#]+)/); if(m)q=decodeURIComponent(m[1]);
+  q=q.toUpperCase();
+  U={};
+  if(!q){render();return}
+  const fail=msg=>{U.kind="err";U.msg=msg;render()};
+  let b=bookingById(q);
   if(!b){
-    const hits=S.bookings.filter(x=>x.plate===raw&&x.date===S.simDate&&x.status!=="cancelled");
-    if(hits.length===1)b=hits[0];
-    else if(hits.length>1){
-      b=hits.find(x=>x.dc===dcCode)||hits[0];
-      S.ui.gateMsg="車牌 "+raw+" 今日有 "+hits.length+" 筆預約（不同物流中心），已比對 "+dcOf(b.dc).name+"。";
-    }
+    const o=orderOf(q);
+    if(o){b=bookingOfPO(o.po);if(!b)return fail(`採購單 <span class="mono">${o.po}</span> 沒有預約紀錄。未預約的車請走右側現場候位。`)}
   }
   if(!b){
-    const any=S.bookings.find(x=>x.plate===raw||x.id===raw);
-    S.ui.gateMsg=any?("查到 "+any.plate+" 的預約，但進貨日為 "+any.date+"，非今日預約。"):"查無此預約單號或車牌。";
-    save();render();return;
+    const hits=S.bookings.filter(x=>x.plate&&x.plate===q&&x.date===S.simDate&&x.status!=="cancelled");
+    b=hits.find(x=>x.dc===dc)||hits[0];
   }
-  if(b.date!==S.simDate){S.ui.gateMsg="非今日進貨預約（預約日 "+b.date+"），不可報到。";save();render();return}
-  if(b.dc!==dcCode){S.ui.gateDc=b.dc;S.ui.gateMsg="此單的收貨中心是 "+dcOf(b.dc).name+"，已自動切換。"}
-  if(b.status==="arrived"){S.ui.gateDup=true;S.ui.gateHit=b.id;save();render();return}
-  const dayN=S.bookings.filter(x=>x.dc===b.dc&&x.date===S.simDate&&x.pager).length+1;
-  b.status="arrived";b.checkinAt=S.simMin;b.pager="P-"+pad(dayN);
-  /* 判定延遲時，當下就給當天最快的可進場時段——他已經在現場等，不必再輸採購單號。
-     原單的判定維持「延遲」：遲到就結案，不另外產生一筆預約，報表也就不會被稀釋。 */
+  if(!b)return fail(`查無 <span class="mono">${esc(q)}</span>。請確認預約單號、採購單號或車牌。`);
+  if(b.date!==S.simDate)return fail(`<span class="mono">${b.id}</span> 的進貨日是 ${dshow(b.date)}，不是今天。`);
+  if(b.dc!==dc)return fail(`<span class="mono">${b.id}</span> 的收貨地點是${dcOf(b.dc).name}，不是本物流中心。`);
+  if(b.status==="arrived"||isWalkin(b)){U.kind="dup";U.hit=b.id;render();return}
+  /* 過刷即報到並立即判定。判定遲到時，當下就給當天最快的可進場時段——人已經在現場，不必再輸採購單號。
+     原單維持「遲到」：遲到就結案，不另外產生一筆預約，報表不會被稀釋。 */
+  b.status="arrived";b.checkinAt=S.simMin;b.pager=nextPager(b.dc,b.date);b.createdAt=Date.now();
   b.lateSlot=null;b.lateEnd=null;
   const pu=punctuality(b);
-  if(pu==="late"){
-    const nx=openSlotsNow(b.dc,b.wh,b.group)[0];
-    if(nx){b.lateSlot=nx.start;b.lateEnd=nx.end}
+  if(pu==="late"){const nx=openSlotsNow(b.dc,b.wh,b.group)[0];if(nx){b.lateSlot=nx.start;b.lateEnd=nx.end}}
+  save();
+  U.kind=pu;U.hit=b.id;render();
+}
+/* 備援：司機手機無法掃描時，由警衛代為候位。系統照樣佔名額、計次；時間由警衛口頭告知並人工記錄。 */
+let GW=null;
+function guardWalkModal(){
+  const dc=curDc();
+  let body;
+  const b=GW.done&&bookingById(GW.done);
+  if(b){
+    body=`<div class="grid" style="gap:12px;text-align:center">
+      <div style="color:var(--ok)">${ic("check",52,2.6)}</div>
+      <div style="font-size:22px;font-weight:900">候位完成</div>
+      <div class="pager" style="justify-self:center;margin:0"><span class="l">震動器</span><span class="n">${b.pager}</span></div>
+      <div style="font-size:18px;font-weight:700">進場時段 <span class="mono" style="font-size:28px">${hhmm(b.slot)}–${hhmm(b.end)}</span></div>
+      <div class="note brand" style="text-align:left">請<b>口頭告知司機進場時間</b>，並記在現場紀錄表。系統已佔用名額並計入現場候位次數。</div>
+      <button class="btn pri lg" id="gwClose">完成</button></div>`;
+  }else{
+    body=`${walkinFields(dc,GW,"g")}
+      <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn" id="gwClose">取消</button>
+      <button class="btn pri" id="gwGo" ${GW.slot!=null?"":"disabled"}>確認候位並發放震動器</button></div>`;
   }
-  S.ui.gateHit=b.id;
-  save();render();
-  toast(b.id+" 報到完成："+PLABEL[pu]+(pu!=="late"?"":
-    (b.lateSlot!=null?"（延遲 "+lateBy(b)+" 分，改 "+hhmm(b.lateSlot)+" 進場）"
-                     :"（延遲 "+lateBy(b)+" 分，今日已無時段）")));
-}
-
-/* 現場候位：未預約的車到現場，由警衛當場給時段。不需採購單號，只輸車號數字。 */
-function doWalkin(){
-  const el=$("#walkPlate");
-  const wd=digitsOf(el?el.value:(S.ui.walkDigits||""));
-  const dc=S.ui.gateDc||S.cfg.dcs[0].code, w=bookableWh(dc), g=S.ui.walkGroup||"dock";
-  const slot=S.ui.walkSlot;
-  S.ui.walkDigits=wd;S.ui.walkErr="";
-  if(!wd){S.ui.walkErr="請輸入車號數字。";save();render();return}
-  if(!w||slot==null){S.ui.walkErr="請先選擇進場時段。";save();render();return}
-  if(remainAt(dc,w.id,g,S.simDate,slot)<=0||slot<S.simMin+(S.cfg.walkinLeadMin||0)){
-    S.ui.walkSlot=null;S.ui.walkErr="此時段剛被佔用或已過時，請改選。";save();render();return}
-  const carrier=carrierByDigits(wd);
-  const plate=plateByDigits(wd)||wd;
-  const step=60/poolOf(dc,w.id,g).split;
-  const n=S.bookings.filter(b=>b.dc===dc&&b.date===S.simDate).length+1;
-  const dayN=S.bookings.filter(x=>x.dc===dc&&x.date===S.simDate&&x.pager).length+1;
-  const b={id:dc+"-"+S.simDate.slice(5).replace("-","")+"-"+pad(n),
-    carrier,dc,wh:w.id,group:g,date:S.simDate,slot,end:slot+step,plate,poRefs:[],
-    source:"walkin",status:"walkin",checkinAt:S.simMin,pager:"P-"+pad(dayN),
-    lateSlot:null,lateEnd:null,createdAt:Date.now()};
-  S.bookings.push(b);
-  S.ui.walkOpen=false;S.ui.walkDigits="";S.ui.walkSlot=null;S.ui.walkErr="";
-  save();render();showTicket(b.id);
-  toast("現場候位成立："+b.id+"　進場 "+hhmm(slot));
-}
-function exportCsv(){
-  const u=S.ui,mode=u.rMode||"month",period=u.rPeriod||"2026-08";
-  const inRange=b=>{
-    if(mode==="month")return b.date.slice(0,7)===period;
-    const[y,q]=period.split("-Q");return b.date.slice(0,4)===y&&Math.ceil(+b.date.slice(5,7)/3)===+q;
+  $("#layer").innerHTML=`<div class="scrim" id="gwScrim"><div class="modal" role="dialog" aria-label="代為候位"><div class="card-h"><h3>${ic("guard",20)}代為候位・${esc(dcOf(dc).name)}</h3></div>
+    <div class="pad">${body}</div></div></div>`;
+  const close=()=>{$("#layer").innerHTML="";GW=null;render()};
+  $("#gwClose").onclick=close;
+  $("#gwScrim").onclick=e=>{if(e.target.id==="gwScrim")close()};
+  $$("[data-gg]").forEach(x=>x.onclick=()=>{GW.g=x.dataset.gg;GW.slot=null;keepDigits("#gDigits",GW);guardWalkModal()});
+  $$("[data-gslot]").forEach(x=>x.onclick=()=>{GW.slot=+x.dataset.gslot;GW.err="";keepDigits("#gDigits",GW);guardWalkModal()});
+  const go=$("#gwGo"); if(go)go.onclick=()=>{
+    keepDigits("#gDigits",GW);
+    const r=createWalkin(dc,GW.g||"dock",GW.slot,GW.digits,"guard");
+    if(typeof r==="string"){GW.err=r;GW.slot=null}else GW.done=r.id;
+    guardWalkModal();
   };
-  const rows=S.bookings.filter(b=>inRange(b)&&(punctuality(b)||isWalkin(b)))
-    .sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:a.slot-b.slot));
-  const lines=["進貨日,單號,來源,貨運業者代號,貨運業者,車牌,物流中心,倉別,車型,時段,過刷時間,遲到分鐘,延遲後進場,判定"];
-  rows.forEach(b=>{
-    const w=whOf(b.dc,b.wh),pu=punctuality(b);
-    lines.push([b.date,b.id,isWalkin(b)?"現場候位":"線上預約",b.carrier||"",carrierName(b.carrier),
-      b.plate,dcOf(b.dc).name,w.temp+w.name,grp(b.group).name,hhmm(b.slot),
-      b.checkinAt!=null?hhmm(b.checkinAt):"",pu==="late"?lateBy(b):"",
-      b.lateSlot!=null?hhmm(b.lateSlot):"",isWalkin(b)?"現場候位":PLABEL[pu]].join(","));
+}
+const keepDigits=(sel,st)=>{const el=$(sel);if(el)st.digits=el.value.replace(/\D/g,"").slice(0,8)};
+
+/* ═════════ 4. 即時看板（滿版） ═════════ */
+V.board=()=>{
+  const dc=curDc(), w=bookableWh(dc);
+  const today=S.bookings.filter(b=>b.dc===dc&&b.date===S.simDate&&b.status!=="cancelled");
+  const online=today.filter(b=>!isWalkin(b)), walk=today.filter(isWalkin);
+  const c={ontime:0,late:0,noshow:0,wait:0};
+  online.forEach(b=>c[statusOf(b)]++);
+  const arrived=c.ontime+c.late, tot=online.length||1, pct=Math.round(arrived/tot*100);
+  const overdue=online.filter(b=>b.status==="booked"&&S.simMin>b.slot+S.cfg.graceMin).sort((a,b)=>a.slot-b.slot);
+  const upcoming=online.filter(b=>b.status==="booked"&&S.simMin<=b.slot+S.cfg.graceMin&&b.slot<=S.simMin+60).sort((a,b)=>a.slot-b.slot);
+  const feed=today.filter(b=>b.checkinAt!=null).sort((a,b)=>b.checkinAt-a.checkinAt||(b.createdAt-a.createdAt)).slice(0,8);
+  const seg=(n,cls)=>n?`<i class="${cls}" style="width:${n/tot*100}%" title="${n}"></i>`:"";
+  const hours=[];
+  if(w){
+    const ps=GROUPS.map(g=>poolOf(dc,w.id,g.id));
+    const h0=Math.min(...ps.map(p=>toMin(p.open))), h1=Math.max(...ps.map(p=>toMin(p.close)));
+    for(let h=h0;h<h1;h+=60){
+      const caps=GROUPS.map(g=>{const sl=slotsOf(dc,w.id,g.id).filter(s=>s.start>=h&&s.start<h+60);
+        return{g,used:sl.reduce((a,s)=>a+usedAt(dc,w.id,g.id,S.simDate,s.start),0),cap:sl.length*poolOf(dc,w.id,g.id).capacity}});
+      const inH=today.filter(b=>(b.slot>=h&&b.slot<h+60)||(b.lateSlot!=null&&b.lateSlot>=h&&b.lateSlot<h+60))
+        .sort((a,b)=>((a.lateSlot>=h&&a.lateSlot<h+60)?a.lateSlot:a.slot)-((b.lateSlot>=h&&b.lateSlot<h+60)?b.lateSlot:b.slot));
+      const now=S.simMin>=h&&S.simMin<h+60;
+      hours.push(`<div class="hour ${now?"now":""}"><div class="h">${hhmm(h)}${now?`<div style="font-size:11px;color:var(--brand-2);font-family:var(--f-body);font-weight:900">現在</div>`:""}</div>
+        <div class="cap">${caps.map(x=>`<div>${x.g.stand} ${x.used}/${x.cap}<div class="bar-mini"><i style="width:${x.cap?Math.min(100,x.used/x.cap*100):0}%;background:${x.used>=x.cap?"var(--bad-bar)":"var(--brand)"}"></i></div></div>`).join("")}</div>
+        <div class="vchips">${inH.map(b=>{const re=b.lateSlot!=null&&b.lateSlot>=h&&b.lateSlot<h+60;const s=statusOf(b);
+          const od=s==="wait"&&S.simMin>b.slot+S.cfg.graceMin;
+          return `<span class="vchip ${od?"bad":SCLS[s]}" title="${b.id}｜${SLABEL[s]}｜${b.plate||"未填車牌"}">${re?"↻"+hhmm(b.lateSlot):hhmm(b.slot)} ${esc(b.plate||"#"+b.id.slice(-2))}${b.group==="wing"?"・廣":""}</span>`}).join("")||`<span class="muted" style="font-size:13px">—</span>`}</div></div>`);
+    }
+  }
+  const mini=(list,empty,fmt)=>list.length?list.map(fmt).join(""):`<div class="muted" style="display:block;text-align:center">${empty}</div>`;
+  return `<div class="kiosk">${kbar("即時看板","board")}<div class="kbody grid" style="gap:16px">
+    <div class="kpis">
+      <div class="kpi brand"><div class="l">${ic("calendar",16)}今日預約</div><div class="v">${online.length}</div><div class="s">車次（不含現場候位）</div></div>
+      <div class="kpi brand"><div class="l">${ic("check",16)}已報到</div><div class="v">${arrived}</div><div class="s">報到進度 ${pct}%</div></div>
+      <div class="kpi ok"><div class="l">準點</div><div class="v">${c.ontime}</div></div>
+      <div class="kpi late"><div class="l">遲到</div><div class="v">${c.late}</div></div>
+      <div class="kpi bad"><div class="l">未到</div><div class="v">${c.noshow}</div></div>
+      <div class="kpi"><div class="l">${ic("clock",16)}待報到</div><div class="v">${c.wait}</div><div class="s">其中逾時 ${overdue.length}</div></div>
+      <div class="kpi walk"><div class="l">${ic("phone",16)}現場候位</div><div class="v">${walk.length}</div><div class="s">手機 ${walk.filter(b=>b.via!=="guard").length}・代為 ${walk.filter(b=>b.via==="guard").length}</div></div>
+    </div>
+    <div class="card pad grid" style="gap:8px">
+      <div class="row"><b style="font-size:16px">今日報到進度</b><span class="muted" style="font-weight:700">已報到 ${arrived} / 預約 ${online.length}</span><div class="spacer"></div>
+        <div class="legend"><span><i class="c-ok"></i>準點 ${c.ontime}</span><span><i class="c-late"></i>遲到 ${c.late}</span><span><i class="c-bad"></i>未到 ${c.noshow}</span><span><i class="c-wait"></i>待報到 ${c.wait}</span></div></div>
+      <div class="stack" style="height:28px">${seg(c.ontime,"c-ok")}${seg(c.late,"c-late")}${seg(c.noshow,"c-bad")}${seg(c.wait,"c-wait")}</div>
+    </div>
+    <div class="grid split2" style="grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);align-items:start">
+      <div class="card"><div class="card-h"><h3>${ic("clock",19)}各時段進度</h3><div class="spacer"></div>
+        <div class="legend"><span><i class="c-ok"></i>準點</span><span><i class="c-late"></i>遲到</span><span><i class="c-bad"></i>未到／逾時</span><span><i class="c-walk"></i>候位</span><span><i style="background:#fff;border:1.5px solid var(--line-2)"></i>待報到</span><span>↻ 遲到改排</span><span>#末碼＝未填車牌</span><span>・廣＝廣場</span></div></div>
+        <div class="pad hours">${hours.join("")||`<div class="muted">此物流中心沒有開放預約的倉別。</div>`}</div></div>
+      <div class="grid">
+        <div class="card"><div class="card-h"><h3 style="color:var(--bad)">${ic("alert",19)}逾準點未報到</h3><div class="spacer"></div><span class="pill bad">${overdue.length}</span></div>
+          <div class="feed">${mini(overdue,"目前沒有",b=>`<div><b class="mono">${hhmm(b.slot)}</b><div><span class="mono" style="font-weight:600">${b.id}</span>　${plateTxt(b)}</div><span class="pill bad">逾 ${S.simMin-b.slot} 分</span></div>`)}</div></div>
+        <div class="card"><div class="card-h"><h3>${ic("truck",19)}60 分鐘內即將到場</h3><div class="spacer"></div><span class="pill wait">${upcoming.length}</span></div>
+          <div class="feed">${mini(upcoming,"目前沒有",b=>`<div><b class="mono">${hhmm(b.slot)}</b><div><span class="mono" style="font-weight:600">${b.id}</span>　${plateTxt(b)}</div><span class="muted" style="font-weight:700">${grp(b.group).stand}</span></div>`)}</div></div>
+        <div class="card"><div class="card-h"><h3>${ic("list",19)}最新報到</h3></div>
+          <div class="feed">${mini(feed,"今日尚無報到",b=>`<div><b class="mono">${hhmm(b.checkinAt)}</b><div><span class="mono" style="font-weight:600">${b.id}</span>　${plateTxt(b)}</div><div>${statusPill(b)}</div></div>`)}</div></div>
+      </div>
+    </div>
+  </div></div>`;
+};
+
+/* ═════════ 5. 報到分析（後台） ═════════ */
+function tally(list){
+  const t={online:0,ontime:0,late:0,noshow:0,wait:0,walkin:0,phone:0,guard:0,relate:0};
+  list.forEach(b=>{
+    if(b.status==="cancelled")return;
+    const s=statusOf(b);
+    if(s==="walkin"){t.walkin++;b.via==="guard"?t.guard++:t.phone++;return}
+    t.online++;t[s]++;if(b.lateSlot!=null)t.relate++;
   });
+  t.total=t.online+t.walkin;
+  const judged=t.ontime+t.late+t.noshow;
+  t.rate=judged?Math.round(t.ontime/judged*100):null;
+  return t;
+}
+const kpiRow=t=>`<div class="kpis">
+  <div class="kpi brand"><div class="l">總車次</div><div class="v">${t.total}</div><div class="s">預約 ${t.online}・候位 ${t.walkin}</div></div>
+  <div class="kpi ok"><div class="l">準點率</div><div class="v">${t.rate==null?"—":t.rate+"%"}</div><div class="s">準點 ÷（準點＋遲到＋未到）</div></div>
+  <div class="kpi ok"><div class="l">準點</div><div class="v">${t.ontime}</div></div>
+  <div class="kpi late"><div class="l">遲到</div><div class="v">${t.late}</div><div class="s">${t.relate} 次當場改排時段</div></div>
+  <div class="kpi bad"><div class="l">未到</div><div class="v">${t.noshow}</div></div>
+  ${t.wait?`<div class="kpi"><div class="l">待報到</div><div class="v">${t.wait}</div></div>`:""}
+  <div class="kpi walk"><div class="l">現場候位</div><div class="v">${t.walkin}</div><div class="s">手機 ${t.phone}・代為 ${t.guard}</div></div>
+</div>`;
+function detailTable(list,withDate){
+  return `<div class="tbl-wrap"><table><thead><tr>${withDate?"<th>進貨日</th>":""}<th>時段</th><th>預約單號</th><th>物流中心</th><th>採購單</th><th>供應商</th><th>車牌</th><th>車型</th><th>過刷</th><th>判定</th><th>備註</th></tr></thead>
+  <tbody>${list.map(b=>`<tr>${withDate?`<td class="num">${b.date.slice(5).replace("-","/")}</td>`:""}
+    <td class="num" style="font-weight:600">${hhmm(b.slot)}</td><td class="num">${b.id}</td><td>${esc(dcOf(b.dc).name.replace("物流中心",""))}</td>
+    <td class="num">${b.poRefs[0]||`<span class="muted">—</span>`}${b.poRefs.length>1?`<br><span class="muted" style="font-size:12px;font-family:var(--f-body);font-weight:600">＋同車 ${b.poRefs.length-1} 張</span>`:""}</td>
+    <td>${supNames(b)}</td><td>${plateTxt(b)}</td><td>${grp(b.group).name}</td>
+    <td class="num">${b.checkinAt!=null?hhmm(b.checkinAt):"—"}</td><td>${statusPill(b)}</td>
+    <td style="font-size:13px">${isWalkin(b)?viaTxt(b):b.lateSlot!=null?`改排 <span class="mono">${hhmm(b.lateSlot)}</span> 進場`:""}</td></tr>`).join("")
+    ||`<tr><td colspan="${withDate?11:10}" class="empty">沒有符合的紀錄。</td></tr>`}</tbody></table></div>`;
+}
+const FILTERS=[["all","全部"],["ontime","準點"],["late","遲到"],["noshow","未到"],["wait","待報到"],["walkin","現場候位"]];
+V.report=()=>{
+  const tab=U.tab||"day", dcSel=U.dc||"ALL";
+  const inDc=b=>dcSel==="ALL"||b.dc===dcSel;
+  const tabs=`<div class="tabs" role="tablist">${[["day","每日分析"],["month","月報"],["quarter","季報"]].map(([k,t])=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${k===tab}">${t}</button>`).join("")}</div>`;
+  const H=head("報到分析","依採購單的預約紀錄統計準點、遲到、未到與現場候位。準點定義：過刷時間不晚於預約時段起始 "+S.cfg.graceMin+" 分鐘。現場候位不列入準點率，另外計次。","chart");
+  if(tab==="day"){
+    const date=U.date||S.simDate, flt=U.flt||"all";
+    const list=S.bookings.filter(b=>b.date===date&&inDc(b)&&b.status!=="cancelled").sort((a,b)=>a.slot-b.slot||a.id.localeCompare(b.id));
+    const t=tally(list);
+    const hs=[...new Set(list.map(b=>Math.floor(b.slot/60)))].sort((a,b)=>a-b);
+    const hmin=hs.length?hs[0]:8, hmax=hs.length?hs[hs.length-1]:15, cols=[];
+    let peak=1;
+    for(let h=hmin;h<=hmax;h++){const x=tally(list.filter(b=>Math.floor(b.slot/60)===h));cols.push([h,x]);peak=Math.max(peak,x.total)}
+    const shown=flt==="all"?list:list.filter(b=>statusOf(b)===flt);
+    return H+tabs+`<div class="row" style="margin-bottom:16px">
+        <label class="fld">日期<input type="date" id="rDate" value="${date}"></label>
+        <label class="fld">物流中心${dcSelect("rDc",dcSel,true)}</label>
+        <div class="row" style="align-self:flex-end;gap:6px"><button class="btn sm" data-dshift="-1">${ic("back",15)}前一天</button><button class="btn sm" data-dshift="1">後一天</button><button class="btn sm" data-dshift="0">演練日</button></div>
+        <div class="spacer"></div><button class="btn" id="exportCsv" style="align-self:flex-end">${ic("copy",16)}匯出 CSV</button></div>
+      <div class="grid" style="gap:16px">
+      ${kpiRow(t)}
+      <div class="card"><div class="card-h"><h3>${ic("chart",19)}各時段車次</h3><div class="spacer"></div>
+        <div class="legend"><span><i class="c-ok"></i>準點</span><span><i class="c-late"></i>遲到</span><span><i class="c-bad"></i>未到</span><span><i class="c-walk"></i>現場候位</span><span><i class="c-wait"></i>待報到</span></div></div>
+        <div class="pad">${list.length?`<div class="hchart">${cols.map(([h,x])=>`<div class="hcol" title="${hhmm(h*60)}：共 ${x.total}（準點 ${x.ontime}、遲到 ${x.late}、未到 ${x.noshow}、候位 ${x.walkin}、待報到 ${x.wait}）">
+            <div class="tot">${x.total||""}</div><div class="bars" style="height:${x.total/peak*170}px">
+            ${[["ontime","c-ok"],["late","c-late"],["noshow","c-bad"],["walkin","c-walk"],["wait","c-wait"]].map(([k,cl])=>x[k]?`<i class="${cl}" style="display:block;height:${x[k]/x.total*100}%"></i>`:"").join("")}</div></div>`).join("")}</div>
+          <div class="hlabels">${cols.map(([h])=>`<span>${pad(h)}</span>`).join("")}</div>`:`<div class="muted" style="text-align:center;padding:30px">這一天沒有紀錄（週日休）。</div>`}</div></div>
+      <div class="card"><div class="card-h"><h3>${ic("list",19)}明細</h3><div class="spacer"></div>
+        <div class="chips">${FILTERS.map(([k,l])=>{const n=k==="all"?list.length:list.filter(b=>statusOf(b)===k).length;return `<button class="chip" data-flt="${k}" aria-pressed="${k===flt}">${l} ${n}</button>`}).join("")}</div></div>
+        ${detailTable(shown,false)}</div>
+      </div>`;
+  }
+  const months=[...new Set(S.bookings.map(b=>b.date.slice(0,7)))].sort();
+  const quarters=[...new Set(S.bookings.map(b=>b.date.slice(0,4)+"-Q"+Math.ceil(+b.date.slice(5,7)/3)))].sort();
+  const opts=tab==="month"?months:quarters;
+  const period=(U.period&&opts.includes(U.period))?U.period:(tab==="month"?"2026-08":"2026-Q3");
+  const inP=b=>tab==="month"?b.date.slice(0,7)===period:(b.date.slice(0,4)===period.slice(0,4)&&"Q"+Math.ceil(+b.date.slice(5,7)/3)===period.slice(5));
+  const list=S.bookings.filter(b=>inP(b)&&inDc(b)&&b.status!=="cancelled");
+  const t=tally(list);
+  const days=[...new Set(list.map(b=>b.date))].sort();
+  const flt=U.flt&&U.flt!=="all"?U.flt:"late";
+  const shown=list.filter(b=>flt==="both"?["late","noshow"].includes(statusOf(b)):statusOf(b)===flt)
+    .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.slot-b.slot);
+  return H+tabs+`<div class="row" style="margin-bottom:16px">
+      <label class="fld">期間<select id="rPeriod">${opts.map(m=>`<option value="${m}" ${m===period?"selected":""}>${m}</option>`).join("")}</select></label>
+      <label class="fld">物流中心${dcSelect("rDc",dcSel,true)}</label>
+      <div class="spacer"></div><button class="btn" id="exportCsv" style="align-self:flex-end">${ic("copy",16)}匯出 CSV</button></div>
+    <div class="grid" style="gap:16px">
+    ${kpiRow(t)}
+    <div class="card"><div class="card-h"><h3>${ic("calendar",19)}每日趨勢</h3><div class="spacer"></div><span class="muted" style="font-size:13px;font-weight:700">點一列可看當天明細</span></div>
+      <div class="tbl-wrap" style="max-height:460px;overflow-y:auto"><table><thead><tr><th>日期</th><th>車次</th><th>準點</th><th>遲到</th><th>未到</th><th>現場候位</th><th style="min-width:200px">準點率</th></tr></thead>
+      <tbody>${days.map(d=>{const x=tally(list.filter(b=>b.date===d));const r=x.rate;
+        return `<tr class="click" data-day="${d}"><td class="num" style="font-weight:600">${dshow(d)}</td><td class="num">${x.total}</td>
+          <td class="num" style="color:var(--ok);font-weight:700">${x.ontime}</td><td class="num" style="color:var(--late);font-weight:700">${x.late||""}</td>
+          <td class="num" style="color:var(--bad);font-weight:700">${x.noshow||""}</td><td class="num" style="color:var(--walk);font-weight:700">${x.walkin||""}</td>
+          <td>${r==null?"—":`<div class="row" style="gap:8px;flex-wrap:nowrap"><span class="num" style="width:42px;font-weight:700">${r}%</span><div class="bar-mini" style="flex:1"><i style="width:${r}%;background:${r>=80?"var(--ok-bar)":r>=65?"var(--late-bar)":"var(--bad-bar)"}"></i></div></div>`}</td></tr>`}).join("")
+        ||`<tr><td colspan="7" class="empty">此期間沒有紀錄。</td></tr>`}</tbody></table></div></div>
+    <div class="card"><div class="card-h"><h3>${ic("alert",19)}需檢討的採購單</h3><div class="spacer"></div>
+      <div class="chips">${[["late","遲到"],["noshow","未到"],["both","遲到＋未到"]].map(([k,l])=>`<button class="chip" data-flt="${k}" aria-pressed="${k===flt}">${l}</button>`).join("")}</div></div>
+      ${detailTable(shown.slice(0,150),true)}
+      ${shown.length>150?`<div class="pad muted" style="font-weight:600">共 ${shown.length} 筆，畫面只列前 150 筆；完整資料請匯出 CSV。</div>`:""}</div>
+    </div>`;
+};
+function exportCsv(){
+  const tab=U.tab||"day", dcSel=U.dc||"ALL";
+  let list;
+  if(tab==="day"){const date=U.date||S.simDate;list=S.bookings.filter(b=>b.date===date)}
+  else{
+    const period=U.period||(tab==="month"?"2026-08":"2026-Q3");
+    list=S.bookings.filter(b=>tab==="month"?b.date.slice(0,7)===period:(b.date.slice(0,4)===period.slice(0,4)&&"Q"+Math.ceil(+b.date.slice(5,7)/3)===period.slice(5)));
+  }
+  list=list.filter(b=>(dcSel==="ALL"||b.dc===dcSel)&&b.status!=="cancelled").sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.slot-b.slot);
+  const lines=["進貨日,物流中心,預約單號,來源,主要採購單,同車其他採購單,供應商,車牌,車型,時段,過刷時間,遲到分鐘,改排進場,判定"];
+  list.forEach(b=>{const s=statusOf(b);
+    lines.push([b.date,dcOf(b.dc).name,b.id,viaTxt(b),b.poRefs[0]||"",b.poRefs.slice(1).join(" "),
+      supNames(b).replace(/、/g," "),b.plate,grp(b.group).name,hhmm(b.slot),b.checkinAt!=null?hhmm(b.checkinAt):"",
+      s==="late"?lateBy(b):"",b.lateSlot!=null?hhmm(b.lateSlot):"",SLABEL[s]].join(","))});
   const csv=lines.join("\n");
-  $("#layer").innerHTML=`<div class="scrim" id="scrimC"><div class="modal" style="max-width:640px">
-    <div class="card-head"><h3>匯出 CSV</h3></div>
-    <div class="card-pad grid" style="gap:10px">
-      <div class="note">${period}　共 ${rows.length} 筆。請複製下方內容貼入 Excel（分隔符號選逗號）。</div>
-      <textarea id="csvBox" readonly>${esc(csv)}</textarea>
-      <div class="row"><button class="btn pri" id="copyCsv">複製全部</button><button class="btn" id="closeC">關閉</button></div>
-    </div></div></div>`;
-  $("#copyCsv").onclick=()=>{const t=$("#csvBox");t.select();
-    try{navigator.clipboard.writeText(csv)}catch(e){try{document.execCommand("copy")}catch(e2){}}
-    toast("已複製 "+rows.length+" 筆")};
-  $("#closeC").onclick=()=>$("#layer").innerHTML="";
-  $("#scrimC").onclick=ev=>{if(ev.target.id==="scrimC")$("#layer").innerHTML=""};
+  $("#layer").innerHTML=`<div class="scrim" id="csvScrim"><div class="modal" style="max-width:720px"><div class="card-h"><h3>${ic("copy",19)}匯出 CSV</h3></div>
+    <div class="pad grid" style="gap:10px"><div class="note">共 ${list.length} 筆。複製後貼到 Excel，分隔符號選逗號。</div>
+    <textarea id="csvBox" readonly>${esc(csv)}</textarea>
+    <div class="row"><button class="btn pri" id="copyCsv">${ic("copy",16)}複製全部</button><button class="btn" id="closeCsv">關閉</button></div></div></div></div>`;
+  $("#copyCsv").onclick=()=>copyText(csv,list.length+" 筆");
+  $("#closeCsv").onclick=()=>$("#layer").innerHTML="";
+  $("#csvScrim").onclick=e=>{if(e.target.id==="csvScrim")$("#layer").innerHTML=""};
 }
 
-/* ── 綁定 ───────────────────────────── */
-function bind(){
-  const v=$("#view");
-  $$("[data-fill]",v).forEach(b=>b.onclick=()=>{
-    $("#poIn").value=b.dataset.fill;
-    if(!$("#carIn").value)$("#carIn").value="T01";
-    if(!$("#plateIn").value)$("#plateIn").value="ABC-1234";
-    lookup();
-  });
-  const lk=$("#lookup",v); if(lk)lk.onclick=lookup;
-  ["#poIn","#carIn","#plateIn"].forEach(s=>{const el=$(s,v);if(el)el.onkeydown=e=>{if(e.key==="Enter")lookup()}});
-  const cl=$("#clear",v); if(cl)cl.onclick=()=>{S.ui={};save();render()};
-  $$("[data-g]",v).forEach(b=>b.onclick=()=>{S.ui.group=b.dataset.g;S.ui.slot=null;save();render()});
-  $$(".slot[data-slot]",v).forEach(b=>b.onclick=()=>{S.ui.slot=+b.dataset.slot;save();render()});
-  const ae=$("#addExtra",v); if(ae)ae.onclick=addExtra;
-  const ei=$("#extraIn",v); if(ei)ei.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();addExtra()}};
-  $$("[data-rmextra]",v).forEach(b=>b.onclick=()=>{
-    S.ui.extras=S.ui.extras.filter(x=>x!==b.dataset.rmextra);S.ui.exErr="";save();render()});
-  const cf=$("#confirm",v); if(cf)cf.onclick=confirmBooking;
+/* ═════════ 6. 參數設定（後台） ═════════ */
+V.param=()=>head("參數設定","準點寬限、未到判定，以及各物流中心、各倉別、各車型的時段與名額。調整後回預約頁或看板即可看到差異。","sliders")+
+ `<div class="grid">
+   <div class="card"><div class="card-h"><h3>全廠參數</h3></div><div class="pad row" style="gap:20px;align-items:flex-start">
+     <label class="fld">準點寬限（分）<input type="number" class="mono" id="p-grace" value="${S.cfg.graceMin}" min="0" max="60" style="width:110px"></label>
+     <label class="fld">未到判定：時段結束後（分）<input type="number" class="mono" id="p-noshow" value="${S.cfg.noShowAfterMin}" min="0" max="180" style="width:110px"></label>
+     <label class="fld">現場給時段的起算緩衝（分）<input type="number" class="mono" id="p-walklead" value="${S.cfg.walkinLeadMin||0}" min="0" max="120" style="width:110px"></label>
+     <div class="note" style="flex:1;min-width:260px">過刷時間不晚於預約時段起始 <b>${S.cfg.graceMin}</b> 分鐘算準點，超過即遲到。時段結束後 <b>${S.cfg.noShowAfterMin}</b> 分鐘仍未過刷，判定未到。<br>遲到改排與現場候位，只給<b>現在起 ${S.cfg.walkinLeadMin||0} 分鐘之後</b>的時段。</div>
+   </div></div>
+   <div class="card"><div class="card-h"><h3>哪些倉別要預約</h3></div><div class="pad">
+     <div class="note brand">第一階段<b>以常溫為主</b>。${S.cfg.noBookingNote}關閉後，該倉別的採購單在預約頁會被擋下並提示不需預約。</div></div></div>
+   ${S.cfg.dcs.map(d=>`<div class="card"><div class="card-h"><h3>${esc(d.name)}</h3><span class="pill wait mono">${d.code}</span></div>
+     <div class="tbl-wrap"><table><thead><tr><th>倉別</th><th>車型 / 下貨區</th><th>開放時間</th><th>每小時切分</th><th>每段名額</th><th>每日時段數</th></tr></thead>
+     <tbody>${d.warehouses.flatMap(w=>GROUPS.map((g,gi)=>{const p=w.pools[g.id],n=slotsOf(d.code,w.id,g.id).length;
+       return `<tr${w.booking?"":' style="background:var(--soft)"'}>
+         ${gi===0?`<td rowspan="2">${tempTag(w)}<label class="row" style="gap:6px;margin-top:8px;cursor:pointer;font-size:13.5px;font-weight:700">
+           <input type="checkbox" data-book="${d.code}|${w.id}" ${w.booking?"checked":""} style="width:18px;height:18px;accent-color:var(--brand)">${w.booking?"開放預約":"不開放預約"}</label></td>`:""}
+         <td><b>${g.name}</b><br><span class="muted" style="font-size:13px">${g.stand}下貨</span></td>
+         <td><div class="row" style="gap:5px;flex-wrap:nowrap"><input type="time" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|open" value="${p.open}" style="width:120px">
+           <input type="time" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|close" value="${p.close}" style="width:120px"></div></td>
+         <td><select data-cfg="${d.code}|${w.id}|${g.id}|split">${[1,2,3,4].map(x=>`<option value="${x}" ${x===p.split?"selected":""}>${x} 段（每 ${60/x} 分）</option>`).join("")}</select></td>
+         <td><input type="number" class="mono" data-cfg="${d.code}|${w.id}|${g.id}|capacity" value="${p.capacity}" min="0" max="20" style="width:84px"></td>
+         <td class="num" style="font-weight:700">${n}</td></tr>`}))
+     .join("")}</tbody></table></div></div>`).join("")}
+ </div>`;
 
-  const qg=$("#qGo",v); if(qg)qg.onclick=()=>doQuery(false);
-  const qi=$("#qGoId",v); if(qi)qi.onclick=()=>doQuery(true);
-  const qp=$("#qPlate",v); if(qp)qp.onkeydown=e=>{if(e.key==="Enter")doQuery(false)};
-  const qd=$("#qId",v); if(qd)qd.onkeydown=e=>{if(e.key==="Enter")doQuery(true)};
-  $$("[data-ticket]",v).forEach(b=>b.onclick=()=>showTicket(b.dataset.ticket));
+/* ═════════ 7. 測試採購單（Demo） ═════════ */
+V.testdata=()=>{
+  const bookable=S.orders.filter(o=>o.valid&&o.date>=S.simDate&&whOf(o.dc,o.wh).booking&&!bookingOfPO(o.po))
+    .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.dc<b.dc?1:a.dc>b.dc?-1:a.po.localeCompare(b.po));
+  const cold=S.orders.filter(o=>o.valid&&o.date>=S.simDate&&!whOf(o.dc,o.wh).booking&&!bookingOfPO(o.po));
+  const voided=S.orders.filter(o=>!o.valid);
+  const expired=S.orders.filter(o=>o.valid&&o.date<S.simDate&&!bookingOfPO(o.po));
+  const booked=S.bookings.filter(b=>b.date===S.simDate&&b.status==="booked"&&b.poRefs.length).slice(0,4);
+  const multi=S.bookings.find(b=>b.date===S.simDate&&b.poRefs.length>=3);
+  const gateToday=S.bookings.filter(b=>b.date===S.simDate&&b.status==="booked").sort((a,b)=>a.slot-b.slot).slice(0,8);
+  const cp=(v)=>`<button class="copybtn" data-copy="${v}" aria-label="複製 ${v}">${ic("copy",13)}複製</button>`;
+  const poRow=o=>`<tr><td class="num" style="font-weight:600;font-size:15px">${o.po}</td><td>${cp(o.po)}</td>
+    <td>${esc(dcOf(o.dc).name)}</td><td>${tempTag(whOf(o.dc,o.wh))}</td><td class="num">${dshow(o.date)}</td><td>${esc(supplierOf(o.supplier).name)}</td>
+    <td><button class="btn sm" data-try="${o.po}">帶入預約</button></td></tr>`;
+  const tbl=(rows,empty)=>`<div class="tbl-wrap"><table><thead><tr><th>採購單號</th><th></th><th>物流中心</th><th>倉別</th><th>進貨日</th><th>供應商</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="7" class="empty">${empty}</td></tr>`}</tbody></table></div>`;
+  return head("測試採購單","以下清單會隨操作即時更新（預約過的單會自動移出「可預約」）。按「重設 Demo 資料」可回到初始狀態。","clip")+
+  `<div class="grid">
+    <div class="card"><div class="card-h"><h3>${ic("check",19,2.6)}可預約的採購單</h3><span class="pill ok">${bookable.length} 張</span><div class="spacer"></div>
+      <button class="btn sm pri" data-copy="${bookable.map(o=>o.po).join("\n")}">${ic("copy",15)}複製全部單號</button></div>
+      ${tbl(bookable.map(poRow).join(""),"可預約的單都用完了，請按「重設 Demo 資料」。")}
+      <div class="pad note" style="margin:0 18px 16px">同一物流中心、同一天的單可以互相當作「同車其他採購單」加入。</div></div>
+    <div class="grid split2" style="grid-template-columns:1fr 1fr;align-items:start">
+      <div class="card"><div class="card-h"><h3>會被擋下的單</h3></div><div class="tbl-wrap"><table><thead><tr><th>採購單號</th><th></th><th>預期結果</th></tr></thead><tbody>
+        ${cold.map(o=>`<tr><td class="num" style="font-weight:600">${o.po}</td><td>${cp(o.po)}</td><td>低溫倉：提示<b>不需預約</b></td></tr>`).join("")}
+        ${voided.map(o=>`<tr><td class="num" style="font-weight:600">${o.po}</td><td>${cp(o.po)}</td><td>已作廢：無法預約</td></tr>`).join("")}
+        ${expired.map(o=>`<tr><td class="num" style="font-weight:600">${o.po}</td><td>${cp(o.po)}</td><td>進貨日已過：無法預約</td></tr>`).join("")}
+        ${booked.map(b=>`<tr><td class="num" style="font-weight:600">${b.poRefs[0]}</td><td>${cp(b.poRefs[0])}</td><td>已預約過：直接顯示 <span class="mono">${b.id}</span></td></tr>`).join("")}
+        ${multi?`<tr><td class="num" style="font-weight:600">${multi.poRefs[2]}</td><td>${cp(multi.poRefs[2])}</td><td>是 <span class="mono">${multi.id}</span> 的同車其他單：也算已預約</td></tr>`:""}
+      </tbody></table></div></div>
+      <div class="card"><div class="card-h"><h3>過刷測試：今日待報到</h3><div class="spacer"></div><button class="btn sm" data-newtab="gate">${ic("ext",15)}開過刷頁</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>時段</th><th>預約單號</th><th></th><th>車牌</th><th>物流中心</th></tr></thead><tbody>
+        ${gateToday.map(b=>`<tr><td class="num" style="font-weight:600">${hhmm(b.slot)}</td><td class="num" style="font-weight:600">${b.id}</td><td>${cp(b.id)}</td><td>${plateTxt(b)}</td><td>${esc(dcOf(b.dc).name)}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">今日預約都已報到或判定未到。</td></tr>`}
+        </tbody></table></div>
+        <div class="pad note" style="margin:0 18px 16px">過刷頁要先切到該單的物流中心。模擬時間超過「時段＋${S.cfg.graceMin} 分」再過刷會判定遲到。</div></div>
+    </div>
+  </div>`;
+};
 
-  const gd=$("#gateDc",v); if(gd)gd.onchange=e=>{S.ui.gateDc=e.target.value;S.ui.gateHit=null;S.ui.gateMsg="";save();render()};
-  const sg=$("#scanGo",v); if(sg)sg.onclick=doScan;
-  const sc=$("#scan",v); if(sc){sc.onkeydown=e=>{if(e.key==="Enter")doScan()};
-    if(!S.ui.walkOpen)sc.focus({preventScroll:true})}
-  const wo=$("#walkOpen",v); if(wo)wo.onclick=()=>{S.ui.walkOpen=true;S.ui.walkErr="";save();render()};
-  const wcl=$("#walkClose",v); if(wcl)wcl.onclick=()=>{
-    S.ui.walkOpen=false;S.ui.walkSlot=null;S.ui.walkErr="";S.ui.walkDigits="";save();render()};
-  const wpl=$("#walkPlate",v); if(wpl){
-    const sync=e=>{S.ui.walkDigits=e.target.value.replace(/\D/g,"")};
-    wpl.oninput=sync;
-    wpl.onchange=e=>{sync(e);save();render()};
-    wpl.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();sync(e);save();render()}};
-    if(!S.ui.walkDigits)wpl.focus({preventScroll:true});
+/* ═════════ 8. 規格與待確認（Demo） ═════════ */
+V.spec=()=>head("規格與待確認","2026/09/17 依內部討論改版。以下區分已確認的規則與仍待拍板的項目。","doc")+
+ `<div class="note warn" style="margin-bottom:16px">本頁為流程討論用的示範系統，<b>供應商、採購單號、車牌與統計數據皆為測試用虛構資料</b>。</div>
+  <div class="grid split2" style="grid-template-columns:1fr 1fr;align-items:start">
+   <div class="card"><div class="card-h"><h3>畫面架構</h3></div><div class="pad"><ol class="plain">
+     <li><b>預約（查詢＋新增合一）</b>：輸入採購單號，已預約就顯示預約內容，未預約就直接進入預約步驟。也可輸入預約單號或車牌查詢。</li>
+     <li><b>手機現場候位</b>：未預約的司機掃廠門口的 QRcode，用自己的手機取得今日時段與震動器號碼。</li>
+     <li><b>過刷報到（滿版）</b>：接條碼槍，也可手動輸入。大字顯示準點或遲到。放現場候位 QRcode 與「代為候位」備援。</li>
+     <li><b>即時看板（滿版）</b>：當日預約、報到、未到、候位進度，各時段剩餘名額，逾時未到與即將到場。</li>
+     <li><b>報到分析（後台）</b>：每日分析（各時段車次、明細）與月報／季報（每日趨勢、需檢討的採購單）。</li>
+     <li><b>參數設定（後台）</b>：準點寬限、未到判定、各倉別是否開放預約、時段與名額。</li>
+   </ol></div></div>
+   <div class="card"><div class="card-h"><h3>已確認的規則</h3></div><div class="pad"><ol class="plain">
+     <li><b>申請者是貨運業者</b>，但系統<b>不記錄貨運業者代號</b>；統計以採購單為單位，只看那張單準點、遲到或未到。</li>
+     <li><b>一張採購單只能預約一次</b>，主單與同車其他單都算。車牌選填；有填時，同車同日同物流中心不可重複預約。</li>
+     <li><b>只過刷一次。</b>廠門口過刷即報到並立即判定，發放震動器。進場順序由警衛人工控管。</li>
+     <li><b>準點：過刷不晚於預約時段起始 ${S.cfg.graceMin} 分鐘</b>；時段結束後 ${S.cfg.noShowAfterMin} 分鐘未過刷為未到。</li>
+     <li><b>遲到者當場改給當天最快的時段</b>，原單記為遲到後結案，不另產生預約。</li>
+     <li><b>現場候位當場給時段、佔名額</b>，不需採購單號，不列入準點率，只計次。司機手機掃 QRcode 為主，手機無法掃描時由警衛代為候位，進場時間人工告知與記錄。</li>
+     <li><b>預約單同時印 QRcode 與一維條碼</b>，兩種條碼槍都能讀；單號大字印出，可手動輸入。</li>
+     <li><b>第一階段只做常溫</b>，低溫倉的單會提示不需預約；是否開放是參數。</li>
+   </ol></div></div>
+   <div class="card"><div class="card-h"><h3>待確認</h3></div><div class="pad">
+     <div class="openq"><b>現場候位 QRcode 可能被遠端佔位</b><p>目前先不防。QRcode 若被拍下傳給還沒到場的車，對方可以在路上先佔時段。若現場發生，再考慮改成警衛確認後生效，或 QRcode 定時更換。</p></div>
+     <div class="openq"><b>同一張採購單分兩台車送</b><p>「一張單只能預約一次」代表第二台車約不到。若分批送貨常見，需要另訂做法（例如允許註記分批）。</p></div>
+     <div class="openq"><b>現場條碼槍的種類</b><p>預約單已同時印一維條碼與 QRcode。實際導入前仍需確認現場設備能讀哪一種，並實機測試。</p></div>
+     <div class="openq"><b>遲到改排會排擠後面的名額</b><p>目前先到先得。若出現「準時的人反而約不到」，要另訂保留規則。</p></div>
+     <div class="openq"><b>改約與取消</b><p>目前不提供。換車、換時段的頻率有多高？若開放，截止時間怎麼訂？</p></div>
+     <div class="openq"><b>遲到與未到要不要有後果</b><p>目前純統計。報表要送給誰、是否連動限制預約，尚未決定。</p></div>
+     <div class="openq"><b>採購單匯入規格、資料保留天數</b><p>尚未討論，見上線規格文件。</p></div>
+   </div></div>
+   <div class="card"><div class="card-h"><h3>建議操作順序</h3></div><div class="pad"><ol class="plain">
+     <li>左側<b>測試採購單</b>複製一張可預約的單 → 到<b>預約</b>貼上查詢 → 不填車牌、加一張同車其他單、選車型與時段 → 確認。</li>
+     <li>再查一次剛剛那張單號，會直接顯示預約內容；查同車其他單也一樣。</li>
+     <li>點左側「過刷報到」「即時看板」旁的<b>新分頁</b>圖示，各開一個分頁並排。</li>
+     <li>在過刷頁輸入預約單號按 Enter，看判定與震動器；看板分頁會同步更新。</li>
+     <li>按<b>＋15 分</b>推進時間，再過刷一筆待報到的單，看遲到判定與當場改排時段。</li>
+     <li>過刷頁按<b>模擬手機開啟</b>完成一筆候位；再按<b>代為候位</b>完成一筆，看看板的候位數變化。</li>
+     <li>到<b>報到分析</b>看今天，切換到月報，點一天看明細；注意週一的準點率偏低。</li>
+   </ol></div></div>
+  </div>`;
+
+/* ── 預約單 ─────────────────────────────── */
+function showTicket(id){
+  const b=bookingById(id); if(!b)return;
+  const dc=dcOf(b.dc),w=whOf(b.dc,b.wh),g=grp(b.group);
+  $("#layer").innerHTML=`<div class="scrim" id="tScrim"><div class="modal" role="dialog" aria-label="預約單"><div class="ticket">
+    <div class="th"><div class="co">${BRAND.co}<small>${BRAND.sys}・${isWalkin(b)?"現場候位單":"進貨預約單"}</small></div>
+      <div style="text-align:right"><div class="muted" style="font-size:12px;font-weight:700">預約單號</div><div class="bigid">${b.id}</div></div></div>
+    <div class="codes"><div id="tQr"></div>
+      <div class="bc">${code128(b.id)}<div class="hr">${b.id}</div><div class="muted" style="font-size:12px;font-weight:600">條碼槍掃不到時，請手動輸入上方單號</div></div></div>
+    <dl class="kv" style="margin-top:12px">
+      <dt>採購單</dt><dd class="mono" style="font-weight:600">${b.poRefs.length?b.poRefs.join("<br>"):"—（現場候位）"}</dd>
+      <dt>車牌</dt><dd>${plateTxt(b)}</dd>
+      <dt>收貨</dt><dd>${esc(dc.name)}　${w.temp}・${esc(w.name)}</dd>
+      <dt>進貨日</dt><dd class="mono">${dshow(b.date)}</dd>
+      <dt>${isWalkin(b)?"進場時段":"預約時段"}</dt><dd class="mono" style="font-weight:700;font-size:18px">${hhmm(b.slot)}–${hhmm(b.end)}</dd>
+      <dt>車型</dt><dd>${g.name}（${g.stand}下貨）</dd>
+      ${b.pager?`<dt>震動器</dt><dd class="mono" style="font-weight:700">${b.pager}</dd>`:""}
+    </dl>
+    <div class="rules"><ol>${isWalkin(b)?`
+      <li>已在現場完成候位，<b>不需再過刷</b>，請依時段與現場人員指示進場。</li>
+      <li>本次不列入準點率，會計入現場候位次數。下次請事先線上預約。</li>`:`
+      <li>請於 <b>${hhmm(b.slot)}</b> 前抵達廠門口過刷，晚到 ${S.cfg.graceMin} 分鐘內仍算準點。</li>
+      <li>過刷後領取震動器，依現場人員指示進場。</li>
+      <li>超過寬限判定遲到，系統會當場改給當天最快的時段，該次仍記為遲到。</li>
+      <li>未過刷即列為未到。</li>`}</ol></div>
+    <div class="row noprint" style="margin-top:16px"><button class="btn" id="tPrint" style="flex:1">${ic("print",17)}列印</button><button class="btn pri" id="tClose" style="flex:1">關閉</button></div>
+  </div></div></div>`;
+  drawQR($("#tQr"),pageUrl()+"?id="+encodeURIComponent(b.id),132);
+  $("#tClose").onclick=()=>$("#layer").innerHTML="";
+  $("#tPrint").onclick=()=>window.print();
+  $("#tScrim").onclick=e=>{if(e.target.id==="tScrim")$("#layer").innerHTML=""};
+}
+
+/* ── 繪製與綁定 ─────────────────────────────── */
+function render(external){
+  if(autoNoShow())save();
+  const a=document.activeElement;
+  const snap=(a&&a.id&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&a.type!=="date")?{id:a.id,val:a.value,s:a.selectionStart,e:a.selectionEnd}:null;
+  const inner=V[view]();
+  $("#root").innerHTML=KIOSK.has(view)?inner:shell(inner);
+  document.title=(NAV.find(n=>n.v===view)?.t||"")+"｜"+BRAND.sys;
+  bind();
+  if(snap){
+    const el=document.getElementById(snap.id);
+    if(el){
+      if(external)el.value=snap.val;          // 其他分頁觸發的重繪：保留正在輸入的內容
+      el.focus({preventScroll:true});
+      try{if(external)el.setSelectionRange(snap.s,snap.e)}catch(e){}
+    }
   }
-  $$("[data-wg]",v).forEach(b=>b.onclick=()=>{S.ui.walkGroup=b.dataset.wg;S.ui.walkSlot=null;save();render()});
-  $$("[data-wslot]",v).forEach(b=>b.onclick=()=>{S.ui.walkSlot=+b.dataset.wslot;S.ui.walkErr="";save();render()});
-  const wgo=$("#walkGo",v); if(wgo)wgo.onclick=doWalkin;
-
-  const rm=$("#rMode",v); if(rm)rm.onchange=e=>{
-    S.ui.rMode=e.target.value;
-    S.ui.rPeriod=e.target.value==="month"?"2026-08":"2026-Q3";save();render()};
-  const rp=$("#rPeriod",v); if(rp)rp.onchange=e=>{S.ui.rPeriod=e.target.value;save();render()};
-  const ex=$("#exportCsv",v); if(ex)ex.onclick=exportCsv;
-
-  const pg=$("#p-grace",v); if(pg)pg.onchange=e=>{S.cfg.graceMin=Math.max(0,+e.target.value||0);save();render()};
-  const pn=$("#p-noshow",v); if(pn)pn.onchange=e=>{S.cfg.noShowAfterMin=Math.max(0,+e.target.value||0);save();render()};
-  const pw=$("#p-walklead",v); if(pw)pw.onchange=e=>{S.cfg.walkinLeadMin=Math.max(0,+e.target.value||0);save();render()};
-  $$("[data-book]",v).forEach(el=>el.onchange=e=>{
-    const[dc,wh]=el.dataset.book.split("|");
-    whOf(dc,wh).booking=e.target.checked;save();render();
-    toast(whOf(dc,wh).name+(e.target.checked?" 已開放預約":" 已停止開放預約"));
-  });
-  $$("[data-cfg]",v).forEach(el=>el.onchange=e=>{
-    const[dc,wh,g,f]=el.dataset.cfg.split("|");
-    const p=poolOf(dc,wh,g);
-    p[f]=(f==="split"||f==="capacity")?+e.target.value:e.target.value;
+}
+function bind(){
+  const r=$("#root");
+  const on=(sel,ev,fn)=>{const el=$(sel,r);if(el)el[ev]=fn;return el};
+  $$("[data-nav]",r).forEach(b=>b.onclick=()=>go(b.dataset.nav));
+  $$("[data-newtab]",r).forEach(b=>b.onclick=()=>window.open(urlFor(b.dataset.newtab,KIOSK.has(b.dataset.newtab)?curDc():null),"_blank"));
+  $$("[data-adv]",r).forEach(b=>b.onclick=()=>{
+    S.simMin+=+b.dataset.adv;
+    if(S.simMin>=24*60){S.simMin-=24*60;S.simDate=addDays(S.simDate,1)}
     save();render();
   });
+  on("#resetBtn","onclick",()=>{if(!confirm("重設後，所有操作過的預約、報到都會回到初始 Demo 資料。確定嗎？"))return;fresh();U={};render();toast("已重設為初始 Demo 資料")});
+  on("#kBack","onclick",()=>go(lastView||"book"));
+  on("#kDc","onchange",e=>{kdc=e.target.value;U={};syncUrl();render()});
+  $$("[data-copy]",r).forEach(b=>b.onclick=()=>copyText(b.dataset.copy,b.dataset.copy.includes("\n")?b.dataset.copy.split("\n").length+" 張單號":b.dataset.copy));
+  $$("[data-ticket]",r).forEach(b=>b.onclick=()=>showTicket(b.dataset.ticket));
+
+  if(view==="book"){
+    const doQ=()=>{runSearch($("#q").value);render()};
+    on("#qGo","onclick",doQ);
+    on("#q","onkeydown",e=>{if(e.key==="Enter")doQ()});
+    $$("[data-fill]",r).forEach(b=>b.onclick=()=>{runSearch(b.dataset.fill);render()});
+    on("#clear","onclick",()=>{U={};render();$("#q")?.focus()});
+    const pl=on("#plateIn","oninput",e=>{
+      U.plate=e.target.value.toUpperCase();
+      const sp=$("#sumPlate");if(sp)sp.innerHTML=U.plate?`<span class="mono" style="font-weight:600">${esc(U.plate)}</span>`:`<span class="muted">未填</span>`;
+    });
+    $$("[data-g]",r).forEach(b=>b.onclick=()=>{U.group=b.dataset.g;U.slot=null;U.bookErr="";render()});
+    $$(".slot[data-slot]",r).forEach(b=>b.onclick=()=>{U.slot=+b.dataset.slot;U.bookErr="";render()});
+    on("#addExtra","onclick",addExtra);
+    on("#extraIn","onkeydown",e=>{if(e.key==="Enter"){e.preventDefault();addExtra()}});
+    $$("[data-rmextra]",r).forEach(b=>b.onclick=()=>{U.extras=U.extras.filter(x=>x!==b.dataset.rmextra);U.exErr="";render()});
+    on("#confirm","onclick",confirmBooking);
+    if(!U.mode&&!document.activeElement?.id)$("#q")?.focus({preventScroll:true});
+  }
+  if(view==="walkin"){
+    $$("[data-wg]",r).forEach(b=>b.onclick=()=>{keepDigits("#wDigits",U);U.g=b.dataset.wg;U.slot=null;U.err="";render()});
+    $$("[data-wslot]",r).forEach(b=>b.onclick=()=>{keepDigits("#wDigits",U);U.slot=+b.dataset.wslot;U.err="";render()});
+    on("#wGo","onclick",()=>{
+      keepDigits("#wDigits",U);
+      const res=createWalkin(curDc(),U.g||"dock",U.slot,U.digits,"phone");
+      if(typeof res==="string"){U.err=res;U.slot=null;render();return}
+      U={done:res.id};render();window.scrollTo(0,0);
+    });
+    on("#wDone","onclick",()=>{U={};render()});
+  }
+  if(view==="gate"){
+    const sc=$("#scan",r);
+    if(sc){sc.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();doScan(sc.value)}};
+      if(!$("#layer").innerHTML)sc.focus({preventScroll:true})}
+    drawQR($("#wkQr",r),urlFor("walkin",curDc()),190);
+    on("#guardWalk","onclick",()=>{GW={g:"dock",slot:null,digits:"",err:""};guardWalkModal()});
+    on("#simPhone","onclick",()=>window.open(urlFor("walkin",curDc()),"_blank"));
+    on("#toBoard","onclick",()=>window.open(urlFor("board",curDc()),"_blank"));
+  }
+  if(view==="report"){
+    $$("[data-tab]",r).forEach(b=>b.onclick=()=>{U={tab:b.dataset.tab,dc:U.dc};render()});
+    on("#rDate","onchange",e=>{if(e.target.value){U.date=e.target.value;render()}});
+    on("#rDc","onchange",e=>{U.dc=e.target.value;render()});
+    on("#rPeriod","onchange",e=>{U.period=e.target.value;render()});
+    $$("[data-dshift]",r).forEach(b=>b.onclick=()=>{const n=+b.dataset.dshift;U.date=n?addDays(U.date||S.simDate,n):S.simDate;render()});
+    $$("[data-flt]",r).forEach(b=>b.onclick=()=>{U.flt=b.dataset.flt;render()});
+    $$("[data-day]",r).forEach(t=>t.onclick=()=>{U={tab:"day",dc:U.dc,date:t.dataset.day};render();window.scrollTo(0,0)});
+    on("#exportCsv","onclick",exportCsv);
+  }
+  if(view==="param"){
+    on("#p-grace","onchange",e=>{S.cfg.graceMin=Math.max(0,+e.target.value||0);save();render()});
+    on("#p-noshow","onchange",e=>{S.cfg.noShowAfterMin=Math.max(0,+e.target.value||0);save();render()});
+    on("#p-walklead","onchange",e=>{S.cfg.walkinLeadMin=Math.max(0,+e.target.value||0);save();render()});
+    $$("[data-book]",r).forEach(el=>el.onchange=e=>{
+      const[dc,wh]=el.dataset.book.split("|");whOf(dc,wh).booking=e.target.checked;save();render();
+      toast(whOf(dc,wh).name+(e.target.checked?" 已開放預約":" 已停止開放預約"));
+    });
+    $$("[data-cfg]",r).forEach(el=>el.onchange=e=>{
+      const[dc,wh,g,f]=el.dataset.cfg.split("|"),p=poolOf(dc,wh,g);
+      p[f]=(f==="split"||f==="capacity")?+e.target.value:e.target.value;save();render();
+    });
+  }
+  if(view==="testdata"){
+    $$("[data-try]",r).forEach(b=>b.onclick=()=>{view="book";syncUrl();runSearch(b.dataset.try);render();window.scrollTo(0,0)});
+  }
 }
 
-/* ── 啟動 ───────────────────────────── */
-function applyDeepLink(){
-  let q; try{q=new URLSearchParams(location.search)}catch(e){return}
-  const id=(q.get("id")||"").trim().toUpperCase(); if(!id)return;
-  const b=bookingById(id); if(!b)return;
-  S.ui={qId:id,qResult:[b],qErr:""};S.view="query";save();
-  try{history.replaceState(null,"",location.origin+location.pathname)}catch(e){}
-}
-$$(".navbtn").forEach(b=>b.onclick=()=>{S.ui={};go(b.dataset.view)});
-$$("[data-adv]").forEach(b=>b.onclick=()=>{
-  S.simMin+=+b.dataset.adv;
-  if(S.simMin>=24*60){S.simMin-=24*60;S.simDate=addDays(S.simDate,1)}
-  save();render();
+/* 過刷頁：點畫面空白處也把游標拉回輸入欄，條碼槍隨時可掃。 */
+document.addEventListener("click",e=>{
+  if(view!=="gate"||$("#layer").innerHTML)return;
+  if(e.target.closest("button,select,input,a,label"))return;
+  $("#scan")?.focus({preventScroll:true});
 });
-$("#resetBtn").onclick=()=>{fresh();render();toast("已重設為初始 Demo 資料")};
-load();applyDeepLink();render();
+/* 其他分頁寫入資料時同步重繪（看板、過刷、手機候位互相即時更新）。 */
+window.addEventListener("storage",e=>{
+  if(e.key!==KEY||!e.newValue)return;
+  try{const x=JSON.parse(e.newValue);if(x&&x.v===3){S=x;render(true)}}catch(err){}
+});
+
+/* ── 啟動 ── */
+load();
+(function(){
+  let q;try{q=new URLSearchParams(location.search)}catch(e){return}
+  const v=q.get("view"); if(v&&V[v])view=v;
+  const dc=(q.get("dc")||"").toUpperCase(); if(dc)kdc=dc;
+  const id=q.get("id"); if(id){view="book";runSearch(id)}
+})();
+syncUrl();render();
 </script>
 </body>
 </html>
